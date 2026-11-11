@@ -1,0 +1,22 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+
+# colcon 产物
+.colcon/
+build/
+install/
+log/
+
+# 模型权重
+weights/
+*.engine
+*.pt
+*.onnx
+
+# IDE / OS
+.vscode/
+.idea/
+.DS_Store
