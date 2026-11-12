@@ -1,11 +1,16 @@
 """tienkung_dex 适配层单测（用 fake SDK 门面，无需真机）。"""
 import math
+import os
 from types import SimpleNamespace
 
 import pytest
 
 from thinker_skill_sdk import Pose
 from tienkung_dex_robot import TienkungDexBody, TienkungDexSensor
+
+URDF = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+    "robots", "tienkung_dex", "resources", "urdf", "tienkung_dex_brainco.urdf")
 
 
 class _Vel:
@@ -27,6 +32,11 @@ class _JointGroup:
 
     def get_states(self):
         return dict(self.states)
+
+    def get_pose(self):
+        return (self.states.get(31, SimpleNamespace(pos=0.0)).pos,
+                self.states.get(32, SimpleNamespace(pos=0.0)).pos,
+                self.states.get(33, SimpleNamespace(pos=0.0)).pos)
 
     def get_state(self, jid):
         return self.states.get(jid)
@@ -78,7 +88,7 @@ class _Robot:
 
 
 def _body(frame=None):
-    return TienkungDexBody(_Robot(frame))
+    return TienkungDexBody(_Robot(frame), urdf_path=URDF, pelvis_height=0.92)
 
 
 def test_arm_name_to_id_and_clamp():
@@ -96,10 +106,16 @@ def test_arm_unknown_joint():
         body.arm.move_to_joints({"bogus_joint": 0.0})
 
 
-def test_arm_pose_not_supported():
+def test_arm_move_to_pose_via_ik():
+    body = _body()                       # hand_side=right → 右臂，y 为负
+    body.arm.move_to_pose(Pose(0.30, -0.20, 0.90))
+    assert body._robot.arm.calls          # 已下发关节指令
+
+
+def test_arm_move_to_pose_unreachable():
     body = _body()
-    with pytest.raises(NotImplementedError):
-        body.arm.move_to_pose(Pose(0, 0, 0))
+    with pytest.raises(RuntimeError):
+        body.arm.move_to_pose(Pose(1.5, 0.0, 0.9))   # 超臂展
 
 
 def test_arm_is_moving():

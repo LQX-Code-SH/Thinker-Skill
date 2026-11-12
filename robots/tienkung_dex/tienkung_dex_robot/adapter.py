@@ -67,10 +67,14 @@ class TienkungDexAdapter:
         camera_k: Optional[list] = None,
         pelvis_height: float = 0.0,
         hand_variant: str = "brainco",
+        ik_solver: str = "daqp",
     ):
         self.raw = robot
         self.hand_variant = hand_variant
-        self.body = TienkungDexBody(robot, hand_side=hand_side, hand_dof=hand_dof)
+        self.body = TienkungDexBody(
+            robot, hand_side=hand_side, hand_dof=hand_dof,
+            urdf_path=urdf_path, pelvis_height=pelvis_height,
+            ik_solver=ik_solver)
         self.sensor = TienkungDexSensor(
             robot, camera=camera, urdf_path=urdf_path, k=camera_k,
             pelvis_height=pelvis_height)
@@ -95,6 +99,7 @@ def create_adapter(
     urdf_path: Optional[str] = None,
     camera_k: Optional[list] = None,
     pelvis_height: float = 0.0,
+    ik_solver: str = "daqp",
 ) -> TienkungDexAdapter:
     """创建适配器（未 start；调用方需 ``adapter.start()``）。"""
     variant = HAND_VARIANTS.get(hand_variant)
@@ -115,4 +120,5 @@ def create_adapter(
         robot, hand_side=hand_side, hand_dof=dof,
         camera=camera, urdf_path=urdf_path, camera_k=camera_k,
         pelvis_height=pelvis_height, hand_variant=hand_variant,
+        ik_solver=ik_solver,
     )

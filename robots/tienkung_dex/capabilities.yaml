@@ -8,7 +8,8 @@ sdk: "tienkung_dex>=1.0"
 capabilities:
   body.arm:
     dof: 7            # 单臂 7 轴（ID 11-17 左 / 21-27 右）
-    pose_ik: false    # 仅关节级；位姿级需上层 IK
+    pose_ik: true     # 位姿 IK（QP + DAQP，见 D-017）
+    ik_solver: daqp
   body.waist:
     dof: 3            # pitch / roll / yaw
     height: false     # 无升降自由度

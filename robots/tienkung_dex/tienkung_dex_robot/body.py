@@ -30,9 +30,25 @@ from .joints import (
 class TienkungDexArm:
     """手臂：关节级（位姿级不支持）。"""
 
-    def __init__(self, robot: Any):
+    def __init__(self, robot: Any, *, side: str = "left",
+                 urdf_path: Any = None, pelvis_height: float = 0.0,
+                 ik_solver: str = "daqp"):
         self._robot = robot
         self._target: dict = {}
+        self._side = side
+        self._urdf_path = urdf_path
+        self._pelvis_height = pelvis_height
+        self._ik_solver = ik_solver
+        self._ik = None
+
+    def _ik_obj(self):
+        if self._ik is None:
+            from .ik import ArmIK
+            from .kinematics import default_urdf_path
+            path = self._urdf_path or default_urdf_path()
+            self._ik = ArmIK(path, side=self._side, solver=self._ik_solver,
+                             base_offset=(0.0, 0.0, self._pelvis_height))
+        return self._ik
 
     def _require(self):
         if getattr(self._robot, "arm", None) is None:
@@ -70,10 +86,31 @@ class TienkungDexArm:
         return False
 
     def move_to_pose(self, pose: Pose, *, duration: float = 0.0) -> None:
-        raise NotImplementedError("tienkung_dex 手臂无 IK/位姿接口，请用 move_to_joints")
+        """IK 求解后下发关节角；不收敛抛 ``RuntimeError``。"""
+        self._require()
+        from .joints import URDF_TO_BODY
+
+        ik = self._ik_obj()
+        current = self.get_joints()
+        seed = [current.get(URDF_TO_BODY[n], 0.0) for n in ik.joint_names]
+        waist = self._robot.waist.get_pose()
+        q, ok = ik.solve([pose.x, pose.y, pose.z], seed, waist)
+        if not ok:
+            raise RuntimeError(
+                f"IK 未收敛: target=({pose.x:.3f},{pose.y:.3f},{pose.z:.3f})")
+        self.move_to_joints({URDF_TO_BODY[n]: float(v)
+                             for n, v in zip(ik.joint_names, q)})
 
     def get_tcp_pose(self) -> Pose:
-        raise NotImplementedError("tienkung_dex 手臂无 IK/位姿接口")
+        """用 FK 返回腕 roll 末端在 base 系的位置。"""
+        self._require()
+        from .joints import URDF_TO_BODY
+
+        ik = self._ik_obj()
+        current = self.get_joints()
+        q = [current.get(URDF_TO_BODY[n], 0.0) for n in ik.joint_names]
+        p = ik.fk(q, self._robot.waist.get_pose())
+        return Pose(x=float(p[0]), y=float(p[1]), z=float(p[2]))
 
 
 class TienkungDexGripper:
@@ -234,9 +271,13 @@ class TienkungDexBase:
 class TienkungDexBody(BodyAPI):
     """按能力切分的 BodyAPI 实现。"""
 
-    def __init__(self, robot: Any, *, hand_side: str = "right", hand_dof: int = 6):
+    def __init__(self, robot: Any, *, hand_side: str = "right", hand_dof: int = 6,
+                 urdf_path: Any = None, pelvis_height: float = 0.0,
+                 ik_solver: str = "daqp"):
         self._robot = robot
-        self.arm = TienkungDexArm(robot)
+        self.arm = TienkungDexArm(robot, side=hand_side, urdf_path=urdf_path,
+                                  pelvis_height=pelvis_height,
+                                  ik_solver=ik_solver)
         self.gripper = TienkungDexGripper(robot, side=hand_side, dof=hand_dof)
         self.waist = TienkungDexWaist(robot)
         self.head = TienkungDexHead(robot)

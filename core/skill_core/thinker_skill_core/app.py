@@ -45,6 +45,7 @@ def load_robot_adapter(node, config: Dict[str, Any]):
         urdf_path=config.get("urdf_path"),
         camera_k=(config.get("camera") or {}).get("k"),
         pelvis_height=float(config.get("pelvis_height", 0.0) or 0.0),
+        ik_solver=(config.get("ik") or {}).get("solver", "daqp"),
     )
 
 

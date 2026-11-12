@@ -26,6 +26,24 @@ ARM_JOINTS: Dict[str, int] = {
     "right_wrist_roll": 27,
 }
 
+# URDF joint 名 → body 关节名（IK 输出用 URDF 名）
+URDF_TO_BODY: Dict[str, str] = {
+    "shoulder_pitch_l_joint": "left_shoulder_pitch",
+    "shoulder_roll_l_joint": "left_shoulder_roll",
+    "shoulder_yaw_l_joint": "left_shoulder_yaw",
+    "elbow_pitch_l_joint": "left_elbow_pitch",
+    "elbow_yaw_l_joint": "left_wrist_yaw",
+    "wrist_pitch_l_joint": "left_wrist_pitch",
+    "wrist_roll_l_joint": "left_wrist_roll",
+    "shoulder_pitch_r_joint": "right_shoulder_pitch",
+    "shoulder_roll_r_joint": "right_shoulder_roll",
+    "shoulder_yaw_r_joint": "right_shoulder_yaw",
+    "elbow_pitch_r_joint": "right_elbow_pitch",
+    "elbow_yaw_r_joint": "right_wrist_yaw",
+    "wrist_pitch_r_joint": "right_wrist_pitch",
+    "wrist_roll_r_joint": "right_wrist_roll",
+}
+
 HEAD_JOINTS: Dict[str, int] = {"head_yaw": 1, "head_pitch": 2}
 
 WAIST_JOINTS: Dict[str, int] = {
