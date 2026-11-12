@@ -67,6 +67,7 @@ Thinker-Skill 采用六层架构：**应用层 → 服务层 → 执行层 → �
 Thinker-Skill/
 ├── skills/<类别>/<技能>/   技能包，每个 = 一个独立可安装的 ament 包
 ├── core/                   平台核心，六个 ament 包（见 3.2）
+├── robots/                 机型适配，一机型一包（见 3.4）
 ├── python/                 协议适配：MCP 桥、技能聚合器、客户端 SDK
 ├── configs/                跨技能共享配置（机型 / 相机 / 场地 / 错误码文案）
 ├── weights/                模型权重（不入库）
@@ -135,8 +136,8 @@ skills/manipulation/fetch_object/
 | `interfaces` | 协议定义：`ControlCommand.srv`、`Skill.action`、检测/抓取消息                                  | 全部                                     |
 | `skill_sdk`  | 技能作者唯一依赖：`Step`、`StepResult`、`StepCtx`、`BodyAPI`/`SensorAPI`、错误码常量 | 技能包、`skill_core`、`body`、`sensor` |
 | `common`     | DataBuffer、TransformUtil、ConfigLoader、logger、TTS                                               | `skill_core`、`body`、`sensor` |
-| `sensor` | 感知数据通道：相机订阅、RGB-D 对齐、内参、`cam→base` 变换、时间戳缓冲；**不含检测算法** | `skill_core` |
-| `body`       | 控制器、QP、moveit、腰/头/手爪/导航/tf，实现 `BodyAPI`（硬件单例）                               | `skill_core`                           |
+| `sensor` | 感知数据通道抽象：时间戳缓冲、RGB-D 对齐、坐标变换框架；**不含检测算法，不含机型实现** | `skill_core` |
+| `body`       | `BodyAPI` 抽象与通用安全层（限幅、急停钩子）；**不含机型实现**                               | `skill_core`                           |
 | `skill_core` | 发现、装配、身体仲裁、状态存储、Pipeline、三个服务入口                                             | 部署单元（技能**不**依赖）         |
 
 **功能** —— 六包按角色分三类：**契约**（`interfaces`、`skill_sdk`）、**能力**（`body`、`sensor`、`common`）、**机制**（`skill_core`）。其中两个关键包的分工正好相反：
@@ -180,6 +181,35 @@ skills/manipulation/fetch_object/
 | 客户端 SDK | 供调用方接入 MCP / Action |
 
 **边界** —— 与 `core/` **不互相 import**，只经 ROS service/action 通信；不含业务逻辑。
+
+### 3.4 机型适配模块
+
+**定位** —— 把不同机型/SDK 的硬件接口适配成统一的 `BodyAPI` / `SensorAPI`，使技能写一次、跨机型跑。一机型一包，随机器人形态增长（不随技能增长）。
+
+**结构** —— `robots/<model>/` 是一个 ament 包，含能力契约、适配实现与机型特有资源：
+
+```
+robots/tienkung_dex/          # ament 包 thinker_robot_tienkung_dex
+├── capabilities.yaml         # 能力契约：能力名 + 参数 + 版本
+├── src/                      # body.py / sensor.py / safety.py
+└── resources/                # 关节表 / 标定 / URDF
+```
+
+**职责**：
+
+| 内容 | 说明 |
+| ---- | ---- |
+| 能力声明 | `capabilities.yaml` 声明本机型提供的能力、参数与版本，供装配期匹配（D-015） |
+| 适配实现 | 实现 `BodyAPI` / `SensorAPI`，封装机型 SDK |
+| 机型资源 | 关节表、标定、URDF 等机型独有资源 |
+
+**边界**：
+
+- 机型实现只准放 `robots/`，不进 `core`（保证 `core` 不随机型膨胀）；
+- 技能不感知机型，只依赖 `skill_sdk`；
+- 新增机型 = 新增 `robots/<model>/` 包，`configs/robot.yaml` 选择加载。
+
+设计模式：适配器（实现接口）、抽象工厂（按机型+后端创建）、策略（real/sim/mock）、注册表（机型发现）。
 
 ---
 
@@ -271,6 +301,6 @@ mcp: {tools: [fetch_object], port: 8023}
 | 依赖版本 | 服务端 `fastmcp>=2.12.3,<4`（按 Python 版本自适应：3.10 装 2.x、3.12 装 3.x）；与大脑侧 `fastmcp==3.3.1` 仅保协议兼容                            |
 | 可观测   | 结构化日志按技能分文件；`trace_id` 贯穿 MCP → Action → Pipeline                                                         |
 | 可回放   | 感知数据可录制回放（**后置**，v1 用 `FakeSensor` 兜底）；`core/sensor` 预留录制/回放接口                                                                                          |
-| 依赖面   | 技能包只依赖 `skill_sdk` 与消息包；`core` 包数不随技能增长                                                              |
+| 依赖面   | 技能包只依赖 `skill_sdk` 与消息包；`core` 包数不随技能增长，机型实现随 `robots/` 增长                                                              |
 | 代码保护 | Cython 编译 `core/` 与各技能的 `skill/`；保护边界是 `skill_sdk` 公共符号；`mcp_interface/` 保持明文（FastMCP 需反射签名） |
 | 可测试性 | 每个技能必须能仅用 `FakeBody` / `FakeSensor` 在开发机跑通全部步骤                                                   |

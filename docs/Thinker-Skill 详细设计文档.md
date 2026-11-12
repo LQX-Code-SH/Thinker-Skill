@@ -328,19 +328,19 @@ class SensorAPI(Protocol):
 |---|---|
 | 数据获取 | 相机订阅、RGB-D 对齐、内参 |
 | 坐标变换 | `cam→base` 变换、时间戳缓冲 |
-| **不含** | 检测、估计、识别等算法（随技能包走，D-007） |
+| **不含** | 检测/估计/识别算法（随技能包）、机型实现（随 `robots/`，D-007 / D-014） |
 
-**设计思路**：只做「数据 + 坐标」，实现 `SensorAPI`；算法属业务，进技能包。这样算法种类发散不会撑大 `core`。
+**设计思路**：只做「数据 + 坐标」的抽象与通用处理（时间戳、对齐）；算法属业务、机型实现属 `robots/<model>`，两者都不进 `core`，避免 `core` 随算法/机型膨胀。
 
-#### 3.2.5 `body`（硬件实现）
+#### 3.2.5 `body`（抽象与通用安全层）
 
 | 职责 | 内容 |
 |---|---|
-| 控制器 | 臂 / 夹爪 / 腰 / 头 / 底盘 / tf |
-| 运动规划 | QP、moveit |
-| 契约 | 实现 `BodyAPI`（硬件单例） |
+| 契约 | `BodyAPI` 抽象与协议实现约束 |
+| 通用安全层 | 限幅、急停钩子、有效空间校验（与机型无关的部分） |
+| **不含** | 控制器、QP、moveit、具体机型适配（随 `robots/<model>`，D-014） |
 
-**设计思路**：按能力切分（`arm`/`gripper`/`waist`/`head`/`base`），不按机型暴露；全部方法 tick 友好（幂等或可查询完成态）。安全边界（限幅、腰高 clamp、有效空间）收在此层，技能只做业务决策。
+**设计思路**：`core/body` 只放与机型无关的抽象和通用安全逻辑；具体硬件实现由 `robots/<model>/body.py` 提供，按能力切分（`arm`/`gripper`/`waist`/`head`/`base`）且 tick 友好。这样 `core` 不随机型增长。
 
 #### 3.2.6 `skill_core`（执行机制）
 
@@ -392,6 +392,57 @@ class SensorAPI(Protocol):
 - **聚合单端口**：MCP 客户端不支持热加载，因此对外只暴露一个聚合端口（8000），技能增删只重启聚合器；3.1.2 的 `mcp.port`（如 8023）是技能独立端口，仅用于平台注册，对外统一走 8000。
 - **边界**：`python/` 与 `core/` **不互相 import**，只经 ROS service/action 通信；本模块不含业务逻辑。
 - **框架**：统一用第三方 `fastmcp`（`from fastmcp import FastMCP`），服务端声明 `fastmcp>=2.12.3,<4`，按 Python 版本自适应（D-013）。
+
+### 3.4 机型适配模块设计（`robots/`）
+
+**定位** —— 一机型一包，把机型 SDK 的硬件接口适配成统一 `BodyAPI` / `SensorAPI`。技能不感知机型。
+
+**结构**：
+
+```
+robots/tienkung_dex/          # ament 包 thinker_robot_tienkung_dex
+├── package.xml  setup.py
+├── capabilities.yaml         # 能力契约（装配期匹配依据）
+├── src/tienkung_dex_robot/
+│   ├── body.py               # 实现 BodyAPI（封装 create_robot）
+│   ├── sensor.py             # 实现 SensorAPI（4 路 RGB-D / IMU / 音频）
+│   └── safety.py             # 机型安全层（限幅、急停透传）
+└── resources/                # 关节表 / 标定 / URDF
+```
+
+**适配实现要点**（以 tienkung_dex 为例）：
+
+| 能力 | 适配方式 |
+|---|---|
+| 上肢 `arm` | 封装 `robot.arm`，关节 ID → 命名关节映射 |
+| 上肢 `gripper` | `robot.hand_left/right.set_positions`，0..1 归一化 |
+| 头部 `head` | `robot.head`，2 DOF（yaw / pitch） |
+| 下肢 `base` | `robot.walk.set_velocity`（20Hz 速度流） |
+| `sensor.rgbd` | `robot.cameras`，4 路 RGB-D（depth 单位 mm、color BGR） |
+
+**与 SDK 的关系**：直接封装 `tienkung_dex` 门面（`create_robot(backend=real/sim/mock)`），不重写 ROS 话题层；`mock` 后端用于离机开发与单测。
+
+**必补的安全层**（SDK 不做）：
+
+- 关节限幅：按 `resources/joints.yaml` 的 limits 夹紧；
+- 急停：透传 SDK 的 `EstopActiveError`，禁用 `ZERO_CALIB`；
+- 行走前置检查：是否已进话题模式（SDK 未封装，需自订阅 `SbusData` / `rl_state`）。
+
+**能力匹配**（装配期）：
+
+```
+caps = load(robots/<configs/robot.yaml 的 model>/capabilities.yaml)
+for skill in discovered:
+    if not compatible(skill.compatible, caps):        # 机型 / 版本
+        skip + warn; continue
+    if not subset(skill.requires, caps.capabilities): # 能力子集
+        skip + warn; continue
+    装配
+```
+
+v1 只校验「能力名 + `robot_models` + `min_robot_version`」，参数约束（`dof`/`reach`/`type`）的匹配器 v1.1 启用（D-015）。
+
+**新增机型**：新建 `robots/<model>/` 包，实现 `BodyAPI` / `SensorAPI` + 写 `capabilities.yaml`，`configs/robot.yaml` 的 `model` 指过去即可，**不改 `core`**。
 
 ---
 
