@@ -85,3 +85,38 @@ def test_handle_goal_cancel():
     out = handle_goal(_slow_host(), "slow", "{}", cancel_event=ev)
     assert out["state"] == "cancelled"
 
+
+def test_register_tools_mock():
+    from thinker_skill_core.frontends.mcp import register_tools
+
+    class FakeServer:
+        def __init__(self):
+            self.fns = []
+
+        def tool(self):
+            def deco(fn):
+                self.fns.append(fn)
+                return fn
+            return deco
+
+    server = FakeServer()
+    count = register_tools(server, [lambda: None, lambda: None])
+    assert count == 2
+    assert len(server.fns) == 2
+
+
+def test_tool_result_envelope():
+    from thinker_skill_core.frontends.mcp import tool_result
+
+    class R:
+        state = "succeed"
+        code = "OK"
+        msg = ""
+        retryable = False
+        data = {"a": 1}
+
+    out = tool_result(R())
+    assert out == {"state": "succeed", "code": "OK", "msg": "",
+                   "retryable": False, "data": {"a": 1}}
+
+
