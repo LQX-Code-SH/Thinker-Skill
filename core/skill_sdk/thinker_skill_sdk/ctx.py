@@ -5,7 +5,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any, Callable, Mapping
+from typing import TYPE_CHECKING, Any, Callable, Mapping, Optional
 
 if TYPE_CHECKING:
     from .body import BodyAPI
@@ -31,3 +31,4 @@ class StepCtx:
     check_cancel: Callable[[], None]               # 抛 Cancelled，长步骤内部也要调
     now: Callable[[], float]                       # 可注入假时钟
     append_steps: Callable[[list], None]           # 运行期追加步骤
+    call_skill: Optional[Callable[..., Any]] = None  # 调用其他技能（场景技能用）

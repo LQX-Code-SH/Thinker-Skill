@@ -57,7 +57,12 @@ class Host:
             check_cancel=_make_checker(event),
             now=self._clock or time.monotonic,
             append_steps=lambda steps: None,
+            call_skill=self.call_skill,
         )
+
+    def call_skill(self, skill_name: str, params: Optional[dict] = None):
+        """供场景技能同步调用其他技能（返回 ExecutionResult）。"""
+        return self.execute(skill_name, params or {})
 
     def execute(self, skill_name: str, params: dict, *,
                 cancel_event: Optional[threading.Event] = None,

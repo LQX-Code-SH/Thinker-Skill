@@ -1,0 +1,16 @@
+name: fetch_object
+version: 0.1.0
+category: scene
+min_core: 0.1.0
+entry: fetch_object.plugin:FetchObject
+commands: [fetch_object]
+requires: [body.arm, body.gripper]
+precondition: []
+postcondition: {holding: true}
+timeout: 120
+interfaces: [service, action]
+errors:
+  - PRECOND_BODY_BUSY
+  - MOTION_GRASP_FAILED
+  - PERCEPTION_OBJECT_NOT_FOUND
+mcp: {tools: [fetch_object], port: 8033}
