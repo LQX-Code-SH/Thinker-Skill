@@ -17,6 +17,7 @@ class ExecutionResult:
     code: str = ErrorCode.OK
     msg: str = ""
     data: dict = field(default_factory=dict)
+    retryable: bool = False
 
     @property
     def ok(self) -> bool:
@@ -80,6 +81,9 @@ class SkillRuntime:
                 self._state.set(key, value)
 
         msg = result.msg
-        if not msg and self._catalog is not None:
-            msg, _ = self._catalog.render(result.code, **(result.data or {}))
-        return ExecutionResult(result.state, result.code, msg, result.data)
+        retryable = False
+        if self._catalog is not None:
+            rendered, retryable = self._catalog.render(result.code, **(result.data or {}))
+            if not msg:
+                msg = rendered
+        return ExecutionResult(result.state, result.code, msg, result.data, retryable)
