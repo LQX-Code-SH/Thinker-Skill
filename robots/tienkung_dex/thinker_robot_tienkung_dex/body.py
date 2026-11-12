@@ -112,6 +112,16 @@ class TienkungDexGripper:
         self._require()
         self._hand.set_positions([1] * self._dof)
 
+    def get_positions(self):
+        hand = self._hand
+        if hand is None:
+            return []
+        st = hand.get_status()
+        if st is None or not st.positions:
+            return []
+        # brainco 1..1000 → 0..1
+        return [(p - 1) / 999.0 for p in st.positions]
+
     def is_holding(self) -> bool:
         hand = self._hand
         if hand is None:
@@ -144,6 +154,19 @@ class TienkungDexWaist:
         }
         # yaw 带动上半身、负载大，需更大电流（SDK 实测 cur>=40）
         self._robot.waist.move_to(ids, cur=40.0)
+
+    def get_pose(self):
+        self._require()
+        states = self._robot.waist.get_states()
+
+        def _pos(jid):
+            return states[jid].pos if jid in states else 0.0
+
+        return (
+            _pos(WAIST_JOINTS["waist_pitch"]),
+            _pos(WAIST_JOINTS["waist_roll"]),
+            _pos(WAIST_JOINTS["waist_yaw"]),
+        )
 
 
 class TienkungDexHead:

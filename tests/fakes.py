@@ -64,16 +64,25 @@ class FakeGripper:
     def set_positions(self, positions):
         self.width = float(positions[0]) if positions else 0.0
 
+    def get_positions(self):
+        return [self.width]
+
     def is_holding(self):
         return self.holding
 
 
 class FakeWaist:
+    def __init__(self):
+        self.pose = (0.0, 0.0, 0.0)
+
     def set_height(self, height: float):
         pass
 
     def set_pose(self, *, pitch: float = 0.0, roll: float = 0.0, yaw: float = 0.0):
-        pass
+        self.pose = (pitch, roll, yaw)
+
+    def get_pose(self):
+        return self.pose
 
 
 class FakeHead:

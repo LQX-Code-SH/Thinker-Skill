@@ -179,3 +179,17 @@ def test_sensor_timeout():
     sensor = TienkungDexSensor(_Robot(None), poll=0.001)
     with pytest.raises(TimeoutError):
         sensor.rgbd(timeout=0.01)
+
+
+def test_waist_get_pose():
+    body = _body()
+    body._robot.waist.states[31] = SimpleNamespace(pos=0.1)
+    body._robot.waist.states[32] = SimpleNamespace(pos=0.2)
+    body._robot.waist.states[33] = SimpleNamespace(pos=0.3)
+    assert body.waist.get_pose() == pytest.approx((0.1, 0.2, 0.3))
+
+
+def test_gripper_get_positions():
+    body = _body()
+    body._robot.hand_right.status = SimpleNamespace(positions=(1, 500, 1000))
+    assert body.gripper.get_positions() == pytest.approx([0.0, 0.4995, 1.0], abs=1e-3)
