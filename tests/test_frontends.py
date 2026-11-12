@@ -1,8 +1,10 @@
 """frontends/service 测试（纯逻辑，不依赖 ROS）。"""
 import json
+import threading
 from types import SimpleNamespace
 
 from thinker_skill_core import Host, Registry, SkillRuntime, SkillSpec
+from thinker_skill_core.frontends.action import handle_goal
 from thinker_skill_core.frontends.service import _decode, handle_request
 from thinker_skill_sdk import Step, StepResult
 
@@ -44,3 +46,42 @@ def test_handle_request_unknown_skill():
     out = handle_request(_host(), "nope", SimpleNamespace(params_json="{}"))
     assert out["state"] == "failed"
     assert out["code"] == "INPUT_UNSUPPORTED_COMMAND"
+
+
+def _slow_host():
+    class Slow:
+        name = "slow"
+        requires = []
+        postcondition = {}
+        timeout = 5.0
+
+        def build_steps(self, ctx, params):
+            return [Step(name="a", run=lambda c: StepResult(status="running"),
+                         timeout=0.2)]
+
+    reg = Registry()
+    reg.register(SkillSpec(name="slow"), Slow())
+    ctx = make_ctx()
+    return Host(registry=reg, runtime=SkillRuntime(tick=0.001),
+                body=ctx.body, sensor=ctx.sensor)
+
+
+def test_handle_goal_ok():
+    out = handle_goal(_host(), "s", '{"x": 1}')
+    assert out["state"] == "succeed"
+    assert out["code"] == "OK"
+
+
+def test_handle_goal_feedback():
+    phases = []
+    handle_goal(_host(), "s", "{}", on_feedback=lambda f: phases.append(f.phase))
+    # 每步开始与结束各反馈一次
+    assert phases and all(p == "a" for p in phases)
+
+
+def test_handle_goal_cancel():
+    ev = threading.Event()
+    ev.set()
+    out = handle_goal(_slow_host(), "slow", "{}", cancel_event=ev)
+    assert out["state"] == "cancelled"
+
