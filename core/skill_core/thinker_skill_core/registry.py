@@ -4,6 +4,7 @@ from __future__ import annotations
 import importlib
 import os
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 import yaml
@@ -52,22 +53,35 @@ def load_spec(yaml_path: str) -> SkillSpec:
     )
 
 
+def _current_roots(base: Path) -> List[Path]:
+    """部署结构下的 ``*/current``（一或两层），存在则只扫它。"""
+    roots: List[Path] = []
+    for pattern in ("*/current", "*/*/current"):
+        roots.extend(p for p in base.glob(pattern) if p.is_dir())
+    return roots
+
+
 def discover(search_dirs) -> List[SkillSpec]:
     specs: List[SkillSpec] = []
     seen = set()
     for root in search_dirs:
-        # followlinks=True：支持 skills/<skill>/current -> <version> 软链
-        for dirpath, _, files in os.walk(root, followlinks=True):
-            if "skill.yaml" not in files:
-                continue
-            path = os.path.realpath(os.path.join(dirpath, "skill.yaml"))
-            if path in seen:          # 软链与实体目录指向同一文件时去重
-                continue
-            seen.add(path)
-            try:
-                specs.append(load_spec(path))
-            except Exception:
-                continue
+        base = Path(root)
+        if not base.exists():
+            continue
+        # 有 current 时只扫 current：避免多版本共存时重复发现
+        roots = _current_roots(base) or [base]
+        for r in roots:
+            for dirpath, _, files in os.walk(str(r), followlinks=True):
+                if "skill.yaml" not in files:
+                    continue
+                path = os.path.realpath(os.path.join(dirpath, "skill.yaml"))
+                if path in seen:
+                    continue
+                seen.add(path)
+                try:
+                    specs.append(load_spec(path))
+                except Exception:
+                    continue
     return specs
 
 

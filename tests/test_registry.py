@@ -89,3 +89,25 @@ def test_discover_follows_symlink(tmp_path):
 
     specs = discover([str(link_root)])
     assert [s.name for s in specs] == ["s1"]
+
+
+def test_discover_prefers_current(tmp_path):
+    base = tmp_path / "skills"
+    for v in ("0.1.0", "0.2.0"):
+        d = base / "s1" / v / "skill"
+        d.mkdir(parents=True)
+        (d / "skill.yaml").write_text(f"name: s1\nversion: {v}\n", encoding="utf-8")
+    (base / "s1" / "current").symlink_to("0.2.0")
+
+    specs = discover([str(base)])
+    assert len(specs) == 1
+    assert specs[0].version == "0.2.0"
+
+
+def test_discover_without_current(tmp_path):
+    d = tmp_path / "skills" / "manipulation" / "s2" / "skill"
+    d.mkdir(parents=True)
+    (d / "skill.yaml").write_text("name: s2\n", encoding="utf-8")
+
+    specs = discover([str(tmp_path / "skills")])
+    assert [s.name for s in specs] == ["s2"]
