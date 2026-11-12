@@ -68,3 +68,14 @@ def test_out_of_range():
     r = _run(DET, frame=_frame(depth=3000))
     assert r.state == "failed"
     assert r.code == ErrorCode.PERCEPTION_POSE_INVALID
+
+
+def test_cfg_head_pitch_override():
+    import math
+
+    from detect_object.plugin import DetectObject
+
+    ctx = make_ctx(sensor=_Sensor(frames=[_frame()]), cfg={"head_pitch_deg": 50})
+    steps = DetectObject(detector=_Det(DET)).build_steps(ctx, {})
+    run_pipeline(steps, ctx)
+    assert ctx.body.head.pitch == pytest.approx(math.radians(50))

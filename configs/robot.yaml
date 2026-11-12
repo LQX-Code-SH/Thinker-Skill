@@ -20,5 +20,11 @@ camera:
   distortion_model: rational
   d: [-3.34663455, 4.14604418, 0.00053256, -0.00079030, -1.52466885, -3.34589408, 4.14748612, -1.52468165]
 
+# 技能私有配置（经 ctx.cfg 注入，可按技能覆盖）
+skills:
+  detect_object:
+    head_pitch_deg: 50
+    model_path: /home/liu/work/kaiwu_agent/weights/mm_grounding_dino_tiny_o365v1_goldg_v3det
+
 tick_rate: 10             # 动作循环频率（Hz）
 default_timeout: 300      # 缺省超时（秒，Action 通道兜底）

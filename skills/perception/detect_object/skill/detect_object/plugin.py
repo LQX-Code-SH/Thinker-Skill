@@ -5,7 +5,7 @@ import math
 
 from thinker_skill_sdk import ErrorCode, Step, StepResult
 
-from .detector import GroundingDinoDetector
+from .detector import DEFAULT_MODEL, GroundingDinoDetector
 from .geometry import estimate_from_box, estimate_from_mask
 from .spatial import in_valid_range, normalize_prompt
 
@@ -20,14 +20,18 @@ class DetectObject:
         self._detector = detector
         self._default_k = default_k
 
-    def _det(self):
+    def _det(self, model_path=None):
         if self._detector is None:
-            self._detector = GroundingDinoDetector()
+            self._detector = GroundingDinoDetector(
+                model_path=model_path or DEFAULT_MODEL)
         return self._detector
 
     def build_steps(self, ctx, params):
+        cfg = dict(ctx.cfg or {})
         object_name = normalize_prompt(params.get("object_name", "bottle"))
-        pitch = math.radians(float(params.get("head_pitch_deg", 30)))
+        pitch_deg = float(params.get("head_pitch_deg",
+                                     cfg.get("head_pitch_deg", 30)))
+        pitch = math.radians(pitch_deg)
         st = {"frame": None, "det": None}
 
         def look(c):
@@ -39,7 +43,8 @@ class DetectObject:
             return StepResult(status="done")
 
         def detect(c):
-            dets = self._det().detect(st["frame"].color, object_name + ".")
+            dets = self._det(cfg.get("model_path")).detect(
+                st["frame"].color, object_name + ".")
             if not dets:
                 return StepResult(
                     status="failed",
