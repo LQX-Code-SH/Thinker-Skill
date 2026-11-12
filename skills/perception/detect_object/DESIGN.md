@@ -4,10 +4,12 @@
 
 | 项 | 内容 |
 |---|---|
-| 依赖能力 | `body.head`、`sensor.rgbd` |
-| 参数 | `object_name`（默认 `bottle`）、`head_pitch_deg`（默认 30） |
-| 步骤 | 低头 → 取帧 → 检测（GroundingDINO）→ 定位（深度反投影 + 光线延伸） |
+| 依赖能力 | `sensor.rgbd`（只读，不占身体租约） |
+| 参数 | `object_name`（默认 `bottle`） |
+| 步骤 | 取帧 → 检测（GroundingDINO）→ 定位（深度反投影 + 光线延伸） |
+| 前置 | 头部姿态由调用方负责（如先调 `look_down_table`），本技能不下发动作 |
 | 输出 | `data: {object_name, obj_pose:[x,y,z], label, score}`，base 系、米 |
+| 依赖 | `transformers>=4.55`（标准 GroundingDINO 权重，系统 5.0.0 已验证） |
 
 ## 算法（对齐参考实现）
 
@@ -27,5 +29,6 @@
 
 ## 已知限制
 
-- `cam→base` 依赖 `sensor` 实现；tienkung_dex 当前无 TF，需配相机外参后才可用
-- 单帧决定结果，无时序融合
+- `cam→base` 由 `sensor.transform_to_base` 提供：tienkung_dex 用 URDF 正运动学（腰 3 轴 + 头 2 轴）+ `pelvis_height` 平移，非 TF
+- 单帧决定结果，无时序融合；取帧时头部若仍在运动，`locate` 读到的角度与画面会不一致
+- 权重随技能包安装到 `<skill>/<ver>/weights/`，由 `resources.weights` 声明

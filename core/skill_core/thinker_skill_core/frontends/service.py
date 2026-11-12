@@ -33,13 +33,16 @@ def handle_request(host, skill_name: str, request: Any) -> Dict[str, Any]:
 
 class CommandServiceFrontend:
     def __init__(self, node, host, skill_name: str):
+        from rclpy.callback_groups import ReentrantCallbackGroup
         from thinker_interfaces.srv import ControlCommand  # 延迟导入（需 ROS 环境）
         self._host = host
         self._skill = skill_name
+        # 可重入组：技能执行期间不阻塞 /robot_state 等订阅回调
         self._srv = node.create_service(
             ControlCommand,
             f"{SERVICE_PREFIX}/{skill_name}/command",
             self._on_request,
+            callback_group=ReentrantCallbackGroup(),
         )
 
     def _on_request(self, request, response):

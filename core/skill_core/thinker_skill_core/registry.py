@@ -26,6 +26,7 @@ class SkillSpec:
     errors: List[str] = field(default_factory=list)
     config: Optional[str] = None
     mcp: Dict[str, Any] = field(default_factory=dict)
+    resources: Dict[str, Any] = field(default_factory=dict)
     path: str = ""
 
 
@@ -49,8 +50,26 @@ def load_spec(yaml_path: str) -> SkillSpec:
         errors=list(data.get("errors", []) or []),
         config=data.get("config"),
         mcp=dict(data.get("mcp", {}) or {}),
+        resources=dict(data.get("resources", {}) or {}),
         path=yaml_path,
     )
+
+
+def skill_root(skill_yaml: str) -> str:
+    """由 ``skill.yaml`` 回溯技能根目录（含 ``mcp_interface`` 的那一层）。
+
+    源码树布局：``<skill>/skill/skill.yaml`` → ``<skill>``；
+    部署包布局：``<ver>/install/<pkg>/share/<pkg>/skill.yaml`` → ``<ver>``。
+    """
+    start = Path(skill_yaml).resolve().parent
+    p = start
+    for _ in range(6):
+        if (p / "mcp_interface" / "mcp_interface.py").is_file():
+            return str(p)
+        if p.parent == p:
+            break
+        p = p.parent
+    return str(start.parent)
 
 
 def _current_roots(base: Path) -> List[Path]:

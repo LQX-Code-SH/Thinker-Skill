@@ -10,6 +10,7 @@ from __future__ import annotations
 import os
 
 import rclpy
+from rclpy.executors import MultiThreadedExecutor
 from rclpy.node import Node
 
 from .app import bootstrap_ros
@@ -64,11 +65,16 @@ def main(argv=None):
         f"skills={sorted(host._registry.names())} skipped={skipped} "
         f"syspath_added={len(added)}"
     )
+    # 多线程：技能执行（可重入组）不得阻塞 /robot_state 等订阅回调，
+    # 否则 get_pose / is_moving 在整个执行期读到冻结的旧状态。
+    executor = MultiThreadedExecutor(num_threads=4)
+    executor.add_node(node)
     try:
-        rclpy.spin(node)
+        executor.spin()
     except KeyboardInterrupt:
         pass
     finally:
+        executor.shutdown()
         adapter.shutdown()
         node.destroy_node()
         rclpy.shutdown()

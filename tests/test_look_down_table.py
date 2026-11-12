@@ -16,10 +16,10 @@ def _run(params):
     return ctx, result
 
 
-def test_default_50deg():
+def test_default_45deg():
     ctx, r = _run({})
     assert r.ok
-    assert ctx.body.head.pitch == pytest.approx(math.radians(50), abs=1e-6)
+    assert ctx.body.head.pitch == pytest.approx(math.radians(45), abs=1e-6)
     assert ctx.body.head.yaw == 0.0
 
 
@@ -66,4 +66,4 @@ def test_waits_until_reached():
     ctx = make_ctx(body=body)
     r = run_pipeline(LookDownTable().build_steps(ctx, {}), ctx, tick=0.001)
     assert r.ok
-    assert r.data["actual_pitch_deg"] == pytest.approx(50.0, abs=2.0)
+    assert r.data["actual_pitch_deg"] == pytest.approx(45.0, abs=2.0)

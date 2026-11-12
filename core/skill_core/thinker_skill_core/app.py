@@ -9,7 +9,7 @@ from thinker_common import ConfigLoader, ErrorCatalog
 
 from .body_arbiter import BodyArbiter
 from .host import Host
-from .registry import Registry, build_registry, discover
+from .registry import Registry, build_registry, discover, skill_root
 from .runtime import SkillRuntime
 from .state_store import DEFAULT_STATE_KEYS, StateStore
 
@@ -87,6 +87,11 @@ def bootstrap_core(*, config_dir: str, skills_dirs: List[str], body: Any,
     return host, registry, skipped
 
 
+def skill_root_dir(skill_yaml: str) -> Path:
+    """兼容包装：见 :func:`thinker_skill_core.registry.skill_root`。"""
+    return Path(skill_root(skill_yaml))
+
+
 def bootstrap_ros(node, *, config_dir: str, skills_dirs: List[str],
                   robot_dir: Optional[str] = None, min_core: str = "0.1.0"):
     """完整装配：机型适配器 + 技能 + Service/Action frontends。"""
@@ -116,7 +121,7 @@ def bootstrap_ros(node, *, config_dir: str, skills_dirs: List[str],
         for name in names:
             spec = registry.spec(name)
             if spec is not None and spec.path:
-                pairs.append((name, str(Path(spec.path).parent.parent)))
+                pairs.append((name, str(skill_root_dir(spec.path))))
         mcp_server = build_server(
             host, pairs,
             name=(config.get("mcp") or {}).get("name", "thinker_skills"))

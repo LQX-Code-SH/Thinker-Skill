@@ -3,7 +3,7 @@
 <package format="3">
   <name>look_down_table</name>
   <version>0.1.0</version>
-  <description>低头看桌面：把头部 pitch 关节转到指定角度（默认 50 度）</description>
+  <description>低头看桌面：把头部 pitch 关节转到指定角度（默认 45 度）</description>
   <maintainer email="1627049654@qq.com">qingxiangliu</maintainer>
   <license>Apache-2.0</license>
 

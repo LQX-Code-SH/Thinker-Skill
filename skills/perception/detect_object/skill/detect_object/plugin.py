@@ -1,7 +1,8 @@
-"""detect_object：低头 → 取帧 → 检测 → 3D 定位 → base 系位置。"""
+"""detect_object：取帧 → 检测 → 3D 定位 → base 系位置（只读，不下发动作）。"""
 from __future__ import annotations
 
-import math
+import os
+from pathlib import Path
 
 from thinker_skill_sdk import ErrorCode, Step, StepResult
 
@@ -10,11 +11,36 @@ from .geometry import estimate_from_box, estimate_from_mask
 from .spatial import in_valid_range, normalize_prompt
 
 
+def resolve_model_path(raw, ctx):
+    """解析模型目录：绝对路径直接用；相对路径依次尝试
+
+    1. 技能根目录（部署包里 ``<ver>/weights/...``）
+    2. 当前工作目录（源码树仓库根）
+    3. ``THINKER_WEIGHTS_DIR`` + 目录名
+    """
+    p = Path(raw or DEFAULT_MODEL)
+    if p.is_absolute():
+        return str(p)
+    candidates = []
+    skill_dir = getattr(ctx, "skill_dir", None)
+    if skill_dir:
+        candidates.append(Path(skill_dir) / p)
+    candidates.append(Path.cwd() / p)
+    env = os.environ.get("THINKER_WEIGHTS_DIR")
+    if env:
+        candidates.append(Path(env) / p.name)
+    for candidate in candidates:
+        if candidate.is_dir():
+            return str(candidate)
+    return str(p)
+
+
 class DetectObject:
     name = "detect_object"
-    requires = ["body.head", "sensor.rgbd"]
+    # 只读技能：只取相机数据，不下发头部/身体动作，不占身体租约
+    requires = ["sensor.rgbd"]
     postcondition = {}
-    timeout = 30.0
+    timeout = 60.0
 
     def __init__(self, detector=None, default_k=None):
         self._detector = detector
@@ -29,21 +55,15 @@ class DetectObject:
     def build_steps(self, ctx, params):
         cfg = dict(ctx.cfg or {})
         object_name = normalize_prompt(params.get("object_name", "bottle"))
-        pitch_deg = float(params.get("head_pitch_deg",
-                                     cfg.get("head_pitch_deg", 30)))
-        pitch = math.radians(pitch_deg)
+        model_path = resolve_model_path(cfg.get("model_path"), ctx)
         st = {"frame": None, "det": None}
-
-        def look(c):
-            c.body.head.look_at(yaw=0.0, pitch=pitch)
-            return StepResult(status="done")
 
         def capture(c):
             st["frame"] = c.sensor.rgbd(timeout=2.0)
             return StepResult(status="done")
 
         def detect(c):
-            dets = self._det(cfg.get("model_path")).detect(
+            dets = self._det(model_path).detect(
                 st["frame"].color, object_name + ".")
             if not dets:
                 return StepResult(
@@ -102,7 +122,6 @@ class DetectObject:
             )
 
         return [
-            Step(name="低头", kind="motion", weight=1, run=look),
             Step(name="取帧", kind="perception", weight=1, tick_budget=2.0, run=capture),
             Step(name="检测", kind="perception", weight=3, tick_budget=2.0,
                  retries=1, run=detect),

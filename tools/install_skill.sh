@@ -20,4 +20,7 @@ ln -sfn "$VERSION" "$ROOT_DIR/skills/$SKILL/current"
 echo "安装完成: $SKILL $VERSION"
 echo "  目录: $DEST"
 echo "  软链: $ROOT_DIR/skills/$SKILL/current -> $VERSION"
+if [ -d "$DEST/weights" ]; then
+  echo "  权重: $(du -sh "$DEST/weights" | cut -f1) ($DEST/weights)"
+fi
 echo "提示: 重启 thinker-host 生效"

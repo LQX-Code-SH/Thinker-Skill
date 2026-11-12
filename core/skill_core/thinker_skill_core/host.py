@@ -10,6 +10,7 @@ from typing import Any, Callable, Dict, Optional
 
 from thinker_skill_sdk import Cancelled, ErrorCode, StepCtx
 
+from .registry import skill_root
 from .runtime import ExecutionResult
 from .state_store import DEFAULT_STATE_KEYS, StateStore
 
@@ -43,6 +44,8 @@ class Host:
     def make_ctx(self, skill_name: str, params: dict,
                  cancel_event: Optional[threading.Event] = None) -> StepCtx:
         event = cancel_event or threading.Event()
+        spec = self._registry.spec(skill_name)
+        skill_dir = skill_root(spec.path) if spec is not None and spec.path else None
         return StepCtx(
             skill=skill_name,
             params=params or {},
@@ -58,6 +61,7 @@ class Host:
             now=self._clock or time.monotonic,
             append_steps=lambda steps: None,
             call_skill=self.call_skill,
+            skill_dir=skill_dir,
         )
 
     def call_skill(self, skill_name: str, params: Optional[dict] = None):

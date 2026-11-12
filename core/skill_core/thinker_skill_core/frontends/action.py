@@ -59,24 +59,22 @@ class SkillActionFrontend:
         return CancelResponse.ACCEPT
 
     async def _execute(self, goal_handle):
-        import asyncio
-        loop = asyncio.get_event_loop()
         self._cancel.clear()
         Skill = self._Skill
 
-        def _run():
-            def on_fb(f):
-                fb = Skill.Feedback()
-                fb.phase = f.phase
-                fb.progress = float(f.progress)
-                fb.msg = f.msg
-                goal_handle.publish_feedback(fb)
-            return handle_goal(
-                self._host, goal_handle.request.skill,
-                goal_handle.request.params_json,
-                on_feedback=on_fb, cancel_event=self._cancel)
+        def on_fb(f):
+            fb = Skill.Feedback()
+            fb.phase = f.phase
+            fb.progress = float(f.progress)
+            fb.msg = f.msg
+            goal_handle.publish_feedback(fb)
 
-        out = await loop.run_in_executor(None, _run)
+        # 每个 goal 在 MultiThreadedExecutor 的独立执行线程中运行，
+        # 直接同步调用即可；不再依赖 asyncio.get_event_loop()（Py3.12 非主线程会抛错）。
+        out = handle_goal(
+            self._host, goal_handle.request.skill,
+            goal_handle.request.params_json,
+            on_feedback=on_fb, cancel_event=self._cancel)
 
         result = Skill.Result()
         result.state = out["state"]

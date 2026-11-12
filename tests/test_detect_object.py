@@ -70,12 +70,12 @@ def test_out_of_range():
     assert r.code == ErrorCode.PERCEPTION_POSE_INVALID
 
 
-def test_cfg_head_pitch_override():
-    import math
-
+def test_does_not_move_head():
+    """检测技能只读：不改变头部姿态。"""
     from detect_object.plugin import DetectObject
 
-    ctx = make_ctx(sensor=_Sensor(frames=[_frame()]), cfg={"head_pitch_deg": 50})
+    ctx = make_ctx(sensor=_Sensor(frames=[_frame()]))
+    before = ctx.body.head.get_pose()
     steps = DetectObject(detector=_Det(DET)).build_steps(ctx, {})
     run_pipeline(steps, ctx)
-    assert ctx.body.head.pitch == pytest.approx(math.radians(50))
+    assert ctx.body.head.get_pose() == before

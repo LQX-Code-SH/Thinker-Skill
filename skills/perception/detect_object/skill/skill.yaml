@@ -4,13 +4,16 @@ category: perception
 min_core: 0.1.0
 entry: detect_object.plugin:DetectObject
 commands: [detect_object]
-requires: [body.head, sensor.rgbd]
+requires: [sensor.rgbd]
 precondition: []
 postcondition: {}
-timeout: 30
+timeout: 60
 interfaces: [service, action]
 errors:
   - PERCEPTION_OBJECT_NOT_FOUND
   - PERCEPTION_POSE_INVALID
-  - PRECOND_BODY_BUSY
 mcp: {tools: [detect_object], port: 8032}
+# 随技能包一起打包/安装的资源（相对仓库根）；部署后位于 <ver>/weights/...
+resources:
+  weights:
+    - weights/grounding-dino-tiny

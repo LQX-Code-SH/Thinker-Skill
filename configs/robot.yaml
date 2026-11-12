@@ -23,9 +23,14 @@ camera:
 
 # 技能私有配置（经 ctx.cfg 注入，可按技能覆盖）
 skills:
+  look_down_table:
+    # 真机头部低头稳态上限约 47.5°（SDK 表写 58°，实测 50/58 目标均停在 0.829 rad）
+    max_pitch_deg: 47.5
+    tol_deg: 1.0
+    settle_ticks: 3
   detect_object:
-    head_pitch_deg: 50
-    model_path: /home/liu/work/kaiwu_agent/weights/mm_grounding_dino_tiny_o365v1_goldg_v3det
+    # 相对路径：部署包内解析到 <ver>/weights/...，源码树回退到仓库根
+    model_path: weights/grounding-dino-tiny
 
 tick_rate: 10             # 动作循环频率（Hz）
 default_timeout: 300      # 缺省超时（秒，Action 通道兜底）

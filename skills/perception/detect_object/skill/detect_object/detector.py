@@ -1,9 +1,9 @@
 """GroundingDINO 开集检测（延迟加载模型，输入 BGR）。"""
 from __future__ import annotations
 
-DEFAULT_MODEL = (
-    "/home/liu/work/kaiwu_agent/weights/mm_grounding_dino_tiny_o365v1_goldg_v3det"
-)
+import numpy as np
+
+DEFAULT_MODEL = "weights/grounding-dino-tiny"
 
 
 class GroundingDinoDetector:
@@ -33,7 +33,8 @@ class GroundingDinoDetector:
         self._ensure()
         import torch
 
-        rgb = image_bgr[..., ::-1]
+        # 负 stride 数组 torchvision 不接受，必须转成连续内存
+        rgb = np.ascontiguousarray(image_bgr[..., ::-1])
         inputs = self._processor(
             images=rgb, text=prompt, return_tensors="pt"
         ).to(self._device)

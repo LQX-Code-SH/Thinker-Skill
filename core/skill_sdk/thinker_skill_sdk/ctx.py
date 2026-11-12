@@ -32,3 +32,4 @@ class StepCtx:
     now: Callable[[], float]                       # 可注入假时钟
     append_steps: Callable[[list], None]           # 运行期追加步骤
     call_skill: Optional[Callable[..., Any]] = None  # 调用其他技能（场景技能用）
+    skill_dir: Optional[str] = None                # 技能根目录（源码树或部署版本目录）

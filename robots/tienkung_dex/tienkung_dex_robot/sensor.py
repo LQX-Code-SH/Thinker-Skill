@@ -82,15 +82,22 @@ class TienkungDexSensor(SensorAPI):
         )
 
     def transform_to_base(self, point):
+        from .joints import HEAD_JOINTS, WAIST_JOINTS
+
         chain = self._chain_obj()
-        waist = self._robot.waist.get_pose()
-        head = self._robot.head.get_pose()
+        # SDK 的 RealJointGroup 只提供 get_states()，没有 get_pose()
+        waist_states = self._robot.waist.get_states()
+        head_states = self._robot.head.get_states()
+
+        def _pos(states, joint_id):
+            return float(states[joint_id].pos) if joint_id in states else 0.0
+
         angles = {
-            "waist_pitch": waist[0],
-            "waist_roll": waist[1],
-            "waist_yaw": waist[2],
-            "head_yaw": head[0],
-            "head_pitch": head[1],
+            "waist_pitch": _pos(waist_states, WAIST_JOINTS["waist_pitch"]),
+            "waist_roll": _pos(waist_states, WAIST_JOINTS["waist_roll"]),
+            "waist_yaw": _pos(waist_states, WAIST_JOINTS["waist_yaw"]),
+            "head_yaw": _pos(head_states, HEAD_JOINTS["head_yaw"]),
+            "head_pitch": _pos(head_states, HEAD_JOINTS["head_pitch"]),
         }
         return chain.point_to_base(
             point, angles, (0.0, 0.0, self._pelvis_height))
