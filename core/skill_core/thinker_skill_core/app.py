@@ -37,6 +37,7 @@ def load_robot_adapter(node, config: Dict[str, Any]):
         hand_vendor=config.get("hand_vendor", "brainco"),
         hand_side=config.get("hand_side", "right"),
         urdf_path=config.get("urdf_path"),
+        camera_k=(config.get("camera") or {}).get("k"),
     )
 
 

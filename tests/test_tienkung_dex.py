@@ -193,3 +193,11 @@ def test_gripper_get_positions():
     body = _body()
     body._robot.hand_right.status = SimpleNamespace(positions=(1, 500, 1000))
     assert body.gripper.get_positions() == pytest.approx([0.0, 0.4995, 1.0], abs=1e-3)
+
+
+def test_sensor_frame_has_k():
+    frame = SimpleNamespace(color="c", depth="d", stamp=None,
+                            frame_id="ob_camera_head")
+    sensor = TienkungDexSensor(_Robot(frame), k=[1.0, 0, 2.0, 0, 3.0, 4.0, 0, 0, 1.0])
+    out = sensor.rgbd(timeout=0.1)
+    assert out.k is not None and out.k[0] == 1.0
