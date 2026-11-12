@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
 <package format="3">
-  <name>thinker_robot_tienkung_dex</name>
+  <name>tienkung_dex_robot</name>
   <version>0.1.0</version>
-  <description>Thinker-Skill thinker_robot_tienkung_dex</description>
+  <description>Thinker-Skill tienkung_dex_robot</description>
   <maintainer email="1627049654@qq.com">qingxiangliu</maintainer>
   <license>Apache-2.0</license>
 

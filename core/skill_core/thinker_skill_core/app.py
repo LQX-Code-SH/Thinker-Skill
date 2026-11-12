@@ -36,7 +36,7 @@ def load_capabilities(robot_dir: str,
 
 def load_robot_adapter(node, config: Dict[str, Any]):
     model = config.get("model", "tienkung_dex")
-    module = importlib.import_module(f"thinker_robot_{model}")
+    module = importlib.import_module(f"{model}_robot")
     return module.create_adapter(
         node,
         backend=config.get("backend", "real"),

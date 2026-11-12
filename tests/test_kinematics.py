@@ -4,7 +4,7 @@ import os
 import numpy as np
 import pytest
 
-from thinker_robot_tienkung_dex.kinematics import HeadCameraChain
+from tienkung_dex_robot.kinematics import HeadCameraChain
 
 URDF = (
     "/home/liu/work/UBTECH-IL-LAB/ubt_sim/assets/robots/tienkung_dex/"
@@ -60,7 +60,7 @@ class _Robot:
 
 
 def test_sensor_transform_to_base():
-    from thinker_robot_tienkung_dex.sensor import TienkungDexSensor
+    from tienkung_dex_robot.sensor import TienkungDexSensor
 
     sensor = TienkungDexSensor(_Robot(), urdf_path=URDF)
     p = sensor.transform_to_base([0.0, 0.0, 1.0])

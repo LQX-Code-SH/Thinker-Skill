@@ -2,7 +2,7 @@ from glob import glob
 
 from setuptools import setup, find_packages
 
-package_name = "thinker_robot_tienkung_dex"
+package_name = "tienkung_dex_robot"
 
 setup(
     name=package_name,
@@ -19,7 +19,7 @@ setup(
     zip_safe=True,
     maintainer="qingxiangliu",
     maintainer_email="1627049654@qq.com",
-    description="Thinker-Skill thinker_robot_tienkung_dex",
+    description="Thinker-Skill tienkung_dex_robot",
     license="Apache-2.0",
     python_requires=">=3.10",
 )

@@ -27,12 +27,12 @@ def test_fixed_has_no_gripper():
 
 
 def test_urdf_default_in_package():
-    from thinker_robot_tienkung_dex.kinematics import default_urdf_path
+    from tienkung_dex_robot.kinematics import default_urdf_path
     assert os.path.isfile(default_urdf_path())
 
 
 def test_joints_yaml_matches_constants():
-    from thinker_robot_tienkung_dex import joints as J
+    from tienkung_dex_robot import joints as J
 
     with open(os.path.join(ROBOT_DIR, "resources", "joints.yaml"),
               encoding="utf-8") as fh:

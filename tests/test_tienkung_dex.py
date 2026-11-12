@@ -5,7 +5,7 @@ from types import SimpleNamespace
 import pytest
 
 from thinker_skill_sdk import Pose
-from thinker_robot_tienkung_dex import TienkungDexBody, TienkungDexSensor
+from tienkung_dex_robot import TienkungDexBody, TienkungDexSensor
 
 
 class _Vel:

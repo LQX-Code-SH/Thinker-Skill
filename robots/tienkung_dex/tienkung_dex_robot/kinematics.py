@@ -27,7 +27,7 @@ def default_urdf_path() -> str:
 
     try:
         from ament_index_python.packages import get_package_share_directory
-        share = get_package_share_directory("thinker_robot_tienkung_dex")
+        share = get_package_share_directory("tienkung_dex_robot")
         return os.path.join(
             share, "resources", "urdf", "tienkung_dex_brainco.urdf")
     except Exception:

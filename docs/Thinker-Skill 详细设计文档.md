@@ -400,10 +400,10 @@ class SensorAPI(Protocol):
 **结构**：
 
 ```
-robots/tienkung_dex/                # ament 包 thinker_robot_tienkung_dex
+robots/tienkung_dex/                # ament 包 tienkung_dex_robot
 ├── package.xml  setup.py
 ├── capabilities.yaml               # 能力契约（含 hand_variants）
-├── thinker_robot_tienkung_dex/
+├── tienkung_dex_robot/
 │   ├── adapter.py                  # create_adapter 工厂（变体 → hand_vendor/enable）
 │   ├── body.py                     # 实现 BodyAPI（封装 create_robot）
 │   ├── sensor.py                   # 实现 SensorAPI（4 路 RGB-D）

@@ -14,7 +14,7 @@ PACKAGES = {
     "core/sensor": ("thinker_sensor", ["thinker_skill_sdk"]),
     "core/body": ("thinker_body", ["thinker_skill_sdk"]),
     "core/skill_core": ("thinker_skill_core", ["thinker_skill_sdk", "thinker_interfaces"]),
-    "robots/tienkung_dex": ("thinker_robot_tienkung_dex", ["thinker_skill_sdk"]),
+    "robots/tienkung_dex": ("tienkung_dex_robot", ["thinker_skill_sdk"]),
 }
 
 PACKAGE_XML = """<?xml version="1.0"?>

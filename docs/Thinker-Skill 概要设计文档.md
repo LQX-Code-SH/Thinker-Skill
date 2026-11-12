@@ -189,7 +189,7 @@ skills/manipulation/fetch_object/
 **结构** —— `robots/<model>/` 是一个 ament 包，含能力契约、适配实现与机型特有资源：
 
 ```
-robots/tienkung_dex/          # ament 包 thinker_robot_tienkung_dex
+robots/tienkung_dex/          # ament 包 tienkung_dex_robot
 ├── capabilities.yaml         # 能力契约：能力名 + 参数 + 版本
 ├── src/                      # body.py / sensor.py / safety.py
 └── resources/                # 关节表 / 标定 / URDF
