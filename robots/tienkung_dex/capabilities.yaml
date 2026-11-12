@@ -13,6 +13,7 @@ capabilities:
     dof: 6
   body.waist:
     dof: 3            # pitch / roll / yaw
+    height: false     # 无升降自由度
   body.head:
     dof: 2            # yaw / pitch
   body.base:
