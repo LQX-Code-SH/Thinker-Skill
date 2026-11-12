@@ -36,6 +36,7 @@ def load_robot_adapter(node, config: Dict[str, Any]):
         backend=config.get("backend", "real"),
         hand_vendor=config.get("hand_vendor", "brainco"),
         hand_side=config.get("hand_side", "right"),
+        urdf_path=config.get("urdf_path"),
     )
 
 

@@ -5,5 +5,8 @@ backend: real             # real | sim | mock（部署实机用 real，开发机
 hand_vendor: brainco      # brainco | inspire
 hand_side: right
 
+# 头部相机正运动学所需 URDF（cam→base）
+urdf_path: /home/liu/work/UBTECH-IL-LAB/ubt_sim/assets/robots/tienkung_dex/urdf/tienkung_dex_brainco.urdf
+
 tick_rate: 10             # 动作循环频率（Hz）
 default_timeout: 300      # 缺省超时（秒，Action 通道兜底）

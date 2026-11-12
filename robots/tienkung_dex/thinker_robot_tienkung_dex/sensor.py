@@ -5,6 +5,7 @@ depth uint16 毫米）。坐标变换需 TF/标定，SDK 不提供，故 ``trans
 """
 from __future__ import annotations
 
+import os
 import time
 from typing import Any
 
@@ -33,10 +34,23 @@ def _stamp_to_sec(stamp: Any) -> float:
 class TienkungDexSensor(SensorAPI):
     """RGB-D 数据通道。"""
 
-    def __init__(self, robot: Any, *, camera: str = DEFAULT_CAMERA, poll: float = 0.02):
+    def __init__(self, robot: Any, *, camera: str = DEFAULT_CAMERA,
+                 poll: float = 0.02, urdf_path: Any = None):
         self._robot = robot
         self._camera = camera
         self._poll = poll
+        self._urdf_path = urdf_path
+        self._chain = None
+
+    def _chain_obj(self):
+        if self._chain is None:
+            from .kinematics import HeadCameraChain
+            path = self._urdf_path or os.environ.get("THINKER_URDF")
+            if not path:
+                raise NotImplementedError(
+                    "cam->base 需要 URDF：设置 THINKER_URDF 或传入 urdf_path")
+            self._chain = HeadCameraChain(path)
+        return self._chain
 
     @property
     def _stream(self):
@@ -64,5 +78,15 @@ class TienkungDexSensor(SensorAPI):
             frame_id=getattr(frame, "frame_id", "") or "",
         )
 
-    def transform_to_base(self, pose):
-        raise NotImplementedError("坐标变换需 TF/标定，由 core/sensor 提供；SDK 无 TF")
+    def transform_to_base(self, point):
+        chain = self._chain_obj()
+        waist = self._robot.waist.get_pose()
+        head = self._robot.head.get_pose()
+        angles = {
+            "waist_pitch": waist[0],
+            "waist_roll": waist[1],
+            "waist_yaw": waist[2],
+            "head_yaw": head[0],
+            "head_pitch": head[1],
+        }
+        return chain.point_to_base(point, angles)

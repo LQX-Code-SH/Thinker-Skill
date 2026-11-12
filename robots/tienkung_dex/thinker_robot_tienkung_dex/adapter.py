@@ -31,10 +31,11 @@ class TienkungDexAdapter:
         hand_side: str = "right",
         hand_dof: int = 6,
         camera: str = DEFAULT_CAMERA,
+        urdf_path: Optional[str] = None,
     ):
         self.raw = robot
         self.body = TienkungDexBody(robot, hand_side=hand_side, hand_dof=hand_dof)
-        self.sensor = TienkungDexSensor(robot, camera=camera)
+        self.sensor = TienkungDexSensor(robot, camera=camera, urdf_path=urdf_path)
 
     def start(self) -> None:
         self.raw.start()
@@ -53,6 +54,7 @@ def create_adapter(
     enable: Optional[Set[str]] = None,
     joints_table_path: Optional[str] = None,
     camera: str = DEFAULT_CAMERA,
+    urdf_path: Optional[str] = None,
 ) -> TienkungDexAdapter:
     """创建适配器（未 start；调用方需 ``adapter.start()``）。"""
     create_robot = _import_create_robot()
@@ -64,5 +66,6 @@ def create_adapter(
         joints_table_path=joints_table_path,
     )
     return TienkungDexAdapter(
-        robot, hand_side=hand_side, hand_dof=hand_dof, camera=camera
+        robot, hand_side=hand_side, hand_dof=hand_dof,
+        camera=camera, urdf_path=urdf_path,
     )
