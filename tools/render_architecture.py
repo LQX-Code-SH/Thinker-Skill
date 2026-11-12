@@ -195,22 +195,23 @@ def main():
     # ---------- 4. 基础能力层 ----------
     y, h = 810, 122
     band(d, y, h, "4", "基础能力层", "#F7F5EC", "#8A7A3B")
-    txt(d, (210, y + 10), "core/", 13, "#8A7A3B", True)
-    txt(d, (258, y + 10), "共享实现 —— 只写一份；技能只依赖 core/skill_sdk，其余由执行层装配", 12, SUB)
+    txt(d, (210, y + 10), "core/（抽象与机制）+ robots/（机型实现）", 13, "#8A7A3B", True)
+    txt(d, (520, y + 12), "机型差异收敛在 robots/，core 不随机型膨胀", 10, SUB)
     caps = [("core/skill_sdk", "Step · StepCtx · Protocol", "技能作者唯一依赖"),
-            ("core/body", "控制器 · QP · moveit", "腰/头/手爪/导航/tf"),
-            ("core/sensor", "相机 · RGB-D · TF", "仅数据通道，算法在技能"),
+            ("core/body", "BodyAPI 抽象 · 安全层", "机型实现见 robots/"),
+            ("core/sensor", "数据通道抽象 · 对齐", "机型实现见 robots/"),
             ("core/common", "DataBuffer · Transform", "TTS · ConfigLoader"),
-            ("core/interfaces", "ControlCommand.srv", "Skill.action · msg")]
-    cw4 = (990 - 40) / 5
+            ("core/interfaces", "ControlCommand.srv", "Skill.action · msg"),
+            ("robots/<model>", "capabilities · body/sensor", "机型实现 · 关节表/标定")]
+    cw4 = (990 - 50) / 6
     for i, (t, s1, s2) in enumerate(caps):
         x = 210 + i * (cw4 + 10)
         box = (x, y + 32, x + cw4, y + h - 12)
         card(d, box, "#FFFFFF", "#DCD3B4")
         cx = (box[0] + box[2]) / 2
-        txt(d, (cx, y + 50), t, 11, "#8A7A3B", True, "mm")
-        txt(d, (cx, y + 70), s1, 10, INK, False, "mm")
-        txt(d, (cx, y + 86), s2, 9.5, SUB, False, "mm")
+        txt(d, (cx, y + 50), t, 10, "#8A7A3B", True, "mm")
+        txt(d, (cx, y + 70), s1, 9, INK, False, "mm")
+        txt(d, (cx, y + 86), s2, 9, SUB, False, "mm")
 
     # ---------- 5. 机器人本体层 ----------
     y, h = 948, 88
