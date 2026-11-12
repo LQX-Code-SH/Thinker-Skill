@@ -1,0 +1,11 @@
+# 请求
+string command       # 命令名
+string params_json   # 参数 JSON 对象
+
+---
+# 响应（统一信封）
+string state         # succeed | failed | cancelled
+string code          # 大写蛇形枚举，见《接口文档》附录 A；成功为 OK
+string msg           # 中文人话，按 code 从 errors.yaml 生成
+bool retryable       # 仅 failed 时有意义
+string data_json     # 业务附加字段 JSON

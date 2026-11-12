@@ -1,0 +1,29 @@
+# 天工 DEX（tienkung_dex）能力契约
+# 供装配期与技能 requires 做子集匹配（D-015）
+robot_model: tienkung_dex
+version: "3.0"
+sdk: "tienkung_dex>=1.0"
+
+capabilities:
+  body.arm:
+    dof: 7            # 单臂 7 轴（ID 11-17 左 / 21-27 右）
+    pose_ik: false    # 仅关节级；位姿级需上层 IK
+  body.gripper:
+    type: brainco     # brainco(6 电机) | inspire(13 关节)
+    dof: 6
+  body.waist:
+    dof: 3            # pitch / roll / yaw
+  body.head:
+    dof: 2            # yaw / pitch
+  body.base:
+    mode: velocity    # 速度流 20Hz，无到位反馈
+    pose: false
+  sensor.rgbd:
+    count: 4          # head / waist / wrist_left / wrist_right
+    depth_unit: mm
+    color_format: bgr8
+  sensor.audio_in: {}
+  sensor.audio_out: {}
+  sensor.imu:
+    source: livox
+  sensor.pointcloud: {}

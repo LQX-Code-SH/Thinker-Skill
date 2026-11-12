@@ -1,0 +1,17 @@
+# Goal
+string skill          # 技能名
+string params_json    # 参数 JSON 对象
+
+---
+# Result（统一信封）
+string state          # succeed | failed | cancelled
+string code
+string msg
+bool retryable
+string data_json
+
+---
+# Feedback
+string phase          # 当前阶段，取自 Step.name
+float32 progress      # 0.0 ~ 1.0
+string msg            # 人类可读补充
