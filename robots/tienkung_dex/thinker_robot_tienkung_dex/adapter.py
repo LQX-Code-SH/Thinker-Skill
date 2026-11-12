@@ -33,11 +33,13 @@ class TienkungDexAdapter:
         camera: str = DEFAULT_CAMERA,
         urdf_path: Optional[str] = None,
         camera_k: Optional[list] = None,
+        pelvis_height: float = 0.0,
     ):
         self.raw = robot
         self.body = TienkungDexBody(robot, hand_side=hand_side, hand_dof=hand_dof)
         self.sensor = TienkungDexSensor(
-            robot, camera=camera, urdf_path=urdf_path, k=camera_k)
+            robot, camera=camera, urdf_path=urdf_path, k=camera_k,
+            pelvis_height=pelvis_height)
 
     def start(self) -> None:
         self.raw.start()
@@ -58,6 +60,7 @@ def create_adapter(
     camera: str = DEFAULT_CAMERA,
     urdf_path: Optional[str] = None,
     camera_k: Optional[list] = None,
+    pelvis_height: float = 0.0,
 ) -> TienkungDexAdapter:
     """创建适配器（未 start；调用方需 ``adapter.start()``）。"""
     create_robot = _import_create_robot()
@@ -71,4 +74,5 @@ def create_adapter(
     return TienkungDexAdapter(
         robot, hand_side=hand_side, hand_dof=hand_dof,
         camera=camera, urdf_path=urdf_path, camera_k=camera_k,
+        pelvis_height=pelvis_height,
     )

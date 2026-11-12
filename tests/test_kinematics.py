@@ -37,6 +37,13 @@ def test_point_to_base():
     assert p[0] > 0.9          # 相机光轴朝前 → base x
 
 
+def test_pelvis_height_offset():
+    c = _chain()
+    p0 = c.point_to_base([0.0, 0.0, 1.0], {})
+    p1 = c.point_to_base([0.0, 0.0, 1.0], {}, (0.0, 0.0, 0.9))
+    assert p1[2] == pytest.approx(p0[2] + 0.9)
+
+
 class _Waist:
     def get_pose(self):
         return (0.0, 0.0, 0.0)

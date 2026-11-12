@@ -8,6 +8,9 @@ hand_side: right
 # 头部相机正运动学所需 URDF（cam→base）
 urdf_path: /home/liu/work/UBTECH-IL-LAB/ubt_sim/assets/robots/tienkung_dex/urdf/tienkung_dex_brainco.urdf
 
+# pelvis 距地面高度（站立/半身运控），用于 pelvis → base(地面) 平移；待实测标定
+pelvis_height: 0.92
+
 # 头部相机内参（自标定 2026-09-29，rational 8 参）
 camera:
   name: head_gemini336

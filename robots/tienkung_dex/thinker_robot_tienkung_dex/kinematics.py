@@ -81,7 +81,10 @@ class HeadCameraChain:
                 T = T @ _axis_matrix(joint, float(angles.get(key, 0.0)))
         return T
 
-    def point_to_base(self, point, angles: dict) -> np.ndarray:
+    def point_to_base(self, point, angles: dict,
+                      base_offset=(0.0, 0.0, 0.0)) -> np.ndarray:
+        """``base_offset``：pelvis → base(地面) 的平移，通常 ``(0,0,pelvis_height)``。"""
         T = self.cam_to_base(angles)
         p = np.asarray(point, dtype=float).reshape(3)
-        return (T @ np.append(p, 1.0))[:3]
+        p_pelvis = (T @ np.append(p, 1.0))[:3]
+        return p_pelvis + np.asarray(base_offset, dtype=float)

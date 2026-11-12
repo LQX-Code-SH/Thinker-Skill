@@ -35,12 +35,14 @@ class TienkungDexSensor(SensorAPI):
     """RGB-D 数据通道。"""
 
     def __init__(self, robot: Any, *, camera: str = DEFAULT_CAMERA,
-                 poll: float = 0.02, urdf_path: Any = None, k: Any = None):
+                 poll: float = 0.02, urdf_path: Any = None, k: Any = None,
+                 pelvis_height: float = 0.0):
         self._robot = robot
         self._camera = camera
         self._poll = poll
         self._urdf_path = urdf_path
         self._k = k
+        self._pelvis_height = float(pelvis_height)
         self._chain = None
 
     def _chain_obj(self):
@@ -91,4 +93,5 @@ class TienkungDexSensor(SensorAPI):
             "head_yaw": head[0],
             "head_pitch": head[1],
         }
-        return chain.point_to_base(point, angles)
+        return chain.point_to_base(
+            point, angles, (0.0, 0.0, self._pelvis_height))
