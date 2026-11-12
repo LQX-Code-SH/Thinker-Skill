@@ -236,16 +236,17 @@ def main():
     feats = [("独立安装", "一个技能 = 一个 ament 包，装/卸不动 core"),
              ("可组合", "装 N 个技能，服务/Action 名零冲突"),
              ("区域仲裁", "同区域串行 · 跨区域并行 · 只读豁免"),
+             ("多机型适配", "技能只依赖 skill_sdk，机型差异收敛在 robots/"),
              ("长任务可控", "阶段反馈 · 可取消 · 可抢占"),
              ("失败可判", "code 给程序 · msg 给 LLM 播报"),
              ("双接口一致", "MCP 与 Action 共用同一执行内核"),
              ("契约一致", "metadata / mcp_interface / skill.yaml 三方对齐")]
-    fy = 182
+    fy = 180
     for n, s in feats:
-        d.ellipse((px0 + 20, fy + 6, px0 + 28, fy + 14), fill=BLUE)
-        txt(d, (px0 + 38, fy), n, 13, INK, True)
-        txt(d, (px0 + 38, fy + 20), s, 11, SUB)
-        fy += 42
+        d.ellipse((px0 + 20, fy + 5, px0 + 28, fy + 13), fill=BLUE)
+        txt(d, (px0 + 38, fy), n, 12, INK, True)
+        txt(d, (px0 + 38, fy + 18), s, 10, SUB)
+        fy += 36
 
     # ---------- 右侧：闭环 ----------
     box = (px0, 486, px1, 742)
