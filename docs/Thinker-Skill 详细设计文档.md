@@ -400,15 +400,23 @@ class SensorAPI(Protocol):
 **结构**：
 
 ```
-robots/tienkung_dex/          # ament 包 thinker_robot_tienkung_dex
+robots/tienkung_dex/                # ament 包 thinker_robot_tienkung_dex
 ├── package.xml  setup.py
-├── capabilities.yaml         # 能力契约（装配期匹配依据）
-├── src/tienkung_dex_robot/
-│   ├── body.py               # 实现 BodyAPI（封装 create_robot）
-│   ├── sensor.py             # 实现 SensorAPI（4 路 RGB-D / IMU / 音频）
-│   └── safety.py             # 机型安全层（限幅、急停透传）
-└── resources/                # 关节表 / 标定 / URDF
+├── capabilities.yaml               # 能力契约（含 hand_variants）
+├── thinker_robot_tienkung_dex/
+│   ├── adapter.py                  # create_adapter 工厂（变体 → hand_vendor/enable）
+│   ├── body.py                     # 实现 BodyAPI（封装 create_robot）
+│   ├── sensor.py                   # 实现 SensorAPI（4 路 RGB-D）
+│   ├── safety.py                   # 机型安全层（限幅、急停收敛）
+│   ├── joints.py                   # 关节表常量（与 resources/joints.yaml 一致）
+│   └── kinematics.py               # 头部相机 FK（cam→base）
+└── resources/                      # 随包安装（setup.py data_files）
+    ├── joints.yaml                 # 关节 ID/限位事实源
+    ├── urdf/tienkung_dex_brainco.urdf
+    └── calib/head_gemini336_camera_info.yaml
 ```
+
+`resources/` 经 `ament_index_python.get_package_share_directory()` 定位，**部署后不依赖开发机绝对路径**。
 
 **适配实现要点**（以 tienkung_dex 为例）：
 
@@ -422,16 +430,27 @@ robots/tienkung_dex/          # ament 包 thinker_robot_tienkung_dex
 
 **与 SDK 的关系**：直接封装 `tienkung_dex` 门面（`create_robot(backend=real/sim/mock)`），不重写 ROS 话题层；`mock` 后端用于离机开发与单测。
 
-**必补的安全层**（SDK 不做）：
+**必补的安全层**（SDK 不做，集中在 `safety.py`）：
 
-- 关节限幅：按 `resources/joints.yaml` 的 limits 夹紧；
-- 急停：透传 SDK 的 `EstopActiveError`，禁用 `ZERO_CALIB`；
+- 关节限幅：按 `joints.py` / `resources/joints.yaml` 的 limits 夹紧；
+- 急停：SDK 的 `EstopActiveError` 收敛为 `safety.EstopActive`，禁用 `ZERO_CALIB`；
 - 行走前置检查：是否已进话题模式（SDK 未封装，需自订阅 `SbusData` / `rl_state`）。
+
+**手部变体**（同一机型多配置）：
+
+| 变体 | `hand_vendor` | 启用 `hand` | `body.gripper` |
+|---|---|---|---|
+| `brainco` | `brainco` | 是 | `{type: brainco, dof: 6}` |
+| `inspire` | `inspire` | 是 | `{type: inspire, dof: 13}` |
+| `fixed`（拳头假手） | — | 否 | **不存在** |
+
+`create_adapter(hand_variant=...)` 按变体推导 `hand_vendor` 与 `enable`；`fixed` 时 `enable` 显式排除 `hand`，`body.gripper` 不可用。
 
 **能力匹配**（装配期）：
 
 ```
 caps = load(robots/<configs/robot.yaml 的 model>/capabilities.yaml)
+      + hand_variants[configs/robot.yaml 的 hand_variant]   # 合并手部变体
 for skill in discovered:
     if not compatible(skill.compatible, caps):        # 机型 / 版本
         skip + warn; continue
