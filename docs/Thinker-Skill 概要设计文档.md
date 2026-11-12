@@ -79,30 +79,16 @@ Thinker-Skill/
 
 **定位** —— 业务实现的唯一载体：机器人在具体场景下「做什么、怎么判断成败」的全部语义都在这里，`core` 不含任何业务。
 
-**结构** —— 一个技能 = 一个目录，固定在 `skills/<类别>/<技能>/`，内含 ROS 包与平台注册壳两棵子树：
+**结构** —— 一个技能 = 一个目录，固定在 `skills/<类别>/<技能>/`，内含两棵子树：
 
 ```
-skills/perception/detect_object/      # 类别 / 技能名
-├── skill/                            # ament 包（包名 detect_object）
-│   ├── package.xml / setup.py        # exec_depend thinker_skill_sdk
-│   ├── skill.yaml                    # 安装契约：命令、依赖能力、超时、错误码
-│   ├── resource/detect_object        # ament index marker（空文件）
-│   └── detect_object/                # 业务源码（Python 包，可直接 import）
-│       ├── __init__.py
-│       ├── plugin.py                 #   入口：build_steps()
-│       ├── detector.py               #   检测算法（延迟加载模型）
-│       ├── geometry.py               #   3D 定位（深度反投影）
-│       └── spatial.py                #   有效空间过滤 / prompt 归一化
-├── mcp_interface/                    # 平台注册壳（非 colcon 包）
-│   ├── mcp_interface.py              #   工具函数 + docstring（签名即 schema）
-│   ├── metadata.json                 #   平台注册清单
-│   └── requirements.txt              #   fastmcp
-└── DESIGN.md                         # 技能级设计说明
+skills/<类别>/<技能>/
+├── skill/            # ament 包：skill.yaml + package.xml + 业务源码
+├── mcp_interface/    # 平台注册壳：工具函数 + metadata.json
+└── DESIGN.md
 ```
 
-两棵子树分开的原因：`skill/` 走 colcon 构建、随 install 树分发；`mcp_interface/` 被平台按 `modulePath` 直接导入，**必须保持明文**，改动不需要重新构建。
-
-技能私有配置不单独建文件，放在 `configs/robot.yaml` 的 `skills.<name>` 段，经 `ctx.cfg` 只读注入；启动统一由 `thinker_host` 负责，技能不自带 `launch/` 或 `start.sh`。
+`skill/` 走 colcon 构建、随 install 树分发；`mcp_interface/` 被平台按 `modulePath` 直接导入，**必须保持明文**，改动不需要重新构建。完整目录与文件职责见详细设计 3.1.1。
 
 **功能** —— 技能承担且只承担四件事：
 
@@ -190,11 +176,13 @@ skills/perception/detect_object/      # 类别 / 技能名
 **结构** —— `robots/<model>/` 是一个 ament 包，含能力契约、适配实现与机型特有资源：
 
 ```
-robots/tienkung_dex/          # ament 包 tienkung_dex_robot
-├── capabilities.yaml         # 能力契约：能力名 + 参数 + 版本
-├── src/                      # body.py / sensor.py / safety.py
-└── resources/                # 关节表 / 标定 / URDF
+robots/<model>/
+├── capabilities.yaml    # 能力契约：能力名 + 参数 + 版本
+├── <model>_robot/       # 适配实现：BodyAPI / SensorAPI / 安全层
+└── resources/           # 机型资源：关节表 / URDF / 标定
 ```
+
+完整目录与文件职责见详细设计 3.4。
 
 **职责**：
 
@@ -225,7 +213,7 @@ robots/tienkung_dex/          # ament 包 tienkung_dex_robot
 | 类别       | 目录              | 判定标准                    | 示例                                                                 |
 | ---------- | ----------------- | --------------------------- | -------------------------------------------------------------------- |
 | 导航移动类 | `navigation/`   | 改变机器人 base 位姿        | `navigate_to`、`follow_person`、`return_home`                  |
-| 操作类     | `manipulation/` | 改变手臂/夹爪状态或物体位置 | `fetch_object`、`place_object`、`handover`                     |
+| 操作类     | `manipulation/` | 改变手臂/夹爪状态或物体位置 | `look_down_table`、`fetch_object`、`place_object`、`handover`  |
 | 拍照类     | `camera/`       | 只产出图像/视频             | `take_photo`、`record_video`                                     |
 | 语音对话类 | `speech/`       | 只涉及音频输入输出          | `speak`、`listen`、`ask_and_confirm`                           |
 | 视觉感知类 | `perception/`   | 产出结构化世界描述          | `detect_object`、`locate_person`                                 |
@@ -239,28 +227,22 @@ robots/tienkung_dex/          # ament 包 tienkung_dex_robot
 
 ### 4.2 安装契约
 
-```yaml
-name: detect_object
-version: 0.1.0
-category: perception
-min_core: 0.1.0
-entry: detect_object.plugin:DetectObject     # 提供 build_steps()，由 host 装配
-commands: [detect_object]
-requires: [body.head, sensor.rgbd]           # 能力名，带 body./sensor. 前缀
-precondition: []                             # 见 4.4
-postcondition: {}                            # 成功后写回的状态；detect_object 不写
-timeout: 30                                  # 秒；走 MCP 时须小于客户端 read timeout
-interfaces: [service, action]                # ROS 通道；MCP 由下方 mcp 段声明
-errors:                                      # 本技能可能产出的 code
-  - PERCEPTION_OBJECT_NOT_FOUND
-  - PERCEPTION_POSE_INVALID
-  - SYS_CONFIG_ERROR
-mcp: {tools: [detect_object], port: 8032}
-```
+`skill.yaml` 随包安装到 `share/<pkg>/skill.yaml`，声明「我叫什么、需要什么、跑多久、可能怎么失败」：
 
-技能私有参数不进 `skill.yaml`，而是放 `configs/robot.yaml` 的 `skills.<name>` 段，经 `ctx.cfg` 只读注入。
+| 字段 | 作用 |
+|---|---|
+| `name` / `version` / `category` | 身份与分类 |
+| `entry` | `module:Class`，提供 `build_steps()` |
+| `requires` | 能力名（`body.*` / `sensor.*`），装配期做子集匹配 |
+| `precondition` / `postcondition` | 前后置状态 |
+| `timeout` | 单次执行上限（秒），走 MCP 时须小于客户端 read timeout |
+| `interfaces` | 对外通道（`service` / `action`） |
+| `errors` | 可能产出的错误码 |
+| `mcp` | 工具名与端口 |
 
-该文件随包安装到 `share/<pkg>/skill.yaml`，并在 ament index 打 marker。**装了就发现，卸了就消失**。
+完整字段与真实示例见详细设计 3.1.2。技能私有参数不入 `skill.yaml`，放在 `configs/robot.yaml` 的 `skills.<name>` 段，经 `ctx.cfg` 只读注入。
+
+该文件随包安装并被 ament index 标记，**装了就发现、卸了就消失**。
 
 ### 4.3 生命周期与技能发现
 

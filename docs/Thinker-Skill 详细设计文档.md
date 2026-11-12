@@ -103,22 +103,21 @@ Service ───┘                                     │
 一个技能目录 = 一个 ament 包 + 一个平台注册壳，两棵子树并列：
 
 ```
-skills/manipulation/fetch_object/
-├── skill/                            # ament 包（包名 fetch_object）
-│   ├── package.xml  setup.py         # exec_depend thinker_skill_sdk + thinker_interfaces
+skills/perception/detect_object/      # 类别 / 技能名
+├── skill/                            # ament 包（包名 detect_object）
+│   ├── package.xml  setup.py         # exec_depend thinker_skill_sdk
 │   ├── skill.yaml                    # 安装契约（命令、能力、超时、错误码）
-│   ├── src/fetch_object/             # 业务源码
-│   │   ├── plugin.py                 #   入口：build_steps()
-│   │   ├── targets.py                #   目标选择策略（业务）
-│   │   └── geometry.py               #   本技能特有几何（业务）
-│   ├── configs/skills/fetch_object.yaml   # 私有参数：偏置、阈值、重试次数
-│   ├── launch/skill.launch.py
-│   └── start.sh                      # SESSION_NAME=thinker_fetch_object
+│   ├── resource/detect_object        # ament index marker（空文件）
+│   └── detect_object/                # 业务源码（Python 包，可直接 import）
+│       ├── __init__.py
+│       ├── plugin.py                 #   入口：build_steps()
+│       ├── detector.py               #   检测算法（延迟加载模型）
+│       ├── geometry.py               #   3D 定位（深度反投影）
+│       └── spatial.py                #   有效空间过滤 / prompt 归一化
 ├── mcp_interface/                    # 平台注册壳（非 colcon 包）
-│   ├── mcp_interface.py              #   工具函数 + docstring
+│   ├── mcp_interface.py              #   工具函数 + docstring（签名即 schema）
 │   ├── metadata.json                 #   平台注册清单
-│   ├── generate_md5.py               #   指纹生成
-│   └── requirements.txt              #   fastmcp / rclpy 客户端代理依赖
+│   └── requirements.txt              #   fastmcp
 └── DESIGN.md
 ```
 
@@ -127,10 +126,14 @@ skills/manipulation/fetch_object/
 | 原因 | 说明 |
 |---|---|
 | 构建边界 | `skill/` 走 colcon；`mcp_interface/` 不进工作空间，改工具描述或端口无需重新构建 |
-| 编译边界 | `skill/` 参与 Cython；`mcp_interface.py` 必须明文（FastMCP 需反射签名生成 schema） |
 | 平台路径 | `metadata.json` 的 `modulePath` 与目录一一对应 |
 
-约束：`skill.yaml` 必须在 `skill/` 内（ament `data_files` 不能引用包外路径）；用 `src/fetch_object/` 避免目录名/包名/模块名三层同名。
+约束：
+
+- `skill.yaml` 必须在 `skill/` 内（ament `data_files` 不能引用包外路径）；
+- Python 包目录名 = ROS 包名（ament_python 约定），**不设 `src/`**；
+- 技能私有参数不入 `skill.yaml`，放在 `configs/robot.yaml` 的 `skills.<name>` 段，经 `ctx.cfg` 只读注入；
+- 启动统一由 `thinker_host` 负责，技能不自带 `launch/` 与 `start.sh`。
 
 #### 3.1.2 技能契约 `skill.yaml`
 
