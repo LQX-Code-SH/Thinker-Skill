@@ -1,0 +1,16 @@
+name: detect_object
+version: 0.1.0
+category: perception
+min_core: 0.1.0
+entry: detect_object.plugin:DetectObject
+commands: [detect_object]
+requires: [body.head, sensor.rgbd]
+precondition: []
+postcondition: {}
+timeout: 30
+interfaces: [service, action]
+errors:
+  - PERCEPTION_OBJECT_NOT_FOUND
+  - PERCEPTION_POSE_INVALID
+  - PRECOND_BODY_BUSY
+mcp: {tools: [detect_object], port: 8032}

@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
+  <name>detect_object</name>
+  <version>0.1.0</version>
+  <description>感知技能：开集目标检测 → 3D 定位（base 系）</description>
+  <maintainer email="1627049654@qq.com">qingxiangliu</maintainer>
+  <license>Apache-2.0</license>
+
+  <exec_depend>python3</exec_depend>
+  <exec_depend>thinker_skill_sdk</exec_depend>
+
+  <export>
+    <build_type>ament_python</build_type>
+  </export>
+</package>

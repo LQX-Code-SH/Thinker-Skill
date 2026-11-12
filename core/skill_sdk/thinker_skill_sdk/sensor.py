@@ -16,12 +16,14 @@ class Frame:
     - ``depth``: HxW ``uint16``，单位**毫米**
     - ``stamp``: 秒
     - ``frame_id``: 坐标/相机命名空间
+    - ``k``: 相机内参 9 元（fx,0,cx,0,fy,cy,0,0,1），可选
     """
 
     color: Any
     depth: Any
     stamp: float
     frame_id: str = ""
+    k: Any = None
 
 
 class SensorAPI(Protocol):
