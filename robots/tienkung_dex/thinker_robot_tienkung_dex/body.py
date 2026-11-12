@@ -167,6 +167,15 @@ class TienkungDexHead:
     def look_down(self) -> None:
         self.look_at(yaw=0.0, pitch=0.6)
 
+    def get_pose(self):
+        self._require()
+        states = self._robot.head.get_states()
+        jyaw = HEAD_JOINTS["head_yaw"]
+        jpitch = HEAD_JOINTS["head_pitch"]
+        yaw = states[jyaw].pos if jyaw in states else 0.0
+        pitch = states[jpitch].pos if jpitch in states else 0.0
+        return (yaw, pitch)
+
 
 class TienkungDexBase:
     """底盘：矢量速度流（无位姿导航/到位反馈）。"""

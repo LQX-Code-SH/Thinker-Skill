@@ -23,9 +23,20 @@ class LookDownTable:
         pitch_deg = float(params.get("pitch_deg", DEFAULT_PITCH_DEG))
         target = max(PITCH_MIN_RAD, min(PITCH_MAX_RAD, math.radians(pitch_deg)))
 
-        def lower(c):
-            # 幂等：重复下发同一目标角，下位机持续执行到目标
-            c.body.head.look_at(yaw=0.0, pitch=target)
-            return StepResult(status="done", data={"pitch_deg": round(math.degrees(target), 2)})
+        tol = 0.02  # rad，约 1.1°
 
-        return [Step(name="低头看桌面", kind="motion", weight=1, run=lower)]
+        def lower(c):
+            # 幂等下发目标；未到位返回 running，下一 tick 再查
+            c.body.head.look_at(yaw=0.0, pitch=target)
+            _, cur_pitch = c.body.head.get_pose()
+            if abs(cur_pitch - target) <= tol:
+                return StepResult(
+                    status="done",
+                    data={
+                        "pitch_deg": round(math.degrees(target), 2),
+                        "actual_pitch_deg": round(math.degrees(cur_pitch), 2),
+                    },
+                )
+            return StepResult(status="running")
+
+        return [Step(name="低头看桌面", kind="motion", weight=1, run=lower, tick_budget=0.1)]

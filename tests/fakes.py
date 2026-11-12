@@ -87,6 +87,9 @@ class FakeHead:
     def look_down(self):
         self.pitch = -0.5
 
+    def get_pose(self):
+        return (self.yaw, self.pitch)
+
 
 class FakeBase:
     def __init__(self):

@@ -62,6 +62,9 @@ class HeadAPI(Protocol):
 
     def look_at(self, *, yaw: float, pitch: float) -> None: ...
     def look_down(self) -> None: ...
+    def get_pose(self) -> tuple[float, float]:
+        """返回实际 ``(yaw, pitch)``（弧度），用于到位查询。"""
+        ...
 
 
 class BaseAPI(Protocol):
