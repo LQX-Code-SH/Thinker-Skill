@@ -64,3 +64,38 @@ def test_load_capabilities(tmp_path):
           sensor.rgbd: {}
     """), encoding="utf-8")
     assert load_capabilities(str(d)) == {"body.arm", "sensor.rgbd"}
+
+
+def test_load_capabilities_merges_hand_variant(tmp_path):
+    d = tmp_path / "robot"
+    d.mkdir()
+    (d / "capabilities.yaml").write_text(textwrap.dedent("""
+        robot_model: x
+        capabilities:
+          body.arm: {}
+        hand_variants:
+          brainco:
+            capabilities:
+              body.gripper: {}
+          fixed:
+            capabilities: {}
+    """), encoding="utf-8")
+    assert load_capabilities(str(d), "brainco") == {"body.arm", "body.gripper"}
+    assert load_capabilities(str(d), "fixed") == {"body.arm"}
+
+
+def test_resolve_robot_dir_prefers_existing(tmp_path):
+    from thinker_skill_core.app import _resolve_robot_dir
+
+    d = tmp_path / "robot"
+    d.mkdir()
+    (d / "capabilities.yaml").write_text("capabilities: {}\n", encoding="utf-8")
+    assert _resolve_robot_dir(str(d), "tienkung_dex") == str(d)
+
+
+def test_resolve_robot_dir_falls_back_unchanged(tmp_path):
+    from thinker_skill_core.app import _resolve_robot_dir
+
+    missing = str(tmp_path / "nope")
+    # ament 找不到 no_such_model_xyz_robot 时原样返回
+    assert _resolve_robot_dir(missing, "no_such_model_xyz") == missing

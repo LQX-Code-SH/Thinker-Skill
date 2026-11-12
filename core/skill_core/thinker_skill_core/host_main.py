@@ -17,7 +17,8 @@ from .app import bootstrap_ros
 
 def _env_paths():
     config_dir = os.environ.get("THINKER_CONFIG_DIR", "configs")
-    robot_dir = os.environ.get("THINKER_ROBOT_DIR", "robots/tienkung_dex")
+    # 未设置时交给 bootstrap_ros 按 ament_index 解析 <model>_robot 的 share
+    robot_dir = os.environ.get("THINKER_ROBOT_DIR") or None
     skills_env = os.environ.get("THINKER_SKILLS_DIR", "skills")
     skills_dirs = [p for p in skills_env.split(os.pathsep) if p]
     return config_dir, robot_dir, skills_dirs

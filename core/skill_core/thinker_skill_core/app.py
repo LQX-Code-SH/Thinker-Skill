@@ -34,6 +34,23 @@ def load_capabilities(robot_dir: str,
     return set(caps)
 
 
+def _resolve_robot_dir(explicit: Optional[str], model: str) -> Optional[str]:
+    """解析机型目录：显式路径存在则用，否则按 ament_index 找 ``<model>_robot``。
+
+    部署到机器人后通常没有 ``robots/`` 源码目录，此时应落到
+    ``<install>/share/<model>_robot``（``capabilities.yaml`` 就在那里）。
+    """
+    if explicit:
+        p = Path(explicit)
+        if p.exists():
+            return str(p)
+    try:
+        from ament_index_python.packages import get_package_share_directory
+        return get_package_share_directory(f"{model}_robot")
+    except Exception:
+        return explicit
+
+
 def load_robot_adapter(node, config: Dict[str, Any]):
     model = config.get("model", "tienkung_dex")
     module = importlib.import_module(f"{model}_robot")
@@ -71,12 +88,13 @@ def bootstrap_core(*, config_dir: str, skills_dirs: List[str], body: Any,
 
 
 def bootstrap_ros(node, *, config_dir: str, skills_dirs: List[str],
-                  robot_dir: str, min_core: str = "0.1.0"):
+                  robot_dir: Optional[str] = None, min_core: str = "0.1.0"):
     """完整装配：机型适配器 + 技能 + Service/Action frontends。"""
     from .frontends.action import create_actions
     from .frontends.service import create_services
 
     config = ConfigLoader(config_dir).load()
+    robot_dir = _resolve_robot_dir(robot_dir, config.get("model", "tienkung_dex"))
     adapter = load_robot_adapter(node, config)
     adapter.start()
 
