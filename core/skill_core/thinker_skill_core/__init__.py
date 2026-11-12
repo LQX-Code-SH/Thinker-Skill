@@ -3,6 +3,7 @@
 registry / runtime / pipeline / body_arbiter / state_store / frontends 逐步补齐。
 """
 from .body_arbiter import BodyArbiter, BodyBusyError, Lease, LeaseExpired, areas_for
+from .host import Host
 from .pipeline import Feedback, PipelineResult, run_pipeline
 from .registry import (
     Registry,
@@ -21,6 +22,7 @@ __all__ = [
     "DEFAULT_STATE_KEYS",
     "ExecutionResult",
     "Feedback",
+    "Host",
     "Lease",
     "LeaseExpired",
     "PipelineResult",
