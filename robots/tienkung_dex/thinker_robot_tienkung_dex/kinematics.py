@@ -21,6 +21,21 @@ CHAIN = (
 )
 
 
+def default_urdf_path() -> str:
+    """包内默认 URDF：优先 ament share，回退源码目录。"""
+    import os
+
+    try:
+        from ament_index_python.packages import get_package_share_directory
+        share = get_package_share_directory("thinker_robot_tienkung_dex")
+        return os.path.join(
+            share, "resources", "urdf", "tienkung_dex_brainco.urdf")
+    except Exception:
+        root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        return os.path.join(
+            root, "resources", "urdf", "tienkung_dex_brainco.urdf")
+
+
 def _rpy_matrix(r, p, y):
     cr, sr = math.cos(r), math.sin(r)
     cp, sp = math.cos(p), math.sin(p)

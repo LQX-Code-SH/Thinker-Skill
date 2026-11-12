@@ -7,6 +7,8 @@ from __future__ import annotations
 
 from typing import Dict, Tuple
 
+from .safety import clamp  # noqa: F401 - 向后兼容 re-export
+
 ARM_JOINTS: Dict[str, int] = {
     "left_shoulder_pitch": 11,
     "left_shoulder_roll": 12,
@@ -61,6 +63,4 @@ WAIST_LIMITS: Dict[int, Tuple[float, float]] = {
 }
 
 
-def clamp(value: float, limits: Tuple[float, float]) -> float:
-    lo, hi = limits
-    return max(lo, min(hi, float(value)))
+

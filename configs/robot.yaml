@@ -2,11 +2,12 @@
 model: tienkung_dex       # 选择 robots/<model>
 backend: real             # real | sim | mock（部署实机用 real，开发机可用 mock）
 
-hand_vendor: brainco      # brainco | inspire
+# 手部变体：brainco(强脑 6 DOF) | inspire(因时 13 关节) | fixed(拳头假手，无夹爪)
+hand_variant: brainco
 hand_side: right
 
-# 头部相机正运动学所需 URDF（cam→base）
-urdf_path: /home/liu/work/UBTECH-IL-LAB/ubt_sim/assets/robots/tienkung_dex/urdf/tienkung_dex_brainco.urdf
+# 头部相机正运动学 URDF；留空则用包内 resources/urdf/tienkung_dex_brainco.urdf
+urdf_path: null
 
 # pelvis 距地面高度（站立/半身运控），用于 pelvis → base(地面) 平移；待实测标定
 pelvis_height: 0.92

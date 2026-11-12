@@ -47,11 +47,10 @@ class TienkungDexSensor(SensorAPI):
 
     def _chain_obj(self):
         if self._chain is None:
-            from .kinematics import HeadCameraChain
-            path = self._urdf_path or os.environ.get("THINKER_URDF")
-            if not path:
-                raise NotImplementedError(
-                    "cam->base 需要 URDF：设置 THINKER_URDF 或传入 urdf_path")
+            from .kinematics import HeadCameraChain, default_urdf_path
+            path = (self._urdf_path
+                    or os.environ.get("THINKER_URDF")
+                    or default_urdf_path())
             self._chain = HeadCameraChain(path)
         return self._chain
 

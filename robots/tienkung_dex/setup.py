@@ -1,3 +1,5 @@
+from glob import glob
+
 from setuptools import setup, find_packages
 
 package_name = "thinker_robot_tienkung_dex"
@@ -9,6 +11,9 @@ setup(
     data_files=[
         ("share/ament_index/resource_index/packages", ["resource/" + package_name]),
         ("share/" + package_name, ["package.xml", "capabilities.yaml"]),
+        ("share/" + package_name + "/resources", ["resources/joints.yaml"]),
+        ("share/" + package_name + "/resources/urdf", glob("resources/urdf/*.urdf")),
+        ("share/" + package_name + "/resources/calib", glob("resources/calib/*.yaml")),
     ],
     install_requires=[],
     zip_safe=True,

@@ -20,12 +20,18 @@ def _load_yaml(path: Path) -> Dict[str, Any]:
         return yaml.safe_load(fh) or {}
 
 
-def load_capabilities(robot_dir: str) -> Optional[set]:
+def load_capabilities(robot_dir: str,
+                      hand_variant: Optional[str] = None) -> Optional[set]:
+    """合并「基础能力 + 手部变体能力」，返回能力名集合。"""
     path = Path(robot_dir) / "capabilities.yaml"
     if not path.exists():
         return None
     data = _load_yaml(path)
-    return set((data.get("capabilities") or {}).keys())
+    caps = dict(data.get("capabilities") or {})
+    if hand_variant:
+        variant = (data.get("hand_variants") or {}).get(hand_variant) or {}
+        caps.update(variant.get("capabilities") or {})
+    return set(caps)
 
 
 def load_robot_adapter(node, config: Dict[str, Any]):
@@ -34,7 +40,7 @@ def load_robot_adapter(node, config: Dict[str, Any]):
     return module.create_adapter(
         node,
         backend=config.get("backend", "real"),
-        hand_vendor=config.get("hand_vendor", "brainco"),
+        hand_variant=config.get("hand_variant", "brainco"),
         hand_side=config.get("hand_side", "right"),
         urdf_path=config.get("urdf_path"),
         camera_k=(config.get("camera") or {}).get("k"),
@@ -76,7 +82,8 @@ def bootstrap_ros(node, *, config_dir: str, skills_dirs: List[str],
     host, registry, skipped = bootstrap_core(
         config_dir=config_dir, skills_dirs=skills_dirs,
         body=adapter.body, sensor=adapter.sensor,
-        min_core=min_core, capabilities=load_capabilities(robot_dir))
+        min_core=min_core,
+        capabilities=load_capabilities(robot_dir, config.get("hand_variant")))
 
     names = registry.names()
     services = create_services(node, host, names)
