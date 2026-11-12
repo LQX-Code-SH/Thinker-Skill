@@ -115,3 +115,15 @@ def test_exception_converged():
     r = run_pipeline([Step(name="boom", run=boom)], make_ctx())
     assert r.state == "failed"
     assert r.code == ErrorCode.SYS_INTERNAL_ERROR
+
+
+def test_step_data_merged_on_success():
+    steps = [
+        Step(name="a", run=lambda c: StepResult(status="done", data={"x": 1})),
+        Step(name="b", run=lambda c: StepResult(status="done", data={"y": 2})),
+    ]
+    r = run_pipeline(steps, make_ctx())
+    assert r.ok
+    assert r.data["x"] == 1
+    assert r.data["y"] == 2
+    assert r.data["progress"] == 1.0

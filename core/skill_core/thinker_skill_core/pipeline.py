@@ -72,6 +72,7 @@ def run_pipeline(
     warnings: List[str] = []
     total = sum(s.weight for s in steps) or 1.0
     done_w = 0.0
+    merged_data: dict = {}
 
     def emit(phase: str, progress: float, msg: str = "") -> None:
         if on_feedback is not None:
@@ -117,6 +118,7 @@ def run_pipeline(
                 )
 
             if result.status == "done":
+                merged_data.update(result.data or {})
                 break
 
             if result.status == "failed":
@@ -147,4 +149,6 @@ def run_pipeline(
         emit(step.name, done_w / total)
         i += 1
 
-    return PipelineResult("succeed", ErrorCode.OK, data={"progress": 1.0}, warnings=warnings)
+    return PipelineResult(
+        "succeed", ErrorCode.OK, data={"progress": 1.0, **merged_data}, warnings=warnings
+    )
