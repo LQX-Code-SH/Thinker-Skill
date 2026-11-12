@@ -4,6 +4,14 @@ registry / runtime / pipeline / body_arbiter / state_store / frontends 逐步补
 """
 from .body_arbiter import BodyArbiter, BodyBusyError, Lease, LeaseExpired, areas_for
 from .pipeline import Feedback, PipelineResult, run_pipeline
+from .registry import (
+    Registry,
+    SkillSpec,
+    build_registry,
+    discover,
+    instantiate,
+    load_spec,
+)
 from .runtime import ExecutionResult, SkillRuntime
 from .state_store import DEFAULT_STATE_KEYS, StateKeyError, StateStore
 
@@ -16,9 +24,15 @@ __all__ = [
     "Lease",
     "LeaseExpired",
     "PipelineResult",
+    "Registry",
     "SkillRuntime",
+    "SkillSpec",
     "StateKeyError",
     "StateStore",
     "areas_for",
+    "build_registry",
+    "discover",
+    "instantiate",
+    "load_spec",
     "run_pipeline",
 ]
