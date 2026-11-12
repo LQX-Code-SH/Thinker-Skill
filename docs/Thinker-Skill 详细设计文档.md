@@ -135,24 +135,22 @@ skills/manipulation/fetch_object/
 #### 3.1.2 技能契约 `skill.yaml`
 
 ```yaml
-name: fetch_object
-version: 1.0.0
-category: manipulation
+name: detect_object
+version: 0.1.0
+category: perception
 min_core: 0.1.0             # skill_sdk API 兼容边界（见 3.2.2）
-entry: fetch_object.plugin:FetchObjectSkill   # 提供 build_steps()，由 host 装配
-commands: [fetch_bottle]
-requires: [arm, gripper, waist, head, sensor.rgbd]   # 能力 → 区域映射见 4.6
+entry: detect_object.plugin:DetectObject     # 提供 build_steps()，由 host 装配
+commands: [detect_object]
+requires: [body.head, sensor.rgbd]           # 能力名带前缀；区域映射见 4.6
 precondition: []            # 见 4.5
-postcondition: {holding: true}
-timeout: 120                # 可选；缺省走通道默认（MCP 300s / Action default_timeout）
-interfaces: [mcp, action]   # 对外通道；service 恒可用，仅作调试
+postcondition: {}           # 成功后写回状态；detect_object 不写
+timeout: 30                 # 秒；走 MCP 时须小于客户端 read timeout
+interfaces: [service, action]                # ROS 通道；MCP 由下方 mcp 段声明
 errors:                     # 本技能可能产出的 code，供测试与编排期校验
   - PERCEPTION_OBJECT_NOT_FOUND
-  - PRECOND_BODY_BUSY
-  - MOTION_GRASP_FAILED
-  - SAFETY_ESTOP_TRIGGERED
-config: configs/skills/fetch_object.yaml
-mcp: {tools: [fetch_object], port: 8023}
+  - PERCEPTION_POSE_INVALID
+  - SYS_CONFIG_ERROR
+mcp: {tools: [detect_object], port: 8032}
 ```
 
 安装到 `share/<pkg>/skill.yaml` 并在 ament index 打 marker，**装了就发现、卸了就消失**。
@@ -218,7 +216,7 @@ def build_steps(self, ctx: StepCtx, params: dict) -> list[Step]:
 | 两个技能有一小段相似逻辑 | 各自实现，不抽 |
 | 三个以上技能逐行相同 | 先判断是否通用能力被写成业务代码，是则上移 `core` 既有包 |
 | 只差参数的同源逻辑 | 逻辑一份在技能包，参数进 `configs/skills/<skill>.yaml` |
-| 跨技能组合 | 场景技能经 Action 编排，不共享代码 |
+| 跨技能组合 | 场景技能经 `ctx.call_skill` 进程内编排，不共享代码（D-019） |
 
 ### 3.2 Core 模块设计
 
@@ -332,6 +330,8 @@ class SensorAPI(Protocol):
 
 **设计思路**：只做「数据 + 坐标」的抽象与通用处理（时间戳、对齐）；算法属业务、机型实现属 `robots/<model>`，两者都不进 `core`，避免 `core` 随算法/机型膨胀。
 
+> **实现状态**：当前为骨架（仅 `__init__.py`）。时间戳缓冲、RGB-D 对齐、录制回放待实现；数据获取与 `cam→base` 已在 `robots/<model>/sensor.py` 可用。
+
 #### 3.2.5 `body`（抽象与通用安全层）
 
 | 职责 | 内容 |
@@ -341,6 +341,8 @@ class SensorAPI(Protocol):
 | **不含** | 控制器、QP、moveit、具体机型适配（随 `robots/<model>`，D-014） |
 
 **设计思路**：`core/body` 只放与机型无关的抽象和通用安全逻辑；具体硬件实现由 `robots/<model>/body.py` 提供，按能力切分（`arm`/`gripper`/`waist`/`head`/`base`）且 tick 友好。这样 `core` 不随机型增长。
+
+> **实现状态**：当前为骨架（仅 `__init__.py`）。限幅与急停收敛已下沉到 `robots/<model>/safety.py`（机型差异），`core/body` 的通用安全层尚待实现。
 
 #### 3.2.6 `skill_core`（执行机制）
 
@@ -422,11 +424,11 @@ robots/tienkung_dex/                # ament 包 tienkung_dex_robot
 
 | 能力 | 适配方式 |
 |---|---|
-| 上肢 `arm` | 封装 `robot.arm`，关节 ID → 命名关节映射 |
-| 上肢 `gripper` | `robot.hand_left/right.set_positions`，0..1 归一化 |
+| 上肢 `arm` | 封装 `robot.arm`；关节级 `move_to_joints` + **位姿级 `move_to_pose`（QP + DAQP，D-017）** |
+| 上肢 `gripper` | `robot.hand_left/right.set_positions`，0..1 归一化；按 `hand_variants` 支持 brainco / inspire / 拳头假手 |
 | 头部 `head` | `robot.head`，2 DOF（yaw / pitch） |
-| 下肢 `base` | `robot.walk.set_velocity`（20Hz 速度流） |
-| `sensor.rgbd` | `robot.cameras`，4 路 RGB-D（depth 单位 mm、color BGR） |
+| 下肢 `base` | `robot.walk.set_velocity`（20Hz 速度流），**无位姿导航** |
+| `sensor.rgbd` | `robot.cameras`，4 路 RGB-D（depth 单位 mm、color BGR），内参经 `Frame.k` 注入 |
 
 **与 SDK 的关系**：直接封装 `tienkung_dex` 门面（`create_robot(backend=real/sim/mock)`），不重写 ROS 话题层；`mock` 后端用于离机开发与单测。
 
@@ -760,9 +762,9 @@ Thinker-Skill/
 ```
 
 ```bash
-make build              # colcon build --base-paths core skills，产物落 .colcon/
-make build SKILL=fetch_object   # 只构建一个技能（依赖自动解析）
-make test               # 单测，走 Fake 后端，不需要 ROS
+make build                            # colcon build --base-paths core robots skills，产物落 .colcon/
+make build-skill SKILL=detect_object  # 只构建一个技能
+make test                             # 单测，走 Fake 后端，不需要 ROS
 ```
 
 构建顺序约束：`interfaces → skill_sdk → common / sensor / body → skill_core → skills`。`skill_sdk` 可单独 `pip install -e` 供纯 Python 单测。
@@ -834,9 +836,9 @@ configs/
 |---|---|---|
 | `THINKER_CONFIG_DIR` | `configs` | 配置目录 |
 | `THINKER_SKILLS_DIR` | `skills` | 技能搜索路径，`:` 分隔多路径 |
-| `THINKER_ROBOT_DIR` | `robots/tienkung_dex` | 机型能力声明所在目录 |
+| `THINKER_ROBOT_DIR` | **自动解析** | 机型能力声明目录：显式路径存在则用，否则按 `ament_index` 找 `<model>_robot` 的 `share/`（机器人上无源码目录时无需手配） |
 
-技能发现用 `os.walk(followlinks=True)`，因此 `skills/<skill>/current -> <version>` 软链可被扫描。
+技能发现用 `os.walk(followlinks=True)`，因此 `skills/<skill>/current -> <version>` 软链可被扫描；存在 `current` 时**只扫 `current`**，避免多版本共存时重复发现。
 
 ### C.4 运行时安装
 

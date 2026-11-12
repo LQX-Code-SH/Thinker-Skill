@@ -82,26 +82,27 @@ Thinker-Skill/
 **结构** —— 一个技能 = 一个目录，固定在 `skills/<类别>/<技能>/`，内含 ROS 包与平台注册壳两棵子树：
 
 ```
-skills/manipulation/fetch_object/
-├── skill/                            # ament 包（包名 fetch_object）
-│   ├── package.xml / setup.py        # exec_depend thinker_skill_sdk + thinker_interfaces
+skills/perception/detect_object/      # 类别 / 技能名
+├── skill/                            # ament 包（包名 detect_object）
+│   ├── package.xml / setup.py        # exec_depend thinker_skill_sdk
 │   ├── skill.yaml                    # 安装契约：命令、依赖能力、超时、错误码
-│   ├── src/fetch_object/             # 业务源码
-│   │   ├── plugin.py                 #   入口：build_steps()
-│   │   ├── targets.py                #   目标选择策略
-│   │   ├── vision.py                 #   检测/位姿算法（本技能自带）
-│   │   └── geometry.py               #   本技能特有几何
-│   ├── configs/skills/fetch_object.yaml   # 私有参数：偏置、阈值、重试次数
-│   ├── launch/skill.launch.py
-│   └── start.sh                      # 独立启动（standalone 形态）
+│   ├── resource/detect_object        # ament index marker（空文件）
+│   └── detect_object/                # 业务源码（Python 包，可直接 import）
+│       ├── __init__.py
+│       ├── plugin.py                 #   入口：build_steps()
+│       ├── detector.py               #   检测算法（延迟加载模型）
+│       ├── geometry.py               #   3D 定位（深度反投影）
+│       └── spatial.py                #   有效空间过滤 / prompt 归一化
 ├── mcp_interface/                    # 平台注册壳（非 colcon 包）
-│   ├── mcp_interface.py              #   工具函数 + docstring
+│   ├── mcp_interface.py              #   工具函数 + docstring（签名即 schema）
 │   ├── metadata.json                 #   平台注册清单
-│   └── requirements.txt              #   fastmcp / rclpy 客户端代理依赖
+│   └── requirements.txt              #   fastmcp
 └── DESIGN.md                         # 技能级设计说明
 ```
 
-两棵子树分开的原因：`skill/` 走 colcon 构建、参与 Cython 编译；`mcp_interface/` 被平台按 `modulePath` 直接导入，**必须保持明文**，且改动不需要重新构建。
+两棵子树分开的原因：`skill/` 走 colcon 构建、随 install 树分发；`mcp_interface/` 被平台按 `modulePath` 直接导入，**必须保持明文**，改动不需要重新构建。
+
+技能私有配置不单独建文件，放在 `configs/robot.yaml` 的 `skills.<name>` 段，经 `ctx.cfg` 只读注入；启动统一由 `thinker_host` 负责，技能不自带 `launch/` 或 `start.sh`。
 
 **功能** —— 技能承担且只承担四件事：
 
@@ -234,30 +235,30 @@ robots/tienkung_dex/          # ament 包 tienkung_dex_robot
 
 - 依赖关系不决定类别（`fetch_object` 依赖感知，但属操作类）
 - 类别目录**只是分组**，不建 metapackage；"装一个类别" = `colcon build --base-paths skills/manipulation`
-- 场景技能设计期以 `package.xml` 的 `exec_depend` 声明依赖，运行期经 Action 调用其他技能，禁止 import 其他技能源码
+- 场景技能设计期以 `package.xml` 的 `exec_depend` 声明依赖，运行期经 `ctx.call_skill` 进程内调用其他技能，禁止 import 其他技能源码（D-019）
 
 ### 4.2 安装契约
 
 ```yaml
-name: fetch_object
-version: 1.0.0
-category: manipulation
+name: detect_object
+version: 0.1.0
+category: perception
 min_core: 0.1.0
-entry: fetch_object.plugin:FetchObjectSkill   # 提供 build_steps()，由 host 装配
-commands: [fetch_bottle]
-requires: [arm, gripper, waist, head, sensor.rgbd]
-precondition: []            # 见 4.4
-postcondition: {holding: true}
-timeout: 120                # 秒；可选。缺省走通道默认（MCP 300s / Action default_timeout）；走 MCP 的取值需小于 sse_read_timeout(300)
-interfaces: [mcp, action]   # 对外通道；service 恒可用，仅作调试
-errors:                     # 本技能可能产出的 code，供测试与未来编排期校验
+entry: detect_object.plugin:DetectObject     # 提供 build_steps()，由 host 装配
+commands: [detect_object]
+requires: [body.head, sensor.rgbd]           # 能力名，带 body./sensor. 前缀
+precondition: []                             # 见 4.4
+postcondition: {}                            # 成功后写回的状态；detect_object 不写
+timeout: 30                                  # 秒；走 MCP 时须小于客户端 read timeout
+interfaces: [service, action]                # ROS 通道；MCP 由下方 mcp 段声明
+errors:                                      # 本技能可能产出的 code
   - PERCEPTION_OBJECT_NOT_FOUND
-  - PRECOND_BODY_BUSY
-  - MOTION_GRASP_FAILED
-  - SAFETY_ESTOP_TRIGGERED
-config: configs/skills/fetch_object.yaml
-mcp: {tools: [fetch_object], port: 8023}
+  - PERCEPTION_POSE_INVALID
+  - SYS_CONFIG_ERROR
+mcp: {tools: [detect_object], port: 8032}
 ```
+
+技能私有参数不进 `skill.yaml`，而是放 `configs/robot.yaml` 的 `skills.<name>` 段，经 `ctx.cfg` 只读注入。
 
 该文件随包安装到 `share/<pkg>/skill.yaml`，并在 ament index 打 marker。**装了就发现，卸了就消失**。
 
