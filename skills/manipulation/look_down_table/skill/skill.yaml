@@ -1,0 +1,15 @@
+name: look_down_table
+version: 0.1.0
+category: manipulation
+min_core: 0.1.0
+entry: look_down_table.plugin:LookDownTable
+commands: [look_down_table]
+requires: [body.head]
+precondition: []
+postcondition: {}
+timeout: 10
+interfaces: [service, action]
+errors:
+  - PRECOND_BODY_BUSY
+  - MOTION_TIMEOUT
+mcp: {tools: [look_down_table], port: 8031}
