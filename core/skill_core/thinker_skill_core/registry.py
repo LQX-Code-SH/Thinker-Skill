@@ -54,14 +54,20 @@ def load_spec(yaml_path: str) -> SkillSpec:
 
 def discover(search_dirs) -> List[SkillSpec]:
     specs: List[SkillSpec] = []
+    seen = set()
     for root in search_dirs:
         # followlinks=True：支持 skills/<skill>/current -> <version> 软链
         for dirpath, _, files in os.walk(root, followlinks=True):
-            if "skill.yaml" in files:
-                try:
-                    specs.append(load_spec(os.path.join(dirpath, "skill.yaml")))
-                except Exception:
-                    continue
+            if "skill.yaml" not in files:
+                continue
+            path = os.path.realpath(os.path.join(dirpath, "skill.yaml"))
+            if path in seen:          # 软链与实体目录指向同一文件时去重
+                continue
+            seen.add(path)
+            try:
+                specs.append(load_spec(path))
+            except Exception:
+                continue
     return specs
 
 

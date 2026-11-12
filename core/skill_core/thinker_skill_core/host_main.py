@@ -23,8 +23,31 @@ def _env_paths():
     return config_dir, robot_dir, skills_dirs
 
 
+def _add_skill_site_packages(skills_dirs):
+    """把技能独立 install 树的 site-packages 加入 sys.path。"""
+    import pathlib
+    import sys
+
+    added = []
+    for root in skills_dirs:
+        base = pathlib.Path(root)
+        if not base.exists():
+            continue
+        for current in sorted(base.glob("*/current")):
+            install = current / "install"
+            if not install.exists():
+                continue
+            for spp in install.glob("*/lib/python3.*/site-packages"):
+                p = str(spp.resolve())
+                if p not in sys.path:
+                    sys.path.insert(0, p)
+                    added.append(p)
+    return added
+
+
 def main(argv=None):
     config_dir, robot_dir, skills_dirs = _env_paths()
+    added = _add_skill_site_packages(skills_dirs)
 
     rclpy.init(args=argv)
     node = Node("thinker_host")
@@ -36,7 +59,8 @@ def main(argv=None):
     )
     node.get_logger().info(
         f"thinker_host ready: services={len(services)} actions={len(actions)} "
-        f"skills={sorted(host._registry.names())} skipped={skipped}"
+        f"skills={sorted(host._registry.names())} skipped={skipped} "
+        f"syspath_added={len(added)}"
     )
     try:
         rclpy.spin(node)

@@ -10,6 +10,10 @@ build/
 install/
 log/
 
+# 打包产物
+.pack/
+dist/
+
 # 模型权重
 weights/
 *.engine
