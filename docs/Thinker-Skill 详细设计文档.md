@@ -774,59 +774,124 @@ configs/
 
 ## 附录 C 部署与运维
 
-### C.1 两种装配形态
+### C.1 部署分层
+
+机器人只安装三类内容，**不安装开发框架**（`docs/`、`tests/`、`tools/`、源码构建环境）：
+
+| 层 | 内容 | 安装方式 | 更新频率 |
+|---|---|---|---|
+| 运行时 | `core/`（6 包）+ `robots/<model>` | 一次性 | 低 |
+| 技能 | `skills/<类别>/<技能>` | 每技能独立包 | 高 |
+| 配置 | `configs/`（`robot.yaml` / `errors.yaml` / `scene/`） | 随运行时 + 现场改 | 中 |
+
+### C.2 机器人目录布局
+
+```
+~/thinker/
+├── runtime/
+│   ├── install/               # core + robots 的 colcon install 树
+│   └── VERSION
+├── skills/                    # 已装技能，一技能一目录（可多版本）
+│   ├── look_down_table/
+│   │   ├── 0.1.0/
+│   │   └── current -> 0.1.0
+│   └── fetch_object_mock/
+│       ├── 0.1.0/
+│       └── current -> 0.1.0
+├── configs/
+└── logs/
+```
+
+### C.3 装配形态与启动入口
 
 | 形态 | 命令 | 适用 |
 |---|---|---|
-| standalone | `ros2 launch fetch_object skill.launch.py`（内部启 `host --skills fetch_object`） | 单技能、独立调试、故障隔离 |
-| composed | `ros2 run thinker_skill_core host`（加载全部已安装技能） | 组合部署：一个 host 共享控制器与状态 |
+| standalone | `ros2 run thinker_skill_core thinker_host`（`THINKER_SKILLS_DIR` 指向单技能） | 单技能、故障隔离 |
+| composed | `ros2 run thinker_skill_core thinker_host`（`THINKER_SKILLS_DIR` 指向全部） | 组合部署：一个 host 共享控制器与状态 |
 
-两种形态下对外接口同时存在，任意调用方两种都可用：LLM Agent 接 `python/thinker_mcp_aggregator` 单端口；工作流编排需要进度/取消/抢占时接 Action。
+`thinker_host` 的部署路径由环境变量决定：
 
-### C.2 安装组合
+| 变量 | 默认 | 说明 |
+|---|---|---|
+| `THINKER_CONFIG_DIR` | `configs` | 配置目录 |
+| `THINKER_SKILLS_DIR` | `skills` | 技能搜索路径，`:` 分隔多路径 |
+| `THINKER_ROBOT_DIR` | `robots/tienkung_dex` | 机型能力声明所在目录 |
+
+技能发现用 `os.walk(followlinks=True)`，因此 `skills/<skill>/current -> <version>` 软链可被扫描。
+
+### C.4 运行时安装
+
+运行时（core + robots）只在机器人上安装一次：
 
 ```bash
-colcon build --packages-select detect_object          # 只装感知
-colcon build --base-paths skills/manipulation          # 只装操作类
-make build                                             # 全量
+# 机器人上源码构建（同架构、同 distro）
+rsync -av --exclude='.colcon' --exclude='.git' --exclude='docs' --exclude='tests' \
+  dev:~/Thinker-Skill/ ~/thinker/src/
+cd ~/thinker/src
+source /opt/ros/humble/setup.bash
+make build
+mv .colcon/install ~/thinker/runtime/install
 ```
 
-依赖由 `package.xml` 强制：`manipulation/*` 依赖 `core/body`，`perception/*` 依赖 `core/sensor`。
+或由同架构构建机产出 `thinker-runtime-<ver>-<distro>-aarch64.tar.gz`，机器人上解到 `~/thinker/runtime/`。
 
-### C.3 离线安装
+> 关键：不能在开发机（x86_64）构建后拷到 Jetson（aarch64），架构与 distro 必须匹配。
 
-`tools/pack_skill.sh <skill>` 产出自带 install 树的 tar 包（带 distro 标识：`<skill>-<ver>-<distro>-<arch>.tar.gz`）；机器人端 `tools/install_skill.sh` 解到 `~/thinker_skills/<skill>/<version>/` 并切 `current` 软链。
+### C.5 技能安装
 
+技能是独立交付单元，装到 `~/thinker/skills/`：
+
+```bash
+# 构建机（同架构）只构建该技能
+colcon build --packages-select look_down_table --install-base dist/look_down_table/0.1.0
+tar czf look_down_table-0.1.0-humble-aarch64.tar.gz -C dist/look_down_table/0.1.0 .
+
+# 机器人
+mkdir -p ~/thinker/skills/look_down_table/0.1.0
+tar xzf look_down_table-0.1.0-humble-aarch64.tar.gz -C ~/thinker/skills/look_down_table/0.1.0
+ln -sfn 0.1.0 ~/thinker/skills/look_down_table/current
 ```
-~/thinker_skills/fetch_object/
-├── 1.0.0/                 # 完整安装树（skill/install + mcp_interface/）
-├── 1.1.0/
-└── current -> 1.1.0       # 启动脚本只 source 这一层
+
+技能包必须包含：`share/<skill>/skill.yaml`、Python 包、`mcp_interface/`（若暴露 MCP）。
+
+> 走 MCP 的技能需先 `pip install -r mcp_interface/requirements.txt`；只走 ROS Service/Action 的不需要 `fastmcp`。
+
+### C.6 启动服务
+
+```ini
+# /etc/systemd/system/thinker-host.service
+[Unit]
+Description=Thinker-Skill host
+After=network.target
+
+[Service]
+Environment=THINKER_SKILLS_DIR=/home/liu/thinker/skills
+Environment=THINKER_CONFIG_DIR=/home/liu/thinker/configs
+ExecStart=/usr/bin/bash -lc "source /opt/ros/humble/setup.bash && \
+  source ~/thinker/runtime/install/setup.bash && \
+  ros2 run thinker_skill_core thinker_host"
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
 ```
 
-启动脚本必须写 `source ~/thinker_skills/<skill>/current/skill/install/setup.bash`，**不能写版本号**——否则软链切换失去意义。
+```bash
+sudo systemctl daemon-reload
+sudo systemctl enable --now thinker-host
+journalctl -u thinker-host -f
+```
 
-### C.4 安装流程、升级与回滚
-
-| # | 步骤 | 命令 | 校验点 |
-|---|---|---|---|
-| 1 | 构建 | `colcon build --packages-select fetch_object` | install 树生成 |
-| 2 | 打包 | `tools/pack_skill.sh fetch_object` | tar 含 `share/fetch_object/skill.yaml` 与 `mcp_interface/` |
-| 3 | 下发 | scp / U 盘 / 平台推送 | `aarch64` 与 distro 标识匹配 |
-| 4 | 装依赖 | `pip install -r mcp_interface/requirements.txt` | 装进 host 的 venv，启动前就位 |
-| 5 | 解包 | `tools/install_skill.sh dist/<tar.gz>` | 目录布局与软链见 C.3 |
-| 6 | 重启 host | `systemctl restart thinker-host` | 扫描 `share/*/skill.yaml` 完成发现 |
-| 7 | 验证 | `ros2 service call /thinker/skills`、MCP `tools/list` | 技能在列表且工具可调 |
-
-第 4 步易漏：`mcp_interface/` 不在 colcon 内，依赖只由 `requirements.txt` 声明，**必须启动前装好**，否则表现为「Action 能调、MCP 看不到」。
+### C.7 升级与回滚
 
 | 操作 | 做法 |
 |---|---|
-| 升级 | 解新版本目录 → 校验通过 → `current` 指向新版本 → 重启 host |
-| 回滚 | `current` 指回旧版本 → 重启 host（秒级） |
-| 卸载 | 删除版本目录；若是当前版本，先切走软链再删 |
+| 升级技能 | 解新版本目录 → 校验 → `current` 指向新版本 → 重启 host |
+| 回滚技能 | `current` 指回旧版本 → 重启 host（秒级） |
+| 卸载技能 | 删除版本目录；若是当前版本，先切走软链再删 |
+| 升级运行时 | 安装新 runtime → 重启 host；技能无需重装（`min_core` 满足即可） |
 
-### C.5 升级准入判定
+升级准入：
 
 | 场景 | 处理 |
 |---|---|
@@ -836,7 +901,7 @@ make build                                             # 全量
 | 新旧 `skill.yaml` 的 `name` 不一致 | 拒绝——目录名必须等于技能名 |
 | 装完自检失败 | 软链切回旧版本 + 重启 host |
 
-### C.6 与平台注册的关系
+### C.8 与平台注册的关系
 
 | 动作 | 生效范围 |
 |---|---|
@@ -845,7 +910,7 @@ make build                                             # 全量
 
 两条线独立：只装不注册 → Agent 看不到工具；只注册不装 → 工具在列表但调用失败。上线检查必须两者都过。
 
-### C.7 不做热加载
+### C.9 不做热加载
 
 安装、升级、卸载后都必须重启 host。技能发现在 host 启动期一次性构建 registry，MCP 客户端 `mcp_cfg` 同样需重启。这是当前版本的明确限制。
 

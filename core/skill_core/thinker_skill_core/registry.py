@@ -55,7 +55,8 @@ def load_spec(yaml_path: str) -> SkillSpec:
 def discover(search_dirs) -> List[SkillSpec]:
     specs: List[SkillSpec] = []
     for root in search_dirs:
-        for dirpath, _, files in os.walk(root):
+        # followlinks=True：支持 skills/<skill>/current -> <version> 软链
+        for dirpath, _, files in os.walk(root, followlinks=True):
             if "skill.yaml" in files:
                 try:
                     specs.append(load_spec(os.path.join(dirpath, "skill.yaml")))

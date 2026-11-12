@@ -76,3 +76,16 @@ def test_registry_register_get():
     reg.register(spec, object())
     assert reg.has("x")
     assert reg.spec("x") is spec
+
+
+def test_discover_follows_symlink(tmp_path):
+    real = tmp_path / "skills_real" / "s1"
+    real.mkdir(parents=True)
+    (real / "skill.yaml").write_text("name: s1\n", encoding="utf-8")
+
+    link_root = tmp_path / "skills"
+    link_root.mkdir()
+    (link_root / "s1").symlink_to(real)          # 模拟 current -> 1.0.0
+
+    specs = discover([str(link_root)])
+    assert [s.name for s in specs] == ["s1"]
