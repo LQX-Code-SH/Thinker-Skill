@@ -25,12 +25,14 @@ class ExecutionResult:
 
 class SkillRuntime:
     def __init__(self, *, arbiter=None, state=None, capabilities=None,
-                 tick: float = 0.1, estop: Optional[Callable[[], None]] = None):
+                 tick: float = 0.1, estop: Optional[Callable[[], None]] = None,
+                 catalog=None):
         self._arbiter = arbiter or BodyArbiter()
         self._state = state or StateStore(DEFAULT_STATE_KEYS)
         self._capabilities = set(capabilities) if capabilities else set()
         self._tick = tick
         self._estop = estop
+        self._catalog = catalog
 
     def _on_preempt(self, _lease):
         if self._estop:
@@ -77,4 +79,7 @@ class SkillRuntime:
             for key, value in (getattr(skill, "postcondition", {}) or {}).items():
                 self._state.set(key, value)
 
-        return ExecutionResult(result.state, result.code, result.msg, result.data)
+        msg = result.msg
+        if not msg and self._catalog is not None:
+            msg, _ = self._catalog.render(result.code, **(result.data or {}))
+        return ExecutionResult(result.state, result.code, msg, result.data)

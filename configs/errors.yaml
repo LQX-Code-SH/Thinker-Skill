@@ -1,0 +1,104 @@
+# 错误码 → 文案模板 + retryable（与《接口文档》附录 A 一一对应）
+# 技能只产出 code，msg 由 runtime 出口按本表渲染（支持 {param} 占位）
+
+OK:
+  msg: ""
+  retryable: false
+
+# 感知
+PERCEPTION_OBJECT_NOT_FOUND:
+  msg: "没有找到{object_name}"
+  retryable: true
+PERCEPTION_TIMEOUT:
+  msg: "等待感知结果超时"
+  retryable: true
+PERCEPTION_UNAVAILABLE:
+  msg: "感知服务未就绪或相机掉线"
+  retryable: true
+PERCEPTION_POSE_INVALID:
+  msg: "目标位姿无效或超出有效空间"
+  retryable: false
+
+# 运控
+MOTION_GRASP_FAILED:
+  msg: "抓取失败，未检测到有效抓持"
+  retryable: true
+MOTION_IK_UNREACHABLE:
+  msg: "目标位姿不可达"
+  retryable: false
+MOTION_TIMEOUT:
+  msg: "动作执行超时"
+  retryable: true
+MOTION_COLLISION_RISK:
+  msg: "规划检测到碰撞风险"
+  retryable: false
+MOTION_NOT_READY:
+  msg: "控制器未就绪"
+  retryable: true
+
+# 导航
+NAV_TARGET_UNREACHABLE:
+  msg: "目标点不可达或被占用"
+  retryable: true
+NAV_TIMEOUT:
+  msg: "导航超时"
+  retryable: true
+NAV_MAP_NOT_READY:
+  msg: "地图未就绪或未定位"
+  retryable: false
+NAV_LOCATION_LOST:
+  msg: "运行中丢失定位"
+  retryable: true
+
+# 前置状态
+PRECOND_NOT_HOLDING:
+  msg: "我手上没有东西，请先让我抓取"
+  retryable: false
+PRECOND_ALREADY_HOLDING:
+  msg: "我已经拿着东西了，请先放下"
+  retryable: false
+PRECOND_BODY_BUSY:
+  msg: "身体正被其他任务占用，请稍后"
+  retryable: true
+PRECOND_CAPABILITY_MISSING:
+  msg: "当前机型不具备所需能力"
+  retryable: false
+
+# 安全
+SAFETY_ESTOP_TRIGGERED:
+  msg: "急停已触发，请检查现场后复位"
+  retryable: false
+SAFETY_FORCE_LIMIT:
+  msg: "力超过安全阈值"
+  retryable: false
+SAFETY_STUCK_DETECTED:
+  msg: "检测到卡死，已停止"
+  retryable: false
+SAFETY_SPACE_VIOLATION:
+  msg: "目标超出安全工作空间"
+  retryable: false
+
+# 输入
+INPUT_INVALID_PARAMS:
+  msg: "参数缺失或类型错误"
+  retryable: false
+INPUT_UNSUPPORTED_COMMAND:
+  msg: "不支持的指令"
+  retryable: false
+
+# 系统
+SYS_CANCELLED:
+  msg: "已取消"
+  retryable: false
+SYS_TIMEOUT:
+  msg: "任务超时"
+  retryable: true
+SYS_INTERNAL_ERROR:
+  msg: "内部错误，请联系维护人员"
+  retryable: true
+SYS_DEPENDENCY_MISSING:
+  msg: "依赖包或权重缺失"
+  retryable: false
+SYS_CONFIG_ERROR:
+  msg: "配置缺失或非法"
+  retryable: false

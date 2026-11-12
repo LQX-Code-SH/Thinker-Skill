@@ -93,3 +93,20 @@ def test_state_store_whitelist():
     assert s.get("holding") is True
     with pytest.raises(StateKeyError):
         s.set("bogus", 1)
+
+
+def test_msg_rendered_from_catalog():
+    import os
+
+    from thinker_common import ErrorCatalog
+
+    root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    catalog = ErrorCatalog(os.path.join(root, "configs", "errors.yaml"))
+
+    def fail(c):
+        return StepResult(status="failed", code="PERCEPTION_OBJECT_NOT_FOUND",
+                          data={"object_name": "瓶子"})
+
+    rt = SkillRuntime(catalog=catalog)
+    r = rt.execute(_Skill(steps=[Step(name="x", run=fail)]), {}, make_ctx())
+    assert "瓶子" in r.msg
