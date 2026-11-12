@@ -1,0 +1,3 @@
+# 配置入口：includes 递归合并，后者覆盖前者
+includes:
+  - robot.yaml

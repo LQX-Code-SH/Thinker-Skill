@@ -11,7 +11,7 @@ from .body_arbiter import BodyArbiter
 from .host import Host
 from .registry import Registry, build_registry, discover
 from .runtime import SkillRuntime
-from .state_store import StateStore
+from .state_store import DEFAULT_STATE_KEYS, StateStore
 
 
 def _load_yaml(path: Path) -> Dict[str, Any]:
@@ -52,10 +52,11 @@ def bootstrap_core(*, config_dir: str, skills_dirs: List[str], body: Any,
                                        capabilities=capabilities)
 
     tick_rate = float(config.get("tick_rate", 10))
-    runtime = SkillRuntime(arbiter=BodyArbiter(), state=StateStore(),
+    state = StateStore(DEFAULT_STATE_KEYS)
+    runtime = SkillRuntime(arbiter=BodyArbiter(), state=state,
                            tick=1.0 / tick_rate, catalog=catalog)
     host = Host(registry=registry, runtime=runtime, body=body, sensor=sensor,
-                config=config, tick_rate=tick_rate)
+                state=state, config=config, tick_rate=tick_rate)
     return host, registry, skipped
 
 

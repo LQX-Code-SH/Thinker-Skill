@@ -51,6 +51,7 @@ def test_bootstrap_core(tmp_path, monkeypatch):
     assert skipped == []
     assert registry.names() == ["demo"]
     assert host.execute("demo", {}).ok
+    assert host._state.get("holding") is True   # 与 runtime 共享同一 state
 
 
 def test_load_capabilities(tmp_path):

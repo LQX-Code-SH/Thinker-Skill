@@ -1,0 +1,15 @@
+name: fetch_object_mock
+version: 0.1.0
+category: mock
+min_core: 0.1.0
+entry: fetch_object_mock.plugin:FetchObjectMock
+commands: [fetch_bottle]
+requires: [body.arm, body.gripper]
+precondition: []
+postcondition: {holding: true}
+timeout: 30
+interfaces: [service, action]
+errors:
+  - MOTION_GRASP_FAILED
+  - PRECOND_BODY_BUSY
+mcp: {tools: [fetch_object_mock], port: 8030}
