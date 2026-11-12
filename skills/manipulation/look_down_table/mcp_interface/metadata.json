@@ -1,0 +1,10 @@
+{
+  "name": "look_down_table",
+  "version": "0.1.0",
+  "modulePath": "mcp_interface.py",
+  "functionNames": ["look_down_table"],
+  "transport": "streamable-http",
+  "host": "localhost",
+  "port": 8031,
+  "tools": ["look_down_table"]
+}

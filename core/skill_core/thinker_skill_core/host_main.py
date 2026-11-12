@@ -51,7 +51,7 @@ def main(argv=None):
 
     rclpy.init(args=argv)
     node = Node("thinker_host")
-    host, adapter, services, actions, skipped = bootstrap_ros(
+    host, adapter, services, actions, mcp_server, skipped = bootstrap_ros(
         node,
         config_dir=config_dir,
         skills_dirs=skills_dirs,
@@ -59,6 +59,7 @@ def main(argv=None):
     )
     node.get_logger().info(
         f"thinker_host ready: services={len(services)} actions={len(actions)} "
+        f"mcp={'on' if mcp_server is not None else 'off'} "
         f"skills={sorted(host._registry.names())} skipped={skipped} "
         f"syspath_added={len(added)}"
     )

@@ -88,4 +88,20 @@ def bootstrap_ros(node, *, config_dir: str, skills_dirs: List[str],
     names = registry.names()
     services = create_services(node, host, names)
     actions = create_actions(node, host, names)
-    return host, adapter, services, actions, skipped
+
+    # MCP 聚合器（可选：fastmcp 未安装时跳过，不影响 ROS 通道）
+    mcp_server = None
+    try:
+        from .frontends.mcp import build_server
+        pairs = []
+        for name in names:
+            spec = registry.spec(name)
+            if spec is not None and spec.path:
+                pairs.append((name, str(Path(spec.path).parent.parent)))
+        mcp_server = build_server(
+            host, pairs,
+            name=(config.get("mcp") or {}).get("name", "thinker_skills"))
+    except Exception as exc:       # noqa: BLE001 - MCP 失败不应拖垮 ROS 通道
+        skipped.append(f"mcp: {exc}")
+
+    return host, adapter, services, actions, mcp_server, skipped

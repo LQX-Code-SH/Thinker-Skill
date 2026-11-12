@@ -1,0 +1,10 @@
+{
+  "name": "detect_object",
+  "version": "0.1.0",
+  "modulePath": "mcp_interface.py",
+  "functionNames": ["detect_object"],
+  "transport": "streamable-http",
+  "host": "localhost",
+  "port": 8032,
+  "tools": ["detect_object"]
+}
