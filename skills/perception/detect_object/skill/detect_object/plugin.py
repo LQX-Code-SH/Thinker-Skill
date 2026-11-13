@@ -46,16 +46,19 @@ class DetectObject:
         self._detector = detector
         self._default_k = default_k
 
-    def _det(self, model_path=None):
+    def _det(self, model_path=None, threshold=0.35, text_threshold=0.35):
         if self._detector is None:
             self._detector = GroundingDinoDetector(
-                model_path=model_path or DEFAULT_MODEL)
+                model_path=model_path or DEFAULT_MODEL,
+                threshold=threshold, text_threshold=text_threshold)
         return self._detector
 
     def build_steps(self, ctx, params):
         cfg = dict(ctx.cfg or {})
         object_name = normalize_prompt(params.get("object_name", "bottle"))
         model_path = resolve_model_path(cfg.get("model_path"), ctx)
+        threshold = float(cfg.get("threshold", 0.35))
+        text_threshold = float(cfg.get("text_threshold", 0.35))
         st = {"frame": None, "det": None}
 
         def capture(c):
@@ -63,7 +66,7 @@ class DetectObject:
             return StepResult(status="done")
 
         def detect(c):
-            dets = self._det(model_path).detect(
+            dets = self._det(model_path, threshold, text_threshold).detect(
                 st["frame"].color, object_name + ".")
             if not dets:
                 return StepResult(
@@ -97,7 +100,9 @@ class DetectObject:
                     data={"reason": info},
                 )
             try:
-                p_base = c.sensor.transform_to_base(p_cam)
+                # 用取帧时刻的关节角，避免与 locate 时刻不一致
+                p_base = c.sensor.transform_to_base(
+                    p_cam, getattr(frame, "angles", None))
             except NotImplementedError as exc:
                 return StepResult(
                     status="failed",
@@ -111,15 +116,17 @@ class DetectObject:
                     code=ErrorCode.PERCEPTION_POSE_INVALID,
                     data={"obj_pose": pose},
                 )
-            return StepResult(
-                status="done",
-                data={
-                    "object_name": object_name,
-                    "obj_pose": pose,
-                    "label": det.get("label", object_name),
-                    "score": det.get("score"),
-                },
-            )
+            payload = {
+                "object_name": object_name,
+                "obj_pose": pose,
+                "label": det.get("label", object_name),
+                "score": det.get("score"),
+                "box": [float(v) for v in det.get("box", [])],
+                "stamp": frame.stamp,
+            }
+            # 写入语义状态，供下游技能（抓取/放置）直接复用
+            c.state.set("last_detection", payload)
+            return StepResult(status="done", data=payload)
 
         return [
             Step(name="取帧", kind="perception", weight=1, tick_budget=2.0, run=capture),

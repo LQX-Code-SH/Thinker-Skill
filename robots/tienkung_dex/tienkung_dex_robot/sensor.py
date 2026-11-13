@@ -62,6 +62,23 @@ class TienkungDexSensor(SensorAPI):
             stream = next(iter(cameras.values()), None)
         return stream
 
+    def _joint_angles(self):
+        from .joints import HEAD_JOINTS, WAIST_JOINTS
+
+        waist_states = self._robot.waist.get_states()
+        head_states = self._robot.head.get_states()
+
+        def _pos(states, joint_id):
+            return float(states[joint_id].pos) if joint_id in states else 0.0
+
+        return {
+            "waist_pitch": _pos(waist_states, WAIST_JOINTS["waist_pitch"]),
+            "waist_roll": _pos(waist_states, WAIST_JOINTS["waist_roll"]),
+            "waist_yaw": _pos(waist_states, WAIST_JOINTS["waist_yaw"]),
+            "head_yaw": _pos(head_states, HEAD_JOINTS["head_yaw"]),
+            "head_pitch": _pos(head_states, HEAD_JOINTS["head_pitch"]),
+        }
+
     def rgbd(self, *, timeout: float = 2.0) -> Frame:
         stream = self._stream
         if stream is None:
@@ -79,25 +96,12 @@ class TienkungDexSensor(SensorAPI):
             stamp=_stamp_to_sec(getattr(frame, "stamp", None)),
             frame_id=getattr(frame, "frame_id", "") or "",
             k=self._k,
+            angles=self._joint_angles(),
         )
 
-    def transform_to_base(self, point):
-        from .joints import HEAD_JOINTS, WAIST_JOINTS
-
+    def transform_to_base(self, point, angles=None):
         chain = self._chain_obj()
-        # SDK 的 RealJointGroup 只提供 get_states()，没有 get_pose()
-        waist_states = self._robot.waist.get_states()
-        head_states = self._robot.head.get_states()
-
-        def _pos(states, joint_id):
-            return float(states[joint_id].pos) if joint_id in states else 0.0
-
-        angles = {
-            "waist_pitch": _pos(waist_states, WAIST_JOINTS["waist_pitch"]),
-            "waist_roll": _pos(waist_states, WAIST_JOINTS["waist_roll"]),
-            "waist_yaw": _pos(waist_states, WAIST_JOINTS["waist_yaw"]),
-            "head_yaw": _pos(head_states, HEAD_JOINTS["head_yaw"]),
-            "head_pitch": _pos(head_states, HEAD_JOINTS["head_pitch"]),
-        }
+        # 优先用取帧时刻的角度，避免 locate 与 capture 之间的头部运动误差
+        angles = angles or self._joint_angles()
         return chain.point_to_base(
             point, angles, (0.0, 0.0, self._pelvis_height))

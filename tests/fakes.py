@@ -146,7 +146,7 @@ class FakeSensor(SensorAPI):
         self._i += 1
         return f
 
-    def transform_to_base(self, pose):
+    def transform_to_base(self, pose, angles=None):
         return pose
 
 

@@ -17,6 +17,7 @@ class Frame:
     - ``stamp``: 秒
     - ``frame_id``: 坐标/相机命名空间
     - ``k``: 相机内参 9 元（fx,0,cx,0,fy,cy,0,0,1），可选
+    - ``angles``: 取帧时刻的关节角（腰 3 + 头 2），用于精确 cam→base
     """
 
     color: Any
@@ -24,10 +25,11 @@ class Frame:
     stamp: float
     frame_id: str = ""
     k: Any = None
+    angles: Any = None
 
 
 class SensorAPI(Protocol):
     """感知数据通道。"""
 
     def rgbd(self, *, timeout: float = 2.0) -> Frame: ...
-    def transform_to_base(self, pose: Any) -> Any: ...
+    def transform_to_base(self, pose: Any, angles: Any = None) -> Any: ...
