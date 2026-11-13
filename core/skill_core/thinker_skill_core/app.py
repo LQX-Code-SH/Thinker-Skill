@@ -68,7 +68,7 @@ def load_robot_adapter(node, config: Dict[str, Any]):
 
 def bootstrap_core(*, config_dir: str, skills_dirs: List[str], body: Any,
                    sensor: Any, min_core: str = "0.1.0",
-                   capabilities=None) -> Tuple[Host, Registry, List]:
+                   capabilities=None, estop=None) -> Tuple[Host, Registry, List]:
     """不依赖 ROS 的装配核心（可单测）。"""
     config = ConfigLoader(config_dir).load()
     errors_path = Path(config_dir) / "errors.yaml"
@@ -80,8 +80,10 @@ def bootstrap_core(*, config_dir: str, skills_dirs: List[str], body: Any,
 
     tick_rate = float(config.get("tick_rate", 10))
     state = StateStore(DEFAULT_STATE_KEYS)
-    runtime = SkillRuntime(arbiter=BodyArbiter(), state=state,
-                           tick=1.0 / tick_rate, catalog=catalog)
+    runtime = SkillRuntime(
+        arbiter=BodyArbiter(), state=state, tick=1.0 / tick_rate,
+        catalog=catalog, estop=estop,
+        default_timeout=float(config.get("default_timeout", 300)))
     host = Host(registry=registry, runtime=runtime, body=body, sensor=sensor,
                 state=state, config=config, tick_rate=tick_rate)
     return host, registry, skipped
@@ -107,7 +109,8 @@ def bootstrap_ros(node, *, config_dir: str, skills_dirs: List[str],
         config_dir=config_dir, skills_dirs=skills_dirs,
         body=adapter.body, sensor=adapter.sensor,
         min_core=min_core,
-        capabilities=load_capabilities(robot_dir, config.get("hand_variant")))
+        capabilities=load_capabilities(robot_dir, config.get("hand_variant")),
+        estop=getattr(adapter, "emergency_stop", None))
 
     names = registry.names()
     services = create_services(node, host, names)

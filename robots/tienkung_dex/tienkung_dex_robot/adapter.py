@@ -85,6 +85,13 @@ class TienkungDexAdapter:
     def shutdown(self) -> None:
         self.raw.shutdown()
 
+    def emergency_stop(self) -> None:
+        """软急停：停底盘速度流；关节保持最后位置（位置模式天然保持）。"""
+        try:
+            self.body.base.stop()
+        except Exception:  # noqa: BLE001 - 急停路径不能再抛错
+            pass
+
 
 def create_adapter(
     node,
