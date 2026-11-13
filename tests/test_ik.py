@@ -38,15 +38,30 @@ def test_ik_unreachable():
     assert not ok
 
 
-def test_daqp_beats_dls_near_limit():
-    """限位附近：DAQP 收敛，DLS 明显更差（选型实证）。"""
-    target = np.array([0.30, 0.20, 0.90])
-    qd, okd = _ik("daqp").solve(target)
-    ql, _ = _ik("dls").solve(target)
+def test_reachability_sphere():
+    ik = _ik()
+    shoulder = ik.shoulder_position()
+    assert ik.is_reachable(shoulder + np.array([0.0, 0.0, -0.2])) is True
+    assert ik.is_reachable(shoulder + np.array([5.0, 0.0, 0.0])) is False
 
-    assert okd
-    assert np.linalg.norm(_ik("daqp").fk(qd) - target) < 2e-3
-    assert np.linalg.norm(_ik("dls").fk(ql) - target) > 5e-3
+
+def test_tcp_offset_softens_reach_bound():
+    ik = ArmIK(URDF, side="left", base_offset=(0, 0, 0.92),
+               tcp_offset=(0.0, 0.0, -0.10), reach_margin=0.03)
+    shoulder = ik.shoulder_position()
+    edge = ik.max_reach - ik.reach_margin
+    target = shoulder + np.array([edge + 0.05, 0.0, 0.0])
+    assert ik.is_reachable(target, tcp=False) is False
+    assert ik.is_reachable(target, tcp=True) is None
+
+
+def test_daqp_solves_near_limit():
+    """限位附近的代表性目标：DAQP 收敛（max_iter=100）。"""
+    target = np.array([0.30, 0.20, 0.90])
+    ik = _ik("daqp")
+    q, ok = ik.solve(target)
+    assert ok
+    assert np.linalg.norm(ik.fk(q) - target) < 2e-3
 
 
 def test_dls_explicit_solver():

@@ -9,7 +9,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Mapping, Protocol, Sequence
+from typing import Mapping, Optional, Protocol, Sequence
 
 
 @dataclass(frozen=True)
@@ -37,8 +37,12 @@ class ArmAPI(Protocol):
     def is_moving(self) -> bool: ...
 
     # —— 位姿级（可选，需 capabilities.body.arm.pose_ik）——
-    def move_to_pose(self, pose: Pose, *, duration: float = 0.0) -> None: ...
+    def move_to_pose(self, pose: Pose, *, tcp: bool = False,
+                     duration: float = 0.0) -> None: ...
     def get_tcp_pose(self) -> Pose: ...
+    def is_reachable(self, pose: Pose, *, tcp: bool = False) -> Optional[bool]:
+        """``True`` 可达 / ``False`` 必不可达 / ``None`` 不确定（交给求解器）。"""
+        ...
 
 
 class GripperAPI(Protocol):

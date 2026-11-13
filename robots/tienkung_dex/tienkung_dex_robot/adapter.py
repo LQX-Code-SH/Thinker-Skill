@@ -68,13 +68,20 @@ class TienkungDexAdapter:
         pelvis_height: float = 0.0,
         hand_variant: str = "brainco",
         ik_solver: str = "daqp",
+        ik_max_iter: int = 100,
+        ik_tol: float = 1e-3,
+        ik_damping: float = 0.08,
+        tcp_offset=None,
+        reach_margin: float = 0.03,
     ):
         self.raw = robot
         self.hand_variant = hand_variant
         self.body = TienkungDexBody(
             robot, hand_side=hand_side, hand_dof=hand_dof,
             urdf_path=urdf_path, pelvis_height=pelvis_height,
-            ik_solver=ik_solver)
+            ik_solver=ik_solver, ik_max_iter=ik_max_iter,
+            ik_tol=ik_tol, ik_damping=ik_damping,
+            tcp_offset=tcp_offset, reach_margin=reach_margin)
         self.sensor = TienkungDexSensor(
             robot, camera=camera, urdf_path=urdf_path, k=camera_k,
             pelvis_height=pelvis_height)
@@ -107,6 +114,11 @@ def create_adapter(
     camera_k: Optional[list] = None,
     pelvis_height: float = 0.0,
     ik_solver: str = "daqp",
+    ik_max_iter: int = 100,
+    ik_tol: float = 1e-3,
+    ik_damping: float = 0.08,
+    tcp_offset=None,
+    reach_margin: float = 0.03,
 ) -> TienkungDexAdapter:
     """创建适配器（未 start；调用方需 ``adapter.start()``）。"""
     variant = HAND_VARIANTS.get(hand_variant)
@@ -127,5 +139,7 @@ def create_adapter(
         robot, hand_side=hand_side, hand_dof=dof,
         camera=camera, urdf_path=urdf_path, camera_k=camera_k,
         pelvis_height=pelvis_height, hand_variant=hand_variant,
-        ik_solver=ik_solver,
+        ik_solver=ik_solver, ik_max_iter=ik_max_iter,
+        ik_tol=ik_tol, ik_damping=ik_damping,
+        tcp_offset=tcp_offset, reach_margin=reach_margin,
     )

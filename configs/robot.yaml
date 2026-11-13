@@ -51,5 +51,10 @@ mcp:
 ik:
   solver: daqp            # daqp（QP+限位）| dls（无约束）
   tol: 1e-3               # 收敛阈值（米）
-  max_iter: 30
+  max_iter: 100
   damping: 0.08
+  reach_margin: 0.03      # 球面预检留余量（米）
+
+# 末端执行器：腕 roll 系 → 抓取中心（米）；brainco 手约 100 mm，待实测标定
+end_effector:
+  tcp_offset: [0.0, 0.0, -0.10]

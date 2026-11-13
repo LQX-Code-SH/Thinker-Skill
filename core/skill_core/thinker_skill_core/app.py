@@ -54,6 +54,8 @@ def _resolve_robot_dir(explicit: Optional[str], model: str) -> Optional[str]:
 def load_robot_adapter(node, config: Dict[str, Any]):
     model = config.get("model", "tienkung_dex")
     module = importlib.import_module(f"{model}_robot")
+    ik_cfg = config.get("ik") or {}
+    ee_cfg = config.get("end_effector") or {}
     return module.create_adapter(
         node,
         backend=config.get("backend", "real"),
@@ -62,7 +64,12 @@ def load_robot_adapter(node, config: Dict[str, Any]):
         urdf_path=config.get("urdf_path"),
         camera_k=(config.get("camera") or {}).get("k"),
         pelvis_height=float(config.get("pelvis_height", 0.0) or 0.0),
-        ik_solver=(config.get("ik") or {}).get("solver", "daqp"),
+        ik_solver=ik_cfg.get("solver", "daqp"),
+        ik_max_iter=int(ik_cfg.get("max_iter", 100)),
+        ik_tol=float(ik_cfg.get("tol", 1e-3)),
+        ik_damping=float(ik_cfg.get("damping", 0.08)),
+        tcp_offset=ee_cfg.get("tcp_offset"),
+        reach_margin=float(ik_cfg.get("reach_margin", 0.03)),
     )
 
 

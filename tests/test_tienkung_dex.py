@@ -113,9 +113,12 @@ def test_arm_move_to_pose_via_ik():
 
 
 def test_arm_move_to_pose_unreachable():
+    from thinker_skill_sdk import ErrorCode, SkillError
+
     body = _body()
-    with pytest.raises(RuntimeError):
+    with pytest.raises(SkillError) as exc:
         body.arm.move_to_pose(Pose(1.5, 0.0, 0.9))   # 超臂展
+    assert exc.value.code == ErrorCode.MOTION_IK_UNREACHABLE
 
 
 def test_arm_is_moving():

@@ -25,6 +25,18 @@ def test_feedback_progress():
     assert seen[-1] == ("b", 1.0)
 
 
+def test_skill_error_maps_to_code():
+    from thinker_skill_sdk import SkillError
+
+    def unreachable(ctx):
+        raise SkillError(ErrorCode.MOTION_IK_UNREACHABLE, "target out of reach")
+
+    r = run_pipeline([Step(name="pose", run=unreachable)], make_ctx())
+    assert r.state == "failed"
+    assert r.code == ErrorCode.MOTION_IK_UNREACHABLE
+    assert "out of reach" in r.data["error"]
+
+
 def test_failed_abort():
     def fail(ctx):
         return StepResult(status="failed", code=ErrorCode.MOTION_GRASP_FAILED)

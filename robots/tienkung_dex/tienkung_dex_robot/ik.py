@@ -76,9 +76,11 @@ class ArmIK:
     """位置 IK：base 系目标点 → 7 个臂关节角。"""
 
     def __init__(self, urdf_path: str, *, side: str = "left",
-                 tol: float = 1e-3, max_iter: int = 30,
+                 tol: float = 1e-3, max_iter: int = 100,
                  damping: float = 0.08, solver: str = "daqp",
-                 base_offset=(0.0, 0.0, 0.0)):
+                 base_offset=(0.0, 0.0, 0.0),
+                 tcp_offset=(0.0, 0.0, 0.0),
+                 reach_margin: float = 0.03):
         root = ET.parse(urdf_path).getroot()
         joints = {j.get("name"): j for j in root.findall("joint")}
         self.joint_names = list(ARM_JOINTS[side])
@@ -89,9 +91,24 @@ class ArmIK:
         self._damping = damping
         self.solver = solver
         self.base_offset = np.asarray(base_offset, dtype=float)
+        self.tcp_offset = np.asarray(tcp_offset, dtype=float)
+        self.reach_margin = float(reach_margin)
+        suffix = "l" if side == "left" else "r"
+        self._shoulder_link = f"shoulder_pitch_{suffix}_link"
+        self._parent_of = {j.find("child").get("link"): j
+                           for j in root.findall("joint")}
 
         self.lower = np.array([float(j.find("limit").get("lower")) for j in self._arm])
         self.upper = np.array([float(j.find("limit").get("upper")) for j in self._arm])
+
+        # 肩 → 腕的最大展开（各段 origin 长度之和，上界）
+        total = 0.0
+        for joint in self._arm[1:]:
+            origin = joint.find("origin")
+            if origin is not None:
+                total += float(np.linalg.norm(
+                    [float(v) for v in origin.get("xyz", "0 0 0").split()]))
+        self.max_reach = total
 
     # ---------- 正运动学 ----------
     def fk(self, q: Sequence[float], waist=(0.0, 0.0, 0.0)) -> np.ndarray:
@@ -104,6 +121,67 @@ class ArmIK:
         for joint, qi in zip(self._arm, q):
             T = T @ _origin_matrix(joint) @ _axis_matrix(joint, qi)
         return T[:3, 3] + self.base_offset
+
+    # ---------- 可达性预检 ----------
+    def _chain_to(self, link: str) -> list:
+        out = []
+        while link in self._parent_of:
+            joint = self._parent_of[link]
+            out.append(joint)
+            link = joint.find("parent").get("link")
+        return list(reversed(out))
+
+    def shoulder_position(self, waist=(0.0, 0.0, 0.0)) -> np.ndarray:
+        """当前腰角下肩部（shoulder_pitch 关节原点）在 base 系的位置。"""
+        wp, wr, wy = waist
+        waist_angles = {"waist_pitch": wp, "waist_roll": wr, "waist_yaw": wy}
+        key_of = {
+            "waist_yaw_joint": "waist_yaw",
+            "waist_roll_joint": "waist_roll",
+            "waist_pitch_joint": "waist_pitch",
+        }
+        T = np.eye(4)
+        for joint in self._chain_to(self._shoulder_link):
+            T = T @ _origin_matrix(joint)
+            if joint.get("type") == "revolute" and joint.get("name") in key_of:
+                T = T @ _axis_matrix(
+                    joint, waist_angles[key_of[joint.get("name")]])
+        return T[:3, 3] + self.base_offset
+
+    def reach_bounds(self, target, *, tcp: bool = False,
+                     waist=(0.0, 0.0, 0.0)):
+        """目标对应的腕部所需距离区间 ``(d_min, d_max)``。
+
+        ``tcp=True`` 时按工具偏移范数放宽/收紧：工具朝向目标时腕部可近
+        ``|offset|``，背向时需远 ``|offset|``。
+        """
+        d = float(np.linalg.norm(
+            np.asarray(target, dtype=float) - self.shoulder_position(waist)))
+        offset = float(np.linalg.norm(self.tcp_offset)) if tcp else 0.0
+        return max(0.0, d - offset), d + offset
+
+    def is_reachable(self, target, *, tcp: bool = False,
+                     waist=(0.0, 0.0, 0.0),
+                     margin: Optional[float] = None) -> Optional[bool]:
+        """球面预检：``False`` 必不可达 / ``True`` 必在臂展内 / ``None`` 不确定。"""
+        d_min, d_max = self.reach_bounds(target, tcp=tcp, waist=waist)
+        radius = self.max_reach - (
+            self.reach_margin if margin is None else float(margin))
+        if d_min > radius:
+            return False
+        if d_max <= radius:
+            return True
+        return None
+
+    def tcp_to_wrist(self, target, waist=(0.0, 0.0, 0.0)) -> np.ndarray:
+        """把 TCP 目标近似折算为腕部目标（工具沿肩→目标方向）。"""
+        p = np.asarray(target, dtype=float)
+        vec = p - self.shoulder_position(waist)
+        norm = float(np.linalg.norm(vec))
+        offset = float(np.linalg.norm(self.tcp_offset))
+        if norm < 1e-9 or offset <= 0.0:
+            return p
+        return p - vec / norm * offset
 
     def _jacobian(self, q, waist, eps=1e-4) -> np.ndarray:
         p0 = self.fk(q, waist)

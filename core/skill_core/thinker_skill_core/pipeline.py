@@ -11,7 +11,7 @@ import time
 from dataclasses import dataclass, field
 from typing import Callable, List, Optional
 
-from thinker_skill_sdk import Cancelled, ErrorCode, Step, StepCtx, StepResult
+from thinker_skill_sdk import Cancelled, ErrorCode, SkillError, Step, StepCtx, StepResult
 
 
 @dataclass
@@ -102,6 +102,13 @@ def run_pipeline(
                 _abort(on_abort)
                 return PipelineResult(
                     "cancelled", ErrorCode.SYS_CANCELLED, "已取消", warnings=warnings
+                )
+            except SkillError as exc:
+                result = StepResult(
+                    status="failed",
+                    code=exc.code,
+                    retryable=False,
+                    data={"error": exc.msg},
                 )
             except Exception as exc:  # 失败不抛异常，收敛
                 result = StepResult(

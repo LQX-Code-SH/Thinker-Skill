@@ -12,9 +12,9 @@
 """
 from __future__ import annotations
 
-from typing import Any, Mapping, Sequence
+from typing import Any, Mapping, Optional, Sequence
 
-from thinker_skill_sdk import BodyAPI, Pose
+from thinker_skill_sdk import BodyAPI, ErrorCode, Pose, SkillError
 
 from .joints import (
     ARM_JOINTS,
@@ -32,13 +32,20 @@ class TienkungDexArm:
 
     def __init__(self, robot: Any, *, side: str = "left",
                  urdf_path: Any = None, pelvis_height: float = 0.0,
-                 ik_solver: str = "daqp"):
+                 ik_solver: str = "daqp", ik_max_iter: int = 100,
+                 ik_tol: float = 1e-3, ik_damping: float = 0.08,
+                 tcp_offset=(0.0, 0.0, 0.0), reach_margin: float = 0.03):
         self._robot = robot
         self._target: dict = {}
         self._side = side
         self._urdf_path = urdf_path
         self._pelvis_height = pelvis_height
         self._ik_solver = ik_solver
+        self._ik_max_iter = int(ik_max_iter)
+        self._ik_tol = float(ik_tol)
+        self._ik_damping = float(ik_damping)
+        self._tcp_offset = tuple(tcp_offset or (0.0, 0.0, 0.0))
+        self._reach_margin = float(reach_margin)
         self._ik = None
 
     def _ik_obj(self):
@@ -46,8 +53,13 @@ class TienkungDexArm:
             from .ik import ArmIK
             from .kinematics import default_urdf_path
             path = self._urdf_path or default_urdf_path()
-            self._ik = ArmIK(path, side=self._side, solver=self._ik_solver,
-                             base_offset=(0.0, 0.0, self._pelvis_height))
+            self._ik = ArmIK(
+                path, side=self._side, solver=self._ik_solver,
+                tol=self._ik_tol, max_iter=self._ik_max_iter,
+                damping=self._ik_damping,
+                base_offset=(0.0, 0.0, self._pelvis_height),
+                tcp_offset=self._tcp_offset,
+                reach_margin=self._reach_margin)
         return self._ik
 
     def _require(self):
@@ -85,8 +97,19 @@ class TienkungDexArm:
                 return True
         return False
 
-    def move_to_pose(self, pose: Pose, *, duration: float = 0.0) -> None:
-        """IK 求解后下发关节角；不收敛抛 ``RuntimeError``。"""
+    def is_reachable(self, pose: Pose, *, tcp: bool = False) -> Optional[bool]:
+        """球面预检；``tcp=True`` 时按末端工具偏移放宽判定。"""
+        self._require()
+        return self._ik_obj().is_reachable(
+            [pose.x, pose.y, pose.z], tcp=tcp,
+            waist=self._robot.waist.get_pose())
+
+    def move_to_pose(self, pose: Pose, *, tcp: bool = False,
+                     duration: float = 0.0) -> None:
+        """IK 求解后下发关节角；不可达/不收敛抛 ``SkillError``。
+
+        ``tcp=True`` 时 ``pose`` 为夹爪抓取点，按工具偏移近似折算腕部目标。
+        """
         self._require()
         from .joints import URDF_TO_BODY
 
@@ -94,9 +117,19 @@ class TienkungDexArm:
         current = self.get_joints()
         seed = [current.get(URDF_TO_BODY[n], 0.0) for n in ik.joint_names]
         waist = self._robot.waist.get_pose()
-        q, ok = ik.solve([pose.x, pose.y, pose.z], seed, waist)
+        target = [pose.x, pose.y, pose.z]
+
+        verdict = ik.is_reachable(target, tcp=tcp, waist=waist)
+        if verdict is False:
+            raise SkillError(
+                ErrorCode.MOTION_IK_UNREACHABLE,
+                f"目标超出臂展: ({pose.x:.3f},{pose.y:.3f},{pose.z:.3f})")
+
+        wrist = target if not tcp else ik.tcp_to_wrist(target, waist)
+        q, ok = ik.solve(wrist, seed, waist)
         if not ok:
-            raise RuntimeError(
+            raise SkillError(
+                ErrorCode.MOTION_IK_UNREACHABLE,
                 f"IK 未收敛: target=({pose.x:.3f},{pose.y:.3f},{pose.z:.3f})")
         self.move_to_joints({URDF_TO_BODY[n]: float(v)
                              for n, v in zip(ik.joint_names, q)})
