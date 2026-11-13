@@ -76,6 +76,22 @@ def test_missing_skill_dir_returns_empty(tmp_path):
     assert load_tools(tmp_path) == []
 
 
+def test_can_bind_detects_busy_port():
+    import socket
+
+    from thinker_skill_core.frontends.mcp import can_bind
+
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    sock.bind(("127.0.0.1", 0))
+    sock.listen(1)
+    port = sock.getsockname()[1]
+    try:
+        assert can_bind("localhost", port) is False
+    finally:
+        sock.close()
+    assert can_bind("localhost", port) is True
+
+
 def test_build_server_without_fastmcp():
     import importlib.util
 

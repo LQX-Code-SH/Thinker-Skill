@@ -9,7 +9,21 @@ import functools
 import importlib.util
 import inspect
 import pathlib
+import socket
+import threading
 from typing import Callable, Iterable, List, Tuple
+
+
+def can_bind(host: str, port: int) -> bool:
+    """检查端口是否可绑定（避免 MCP 线程静默失败）。"""
+    bind_host = "127.0.0.1" if host in ("localhost", "") else host
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+        sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        try:
+            sock.bind((bind_host, port))
+            return True
+        except OSError:
+            return False
 
 
 def create_server(name: str = "thinker_skills"):
@@ -79,3 +93,18 @@ def build_server(host, skills: Iterable[Tuple[str, str]],
 def run_server(server, *, host: str = "localhost", port: int = 8000) -> None:
     """起 streamable-http 服务；对外暴露需显式设 host 并前置反代。"""
     server.run(transport="streamable-http", host=host, port=port)
+
+
+def start_http(server, *, host: str = "localhost", port: int = 8000,
+               name: str = "mcp-http") -> threading.Thread:
+    """在后台线程启动 streamable-http 服务（不阻塞 ROS executor）。"""
+    def _serve():
+        try:
+            server.run(transport="streamable-http", host=host, port=port,
+                       show_banner=False)
+        except Exception as exc:  # noqa: BLE001 - 端口占用等不应拖垮 ROS 通道
+            print(f"[mcp] server stopped: {exc}", flush=True)
+
+    thread = threading.Thread(target=_serve, name=name, daemon=True)
+    thread.start()
+    return thread
