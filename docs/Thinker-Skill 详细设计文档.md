@@ -288,8 +288,10 @@ class StepCtx:
 
 ```python
 class BodyAPI(Protocol):
-    arm: ArmAPI          # move_to_pose / move_to_joints / get_tcp_pose / is_moving
-    gripper: GripperAPI  # grasp / release / width / effort / is_holding
+    arms: Mapping[str, ArmAPI]        # {"left": ..., "right": ...}
+    grippers: Mapping[str, GripperAPI]
+    arm: ArmAPI          # 默认侧（configs hand_side）兼容别名
+    gripper: GripperAPI
     waist: WaistAPI      # set_height / set_pose
     head: HeadAPI        # look_at / look_down
     base: BaseAPI        # navigate_to / arrived / stop / get_pose
@@ -427,8 +429,8 @@ robots/tienkung_dex/                # ament 包 tienkung_dex_robot
 
 | 能力 | 适配方式 |
 |---|---|
-| 上肢 `arm` | 封装 `robot.arm`；关节级 `move_to_joints` + **位姿级 `move_to_pose`（QP + DAQP，D-017）** |
-| 上肢 `gripper` | `robot.hand_left/right.set_positions`，0..1 归一化；按 `hand_variants` 支持 brainco / inspire / 拳头假手 |
+| 上肢 `arm` | 封装 `robot.arm`（左右各一实例）；关节级 `move_to_joints` + **位姿级 `move_to_pose`（位置 3-DoF 或位姿 6-DoF，QP + DAQP，D-017/D-020）**；`get_tcp_pose` 返回 TCP 抓取中心位姿 |
+| 上肢 `gripper` | `robot.hand_left/right.set_positions`，0..1 归一化；**严格按侧取手**（不回落另一侧）；按 `hand_variants` 支持 brainco / inspire / 拳头假手 |
 | 头部 `head` | `robot.head`，2 DOF（yaw / pitch） |
 | 下肢 `base` | `robot.walk.set_velocity`（20Hz 速度流），**无位姿导航** |
 | `sensor.rgbd` | `robot.cameras`，4 路 RGB-D（depth 单位 mm、color BGR），内参经 `Frame.k` 注入 |
@@ -443,13 +445,23 @@ robots/tienkung_dex/                # ament 包 tienkung_dex_robot
 
 **手部变体**（同一机型多配置）：
 
-| 变体 | `hand_vendor` | 启用 `hand` | `body.gripper` |
+| 变体 | `hand_vendor` | 启用 `hand` | `body.gripper` / `body.gripper.left` / `body.gripper.right` |
 |---|---|---|---|
 | `brainco` | `brainco` | 是 | `{type: brainco, dof: 6}` |
 | `inspire` | `inspire` | 是 | `{type: inspire, dof: 13}` |
-| `fixed`（拳头假手） | — | 否 | **不存在** |
+| `fixed`（拳头假手） | — | 否 | **均不存在** |
 
-`create_adapter(hand_variant=...)` 按变体推导 `hand_vendor` 与 `enable`；`fixed` 时 `enable` 显式排除 `hand`，`body.gripper` 不可用。
+`create_adapter(hand_variant=...)` 按变体推导 `hand_vendor` 与 `enable`；`fixed` 时 `enable` 显式排除 `hand`，`body.gripper*` 不可用。
+
+**按侧能力键（D-021）**：能力名必须是**顶层扁平键**（`load_capabilities` 只取 `set(caps)` 的 key），且要在 `body_arbiter.CAPABILITY_TO_AREA` 显式登记区域：
+
+| 能力键 | 区域 | 说明 |
+|---|---|---|
+| `body.arm` / `body.gripper` | `upper` | 粗粒度声明（旧技能兼容） |
+| `body.arm.left` / `body.arm.right` | `upper` | 按侧手臂，供"按目标左右自动选臂"的技能声明 |
+| `body.gripper.left` / `body.gripper.right` | `upper` | 按侧手部 |
+
+未登记的能力键**不占租约**（保守行为，避免拼写错误静默占用身体）。
 
 **能力匹配**（装配期）：
 
@@ -584,6 +596,12 @@ class FetchObjectSkill:
 
 `feedback.phase` 依次为「感知定位 → 接近 → 抓取 → 回收」，`progress` 由权重累加得出，两者都不需要技能自己上报。
 
+> 实现状态：`skills/manipulation/fetch_object` 已按此模型落地，实际阶段为
+> 「低头预备 → 感知定位 → 规划抓取 → 接近 → 抓取位姿 → 合手 → 提拉 → 视觉确认 → 回收」，
+> 低头与定位经 `ctx.call_skill` 复用 `look_down_table` / `detect_object`（D-019）。
+> 注意：场景技能**不要**声明 `body.head`——子技能会以自己名字重新申请 head 租约，
+> 同区域二次申请会立即 `PRECOND_BODY_BUSY`。
+
 ### 4.4 能力注入与约束
 
 技能不持有任何控制器、不 `import` 任何 `core` 实现包，全部能力经 `StepCtx` 获取（`StepCtx` 定义见 3.2.2）。这是「可独立安装、可跨机型、可脱离真机测试」三项要求的共同前提。
@@ -693,7 +711,7 @@ held ─┬─ 正常完成/失败/取消 ─▶ 软急停 ─▶ 停稳确认 �
 
 | 机制 | 参数化 | 说明 |
 |---|---|---|
-| 抓取成败判断 | `hand_grasp_success_effort` / `_finger_num` | 六维力 / 指尖力阈值，进技能私有配置 |
+| 抓取成败判断 | `verify_min_lift_z` / `verify_max_xy_dist` | **视觉二次确认**：提拉后重新检测，按"抬升量 + 水平位移"判定（D-022）；本机无手腕力通道，参考实现的六维力阈值暂不可用 |
 | 卡死保护 | 力监控 | 超阈值 → 软急停，返回 `SAFETY_STUCK_DETECTED` |
 | 动作失败中止 | — | 任一 `Step` 失败且 `on_failure=abort` → 全链中止 + 停止 |
 | 急停 / 暂停 | `CommandNode` | 外部话题触发 |
