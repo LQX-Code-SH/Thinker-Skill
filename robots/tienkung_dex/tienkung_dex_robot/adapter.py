@@ -70,6 +70,7 @@ class TienkungDexAdapter:
         ik_solver: str = "daqp",
         ik_max_iter: int = 100,
         ik_tol: float = 1e-3,
+        ik_rot_tol: float = 0.02,
         ik_damping: float = 0.08,
         tcp_offset=None,
         reach_margin: float = 0.03,
@@ -80,7 +81,7 @@ class TienkungDexAdapter:
             robot, hand_side=hand_side, hand_dof=hand_dof,
             urdf_path=urdf_path, pelvis_height=pelvis_height,
             ik_solver=ik_solver, ik_max_iter=ik_max_iter,
-            ik_tol=ik_tol, ik_damping=ik_damping,
+            ik_tol=ik_tol, ik_rot_tol=ik_rot_tol, ik_damping=ik_damping,
             tcp_offset=tcp_offset, reach_margin=reach_margin)
         self.sensor = TienkungDexSensor(
             robot, camera=camera, urdf_path=urdf_path, k=camera_k,
@@ -116,6 +117,7 @@ def create_adapter(
     ik_solver: str = "daqp",
     ik_max_iter: int = 100,
     ik_tol: float = 1e-3,
+    ik_rot_tol: float = 0.02,
     ik_damping: float = 0.08,
     tcp_offset=None,
     reach_margin: float = 0.03,
@@ -140,6 +142,6 @@ def create_adapter(
         camera=camera, urdf_path=urdf_path, camera_k=camera_k,
         pelvis_height=pelvis_height, hand_variant=hand_variant,
         ik_solver=ik_solver, ik_max_iter=ik_max_iter,
-        ik_tol=ik_tol, ik_damping=ik_damping,
+        ik_tol=ik_tol, ik_rot_tol=ik_rot_tol, ik_damping=ik_damping,
         tcp_offset=tcp_offset, reach_margin=reach_margin,
     )

@@ -3,8 +3,14 @@
 链：waist(yaw/roll/pitch) → shoulder(pitch/roll/yaw) → elbow(pitch/yaw)
     → wrist(pitch/roll)。腰角度已知，只解 7 个臂关节。
 
-- ``dls``：无约束阻尼最小二乘（纯 numpy）
-- ``daqp``：每步解带关节限位约束的 QP（延迟导入 daqp，缺失时降级 dls）
+两种任务：
+
+- **位置**（``solve``）：3 维任务，只管腕部位置，姿态由求解器自由给出；
+- **位姿**（``solve_pose``）：6 维任务，位置 + 姿态同时收敛，供抓取用。
+
+算法：``dls`` 无约束阻尼最小二乘（纯 numpy）；``daqp`` 每步解带关节限位
+约束的 QP（延迟导入 daqp，缺失时降级 dls）。姿态误差统一取旋转向量
+（``rotvec``），与位置误差拼成 6 维残差。
 """
 from __future__ import annotations
 
@@ -72,11 +78,71 @@ def _axis_matrix(joint, q):
     return T
 
 
+# ---------- 姿态工具（不引入 scipy） ----------
+def quat_to_matrix(quaternion: Sequence[float]) -> np.ndarray:
+    """四元数 ``(x, y, z, w)`` → 3×3 旋转矩阵（内部归一化）。"""
+    x, y, z, w = (float(v) for v in quaternion)
+    n = math.sqrt(x * x + y * y + z * z + w * w)
+    if n < 1e-12:
+        return np.eye(3)
+    x, y, z, w = x / n, y / n, z / n, w / n
+    return np.array([
+        [1 - 2 * (y * y + z * z), 2 * (x * y - z * w), 2 * (x * z + y * w)],
+        [2 * (x * y + z * w), 1 - 2 * (x * x + z * z), 2 * (y * z - x * w)],
+        [2 * (x * z - y * w), 2 * (y * z + x * w), 1 - 2 * (x * x + y * y)],
+    ])
+
+
+def matrix_to_quat(R: np.ndarray) -> np.ndarray:
+    """3×3 旋转矩阵 → 四元数 ``(x, y, z, w)``（Shepperd 法，``w >= 0``）。"""
+    m = np.asarray(R, dtype=float)
+    trace = m[0, 0] + m[1, 1] + m[2, 2]
+    if trace > 0.0:
+        s = math.sqrt(trace + 1.0) * 2.0
+        w = 0.25 * s
+        x = (m[2, 1] - m[1, 2]) / s
+        y = (m[0, 2] - m[2, 0]) / s
+        z = (m[1, 0] - m[0, 1]) / s
+    elif m[0, 0] > m[1, 1] and m[0, 0] > m[2, 2]:
+        s = math.sqrt(1.0 + m[0, 0] - m[1, 1] - m[2, 2]) * 2.0
+        w = (m[2, 1] - m[1, 2]) / s
+        x = 0.25 * s
+        y = (m[0, 1] + m[1, 0]) / s
+        z = (m[0, 2] + m[2, 0]) / s
+    elif m[1, 1] > m[2, 2]:
+        s = math.sqrt(1.0 + m[1, 1] - m[0, 0] - m[2, 2]) * 2.0
+        w = (m[0, 2] - m[2, 0]) / s
+        x = (m[0, 1] + m[1, 0]) / s
+        y = 0.25 * s
+        z = (m[1, 2] + m[2, 1]) / s
+    else:
+        s = math.sqrt(1.0 + m[2, 2] - m[0, 0] - m[1, 1]) * 2.0
+        w = (m[1, 0] - m[0, 1]) / s
+        x = (m[0, 2] + m[2, 0]) / s
+        y = (m[1, 2] + m[2, 1]) / s
+        z = 0.25 * s
+    q = np.array([x, y, z, w], dtype=float)
+    if q[3] < 0.0:
+        q = -q
+    return q / np.linalg.norm(q)
+
+
+def matrix_to_rotvec(R: np.ndarray) -> np.ndarray:
+    """3×3 旋转矩阵 → 旋转向量（轴 × 角，弧度；``|角| <= pi``）。"""
+    q = matrix_to_quat(R)
+    vec = q[:3]
+    norm = float(np.linalg.norm(vec))
+    if norm < 1e-12:
+        return np.zeros(3)
+    angle = 2.0 * math.atan2(norm, q[3])
+    return vec / norm * angle
+
+
 class ArmIK:
-    """位置 IK：base 系目标点 → 7 个臂关节角。"""
+    """位置/位姿 IK：base 系目标 → 7 个臂关节角。"""
 
     def __init__(self, urdf_path: str, *, side: str = "left",
-                 tol: float = 1e-3, max_iter: int = 100,
+                 tol: float = 1e-3, rot_tol: float = 0.02, max_iter: int = 100,
                  damping: float = 0.08, solver: str = "daqp",
                  base_offset=(0.0, 0.0, 0.0),
                  tcp_offset=(0.0, 0.0, 0.0),
@@ -87,6 +153,7 @@ class ArmIK:
         self._arm = [joints[n] for n in self.joint_names]
         self._waist = [(joints[n], key) for n, key in WAIST_JOINTS]
         self._tol = tol
+        self._rot_tol = rot_tol
         self._max_iter = max_iter
         self._damping = damping
         self.solver = solver
@@ -111,8 +178,13 @@ class ArmIK:
         self.max_reach = total
 
     # ---------- 正运动学 ----------
-    def fk(self, q: Sequence[float], waist=(0.0, 0.0, 0.0)) -> np.ndarray:
-        """腕 roll 末端在 base 系的位置。``waist`` = (pitch, roll, yaw)。"""
+    def fk_pose(self, q: Sequence[float], waist=(0.0, 0.0, 0.0)
+                ) -> Tuple[np.ndarray, np.ndarray]:
+        """腕 roll 末端在 base 系的 ``(位置, 3×3 旋转)``。
+
+        ``waist`` = ``(pitch, roll, yaw)``；返回的旋转即腕 roll 帧姿态，
+        工具（TCP）偏移在该帧下定义。
+        """
         wp, wr, wy = waist
         angles = {"waist_pitch": wp, "waist_roll": wr, "waist_yaw": wy}
         T = np.eye(4)
@@ -120,7 +192,11 @@ class ArmIK:
             T = T @ _origin_matrix(joint) @ _axis_matrix(joint, angles[key])
         for joint, qi in zip(self._arm, q):
             T = T @ _origin_matrix(joint) @ _axis_matrix(joint, qi)
-        return T[:3, 3] + self.base_offset
+        return T[:3, 3] + self.base_offset, T[:3, :3].copy()
+
+    def fk(self, q: Sequence[float], waist=(0.0, 0.0, 0.0)) -> np.ndarray:
+        """腕 roll 末端在 base 系的位置。``waist`` = (pitch, roll, yaw)。"""
+        return self.fk_pose(q, waist)[0]
 
     # ---------- 可达性预检 ----------
     def _chain_to(self, link: str) -> list:
@@ -183,6 +259,17 @@ class ArmIK:
             return p
         return p - vec / norm * offset
 
+    def tcp_pose_to_wrist(self, position, rotation) -> Tuple[np.ndarray, np.ndarray]:
+        """TCP 位姿折算为腕部位姿：``p_wrist = p_tcp - R_tcp @ tcp_offset``。
+
+        ``tcp_offset`` 定义在腕 roll 帧下（配置 ``end_effector.tcp_offset``），
+        因此姿态直接沿用 TCP 姿态。相比 ``tcp_to_wrist`` 的"沿肩→目标"方向
+        近似，这里用目标姿态旋转偏移，姿态与位置一致。
+        """
+        R = np.asarray(rotation, dtype=float)
+        p = np.asarray(position, dtype=float)
+        return p - R @ self.tcp_offset, R.copy()
+
     def _jacobian(self, q, waist, eps=1e-4) -> np.ndarray:
         p0 = self.fk(q, waist)
         J = np.zeros((3, len(q)))
@@ -191,6 +278,26 @@ class ArmIK:
             q2[i] += eps
             J[:, i] = (self.fk(q2, waist) - p0) / eps
         return J
+
+    def _jacobian6(self, q, waist, eps=1e-4) -> np.ndarray:
+        """6×n 雅可比：上 3 行线速度、下 3 行角速度（base 系）。"""
+        p0, R0 = self.fk_pose(q, waist)
+        J = np.zeros((6, len(q)))
+        for i in range(len(q)):
+            q2 = np.array(q, dtype=float)
+            q2[i] += eps
+            p1, R1 = self.fk_pose(q2, waist)
+            J[:3, i] = (p1 - p0) / eps
+            J[3:, i] = matrix_to_rotvec(R1 @ R0.T) / eps
+        return J
+
+    def pose_error(self, q, position, quaternion,
+                   waist=(0.0, 0.0, 0.0)) -> Tuple[np.ndarray, np.ndarray]:
+        """当前位姿相对目标的 ``(位置误差向量, 姿态误差旋转向量)``。"""
+        p, R = self.fk_pose(q, waist)
+        e_p = np.asarray(position, dtype=float) - p
+        e_r = matrix_to_rotvec(quat_to_matrix(quaternion) @ R.T)
+        return e_p, e_r
 
     # ---------- 求解器 ----------
     def _solve_dls(self, target, seed, waist):
@@ -239,3 +346,68 @@ class ArmIK:
             except ImportError:
                 pass  # daqp 未安装 → 降级
         return self._solve_dls(target, q, waist)
+
+    # ---------- 位姿求解（位置 + 姿态） ----------
+    def _pose_residual(self, q, target_p, target_R, waist) -> np.ndarray:
+        p, R = self.fk_pose(q, waist)
+        return np.concatenate(
+            [target_p - p, matrix_to_rotvec(target_R @ R.T)])
+
+    def _pose_converged(self, e: np.ndarray) -> bool:
+        return (float(np.linalg.norm(e[:3])) < self._tol
+                and float(np.linalg.norm(e[3:])) < self._rot_tol)
+
+    def _solve_dls_pose(self, target_p, target_R, seed, waist):
+        q = seed.copy()
+        lam2 = self._damping ** 2
+        for _ in range(self._max_iter):
+            e = self._pose_residual(q, target_p, target_R, waist)
+            if self._pose_converged(e):
+                return q, True
+            J = self._jacobian6(q, waist)
+            dq = J.T @ np.linalg.solve(J @ J.T + lam2 * np.eye(6), e)
+            q = np.clip(q + dq, self.lower, self.upper)
+        return q, self._pose_converged(
+            self._pose_residual(q, target_p, target_R, waist))
+
+    def _solve_daqp_pose(self, target_p, target_R, seed, waist):
+        import daqp
+
+        q = seed.copy()
+        lam2 = self._damping ** 2
+        n = len(q)
+        A = np.eye(n)
+        for _ in range(self._max_iter):
+            e = self._pose_residual(q, target_p, target_R, waist)
+            if self._pose_converged(e):
+                return q, True
+            J = self._jacobian6(q, waist)
+            H = 2.0 * (J.T @ J + lam2 * np.eye(n))
+            f = -2.0 * (J.T @ e)
+            dq, *_ = daqp.solve(H, f, A, self.upper - q, self.lower - q)
+            q = np.clip(q + dq, self.lower, self.upper)
+        return q, self._pose_converged(
+            self._pose_residual(q, target_p, target_R, waist))
+
+    def solve_pose(self, position, quaternion,
+                   seed: Optional[Sequence[float]] = None,
+                   waist=(0.0, 0.0, 0.0),
+                   solver: Optional[str] = None) -> Tuple[np.ndarray, bool]:
+        """6-DoF 位姿求解：``quaternion`` 为 ``(x, y, z, w)``，腕 roll 帧。
+
+        返回 ``(q, converged)``；位置容差 ``tol``、姿态容差 ``rot_tol``
+        （弧度）需同时满足。
+        """
+        mode = solver or self.solver
+        q = (np.zeros(len(self.joint_names)) if seed is None
+             else np.array(seed, dtype=float))
+        q = np.clip(q, self.lower, self.upper)
+        target_p = np.asarray(position, dtype=float)
+        target_R = quat_to_matrix(quaternion)
+
+        if mode == "daqp":
+            try:
+                return self._solve_daqp_pose(target_p, target_R, q, waist)
+            except ImportError:
+                pass  # daqp 未安装 → 降级
+        return self._solve_dls_pose(target_p, target_R, q, waist)

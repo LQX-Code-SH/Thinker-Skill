@@ -14,7 +14,11 @@ from typing import Mapping, Optional, Protocol, Sequence
 
 @dataclass(frozen=True)
 class Pose:
-    """末端/目标位姿：位置 + 四元数。"""
+    """末端/目标位姿：位置 + 四元数（``qx, qy, qz, qw``）。
+
+    四元数为单位四元数时表示"只约束位置"（保持机型默认姿态）；非单位四元数
+    表示完整 6-DoF 位姿目标，机型需按位置 + 姿态同时求解。
+    """
 
     x: float
     y: float
@@ -27,6 +31,11 @@ class Pose:
     def as_tuple(self) -> tuple[float, float, float, float, float, float, float]:
         return (self.x, self.y, self.z, self.qx, self.qy, self.qz, self.qw)
 
+    def is_unit_quaternion(self, tol: float = 1e-6) -> bool:
+        """是否为单位四元数（即"只控位置"）。"""
+        return (abs(self.qx) < tol and abs(self.qy) < tol
+                and abs(self.qz) < tol and abs(abs(self.qw) - 1.0) < tol)
+
 
 class ArmAPI(Protocol):
     """手臂能力。"""
@@ -38,10 +47,29 @@ class ArmAPI(Protocol):
 
     # —— 位姿级（可选，需 capabilities.body.arm.pose_ik）——
     def move_to_pose(self, pose: Pose, *, tcp: bool = False,
-                     duration: float = 0.0) -> None: ...
-    def get_tcp_pose(self) -> Pose: ...
+                     duration: float = 0.0) -> None:
+        """移动到指定位姿（幂等，可每 tick 重复下发）。
+
+        - ``pose.is_unit_quaternion()`` 为真：只约束位置，姿态由机型求解器给出；
+        - 否则按 6-DoF 位姿求解（位置 + 姿态误差同时收敛），不可达/不收敛抛
+          ``SkillError(MOTION_IK_UNREACHABLE)``；
+        - ``tcp=True`` 表示 ``pose`` 是夹爪抓取中心，机型按其姿态折算腕部目标。
+        """
+        ...
+
+    def get_tcp_pose(self) -> Pose:
+        """当前末端位姿（含四元数），到位判据用。
+
+        口径与 ``move_to_pose(tcp=True)`` 一致：返回夹爪抓取中心位姿，
+        因此可直接与下发过的目标位姿比较位置误差与姿态角误差。
+        """
+        ...
+
     def is_reachable(self, pose: Pose, *, tcp: bool = False) -> Optional[bool]:
-        """``True`` 可达 / ``False`` 必不可达 / ``None`` 不确定（交给求解器）。"""
+        """``True`` 可达 / ``False`` 必不可达 / ``None`` 不确定（交给求解器）。
+
+        只做位置级球面预检；姿态可达性由 ``move_to_pose`` 的求解结果暴露。
+        """
         ...
 
 
@@ -90,8 +118,15 @@ class BaseAPI(Protocol):
 
 
 class BodyAPI(Protocol):
-    """按能力切分（不按机型暴露）。"""
+    """按能力切分（不按机型暴露）。
 
+    左右两侧同时暴露：``arms`` / ``grippers`` 以 ``"left"`` / ``"right"`` 为键；
+    ``arm`` / ``gripper`` 是配置默认侧（``configs/robot.yaml`` 的 ``hand_side``）
+    的兼容别名，单臂机型只需给默认侧即可（映射里也放这一侧）。
+    """
+
+    arms: Mapping[str, ArmAPI]
+    grippers: Mapping[str, GripperAPI]
     arm: ArmAPI
     gripper: GripperAPI
     waist: WaistAPI

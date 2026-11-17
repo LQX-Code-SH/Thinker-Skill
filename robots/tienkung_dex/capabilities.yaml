@@ -10,6 +10,12 @@ capabilities:
     dof: 7            # 单臂 7 轴（ID 11-17 左 / 21-27 右）
     pose_ik: true     # 位姿 IK（QP + DAQP，见 D-017）
     ik_solver: daqp
+  body.arm.left:      # 按侧声明，便于技能显式要求某侧手臂
+    dof: 7
+    pose_ik: true
+  body.arm.right:
+    dof: 7
+    pose_ik: true
   body.waist:
     dof: 3            # pitch / roll / yaw
     height: false     # 无升降自由度
@@ -38,12 +44,24 @@ hand_variants:
       body.gripper:
         type: brainco     # 6 电机灵巧手
         dof: 6
+      body.gripper.left:  # 按侧声明：双手同时可用
+        type: brainco
+        dof: 6
+      body.gripper.right:
+        type: brainco
+        dof: 6
   inspire:
     hand_vendor: inspire
     enable_hand: true
     capabilities:
       body.gripper:
         type: inspire     # 13 关节灵巧手
+        dof: 13
+      body.gripper.left:
+        type: inspire
+        dof: 13
+      body.gripper.right:
+        type: inspire
         dof: 13
   fixed:
     hand_vendor: none

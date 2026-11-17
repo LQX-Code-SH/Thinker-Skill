@@ -50,7 +50,8 @@ mcp:
 # 臂 IK（robots/tienkung_dex/ik.py）
 ik:
   solver: daqp            # daqp（QP+限位）| dls（无约束）
-  tol: 1e-3               # 收敛阈值（米）
+  tol: 1e-3               # 位置收敛阈值（米）
+  rot_tol: 0.02           # 姿态收敛阈值（弧度，约 1.1°）
   max_iter: 100
   damping: 0.08
   reach_margin: 0.03      # 球面预检留余量（米）

@@ -67,6 +67,7 @@ def load_robot_adapter(node, config: Dict[str, Any]):
         ik_solver=ik_cfg.get("solver", "daqp"),
         ik_max_iter=int(ik_cfg.get("max_iter", 100)),
         ik_tol=float(ik_cfg.get("tol", 1e-3)),
+        ik_rot_tol=float(ik_cfg.get("rot_tol", 0.02)),
         ik_damping=float(ik_cfg.get("damping", 0.08)),
         tcp_offset=ee_cfg.get("tcp_offset"),
         reach_margin=float(ik_cfg.get("reach_margin", 0.03)),

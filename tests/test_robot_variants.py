@@ -26,6 +26,23 @@ def test_fixed_has_no_gripper():
     assert "body.arm" in caps
 
 
+def test_arm_capability_per_side():
+    """双臂按侧声明（D-021）：左右臂都在，单侧键也能用于 requires。"""
+    for variant in ("brainco", "inspire", "fixed"):
+        caps = load_capabilities(ROBOT_DIR, variant)
+        assert {"body.arm.left", "body.arm.right"} <= caps, variant
+
+
+def test_gripper_capability_per_side():
+    """双手按侧声明；fixed 假手没有 gripper。"""
+    caps = load_capabilities(ROBOT_DIR, "brainco")
+    assert {"body.gripper.left", "body.gripper.right"} <= caps
+
+    fixed = load_capabilities(ROBOT_DIR, "fixed")
+    assert "body.gripper.left" not in fixed
+    assert "body.gripper.right" not in fixed
+
+
 def test_urdf_default_in_package():
     from tienkung_dex_robot.kinematics import default_urdf_path
     assert os.path.isfile(default_urdf_path())

@@ -87,8 +87,9 @@ class _Robot:
         self.cameras = {"ob_camera_head": _Camera(frame)}
 
 
-def _body(frame=None):
-    return TienkungDexBody(_Robot(frame), urdf_path=URDF, pelvis_height=0.92)
+def _body(frame=None, tcp_offset=None):
+    return TienkungDexBody(_Robot(frame), urdf_path=URDF, pelvis_height=0.92,
+                           tcp_offset=tcp_offset)
 
 
 def test_arm_name_to_id_and_clamp():
@@ -119,6 +120,72 @@ def test_arm_move_to_pose_unreachable():
     with pytest.raises(SkillError) as exc:
         body.arm.move_to_pose(Pose(1.5, 0.0, 0.9))   # 超臂展
     assert exc.value.code == ErrorCode.MOTION_IK_UNREACHABLE
+
+
+# ---------- 双臂与 6-DoF 位姿 ----------
+
+def _quat_ry(angle_rad):
+    """绕 y 轴旋转的四元数（x, y, z, w）。"""
+    return (0.0, math.sin(angle_rad / 2.0), 0.0, math.cos(angle_rad / 2.0))
+
+
+def test_body_exposes_both_arms_and_grippers():
+    body = _body()
+    assert set(body.arms) == {"left", "right"}
+    assert set(body.grippers) == {"left", "right"}
+    # 兼容别名指向配置默认侧，且与映射同一实例
+    assert body.arm is body.arms["right"]
+    assert body.gripper is body.grippers["right"]
+    assert body.arms["left"] is not body.arms["right"]
+    assert body.arms["left"]._side == "left"
+
+
+def test_arm_move_to_pose_6dof():
+    """四元数非单位 → 6-DoF 位姿求解；TCP 偏置按目标姿态折算。"""
+    body = _body(tcp_offset=(0.0, 0.0, -0.10))
+    qx, qy, qz, qw = _quat_ry(-math.pi / 2)
+    body.arm.move_to_pose(Pose(0.30, -0.20, 0.90, qx, qy, qz, qw), tcp=True)
+    ids, _, _ = body._robot.arm.calls[-1]
+    assert len(ids) == 7
+
+    # 位置模式：把指令回灌成关节状态，用 FK 验证 TCP 到位
+    body._robot.arm.states = {
+        jid: SimpleNamespace(pos=val) for jid, val in ids.items()}
+    pose = body.arm.get_tcp_pose()
+    assert math.isclose(pose.x, 0.30, abs_tol=5e-3)
+    assert math.isclose(pose.y, -0.20, abs_tol=5e-3)
+    assert math.isclose(pose.z, 0.90, abs_tol=5e-3)
+    # 姿态与目标同向（±q 等价）
+    dot = abs(pose.qx * qx + pose.qy * qy + pose.qz * qz + pose.qw * qw)
+    assert dot > 0.999
+
+
+def test_arm_move_to_pose_6dof_unreachable_orientation():
+    from thinker_skill_sdk import ErrorCode, SkillError
+
+    body = _body()
+    qx, qy, qz, qw = _quat_ry(math.pi / 2)     # 夹爪朝上：腕部不可达
+    with pytest.raises(SkillError) as exc:
+        body.arm.move_to_pose(Pose(0.30, -0.20, 0.90, qx, qy, qz, qw))
+    assert exc.value.code == ErrorCode.MOTION_IK_UNREACHABLE
+
+
+def test_get_tcp_pose_returns_unit_quaternion():
+    body = _body()
+    body.arm.move_to_joints({"right_shoulder_pitch": 0.0})
+    body._robot.arm.states = {}
+    pose = body.arm.get_tcp_pose()
+    norm = math.sqrt(pose.qx ** 2 + pose.qy ** 2 + pose.qz ** 2 + pose.qw ** 2)
+    assert math.isclose(norm, 1.0, abs_tol=1e-9)
+
+
+def test_gripper_strict_per_side():
+    """左手未装配时不能悄悄落到右手（hand_left=None）。"""
+    body = _body()
+    assert body.grippers["left"].is_holding() is False
+    assert body.grippers["left"].get_positions() == []
+    with pytest.raises(RuntimeError):
+        body.grippers["left"].set_positions([0.5] * 6)
 
 
 def test_arm_is_moving():

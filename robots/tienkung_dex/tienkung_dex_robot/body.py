@@ -4,8 +4,8 @@
 未安装时仍可 import 本模块，仅在创建时抛错。
 
 映射与约定（与 SDK config/joints.yaml 一致）：
-- arm   → robot.arm（关节级；位姿级/IK 不支持）
-- gripper → robot.hand_left/right（0..1 归一化 → brainco 1..1000）
+- arm   → robot.arm（关节级 + 位姿级 IK；左右两侧各一个实例）
+- gripper → robot.hand_left/right（0..1 归一化 → brainco 1..1000；严格按侧取手）
 - waist → robot.waist（pitch/roll/yaw）
 - head  → robot.head（yaw/pitch；pitch 正值=低头）
 - base  → robot.walk（速度流 20Hz，无到位反馈）
@@ -13,6 +13,8 @@
 from __future__ import annotations
 
 from typing import Any, Mapping, Optional, Sequence
+
+import numpy as np
 
 from thinker_skill_sdk import BodyAPI, ErrorCode, Pose, SkillError
 
@@ -28,12 +30,13 @@ from .joints import (
 
 
 class TienkungDexArm:
-    """手臂：关节级（位姿级不支持）。"""
+    """手臂：关节级 + 位姿级（IK，支持 6-DoF 姿态）。"""
 
     def __init__(self, robot: Any, *, side: str = "left",
                  urdf_path: Any = None, pelvis_height: float = 0.0,
                  ik_solver: str = "daqp", ik_max_iter: int = 100,
-                 ik_tol: float = 1e-3, ik_damping: float = 0.08,
+                 ik_tol: float = 1e-3, ik_rot_tol: float = 0.02,
+                 ik_damping: float = 0.08,
                  tcp_offset=(0.0, 0.0, 0.0), reach_margin: float = 0.03):
         self._robot = robot
         self._target: dict = {}
@@ -43,6 +46,7 @@ class TienkungDexArm:
         self._ik_solver = ik_solver
         self._ik_max_iter = int(ik_max_iter)
         self._ik_tol = float(ik_tol)
+        self._ik_rot_tol = float(ik_rot_tol)
         self._ik_damping = float(ik_damping)
         self._tcp_offset = tuple(tcp_offset or (0.0, 0.0, 0.0))
         self._reach_margin = float(reach_margin)
@@ -55,7 +59,8 @@ class TienkungDexArm:
             path = self._urdf_path or default_urdf_path()
             self._ik = ArmIK(
                 path, side=self._side, solver=self._ik_solver,
-                tol=self._ik_tol, max_iter=self._ik_max_iter,
+                tol=self._ik_tol, rot_tol=self._ik_rot_tol,
+                max_iter=self._ik_max_iter,
                 damping=self._ik_damping,
                 base_offset=(0.0, 0.0, self._pelvis_height),
                 tcp_offset=self._tcp_offset,
@@ -108,9 +113,12 @@ class TienkungDexArm:
                      duration: float = 0.0) -> None:
         """IK 求解后下发关节角；不可达/不收敛抛 ``SkillError``。
 
-        ``tcp=True`` 时 ``pose`` 为夹爪抓取点，按工具偏移近似折算腕部目标。
+        单位四元数 → 只约束位置（姿态由求解器给出）；
+        非单位四元数 → 6-DoF 位姿求解（位置 + 姿态同时收敛）。
+        ``tcp=True`` 时 ``pose`` 为夹爪抓取中心，按 **目标姿态** 旋转折算腕部位姿。
         """
         self._require()
+        from .ik import matrix_to_quat, quat_to_matrix
         from .joints import URDF_TO_BODY
 
         ik = self._ik_obj()
@@ -125,8 +133,17 @@ class TienkungDexArm:
                 ErrorCode.MOTION_IK_UNREACHABLE,
                 f"目标超出臂展: ({pose.x:.3f},{pose.y:.3f},{pose.z:.3f})")
 
-        wrist = target if not tcp else ik.tcp_to_wrist(target, waist)
-        q, ok = ik.solve(wrist, seed, waist)
+        if pose.is_unit_quaternion():
+            wrist = target if not tcp else ik.tcp_to_wrist(target, waist)
+            q, ok = ik.solve(wrist, seed, waist)
+        else:
+            R_tcp = quat_to_matrix((pose.qx, pose.qy, pose.qz, pose.qw))
+            if tcp:
+                p_wrist, R_wrist = ik.tcp_pose_to_wrist(target, R_tcp)
+            else:
+                p_wrist, R_wrist = target, R_tcp
+            q, ok = ik.solve_pose(
+                p_wrist, matrix_to_quat(R_wrist), seed, waist)
         if not ok:
             raise SkillError(
                 ErrorCode.MOTION_IK_UNREACHABLE,
@@ -135,15 +152,23 @@ class TienkungDexArm:
                              for n, v in zip(ik.joint_names, q)})
 
     def get_tcp_pose(self) -> Pose:
-        """用 FK 返回腕 roll 末端在 base 系的位置。"""
+        """FK 返回 **TCP 抓取中心** 位姿（位置 + 四元数）。
+
+        与 ``move_to_pose(tcp=True)`` 口径一致：腕部位置加 ``R @ tcp_offset``，
+        因此可以直接和目标位姿比较做到位判据。
+        """
         self._require()
+        from .ik import matrix_to_quat
         from .joints import URDF_TO_BODY
 
         ik = self._ik_obj()
         current = self.get_joints()
         q = [current.get(URDF_TO_BODY[n], 0.0) for n in ik.joint_names]
-        p = ik.fk(q, self._robot.waist.get_pose())
-        return Pose(x=float(p[0]), y=float(p[1]), z=float(p[2]))
+        p, R = ik.fk_pose(q, self._robot.waist.get_pose())
+        tcp = p + R @ np.asarray(self._tcp_offset, dtype=float)
+        qx, qy, qz, qw = matrix_to_quat(R)
+        return Pose(x=float(tcp[0]), y=float(tcp[1]), z=float(tcp[2]),
+                    qx=float(qx), qy=float(qy), qz=float(qz), qw=float(qw))
 
 
 class TienkungDexGripper:
@@ -156,10 +181,8 @@ class TienkungDexGripper:
 
     @property
     def _hand(self):
-        hand = getattr(self._robot, f"hand_{self._side}", None)
-        if hand is not None:
-            return hand
-        return getattr(self._robot, "hand_right", None) or getattr(self._robot, "hand_left", None)
+        # 严格按侧取手：双侧装配时不能把左手请求悄悄落到右手
+        return getattr(self._robot, f"hand_{self._side}", None)
 
     def _require(self):
         if self._hand is None:
@@ -302,16 +325,32 @@ class TienkungDexBase:
 
 
 class TienkungDexBody(BodyAPI):
-    """按能力切分的 BodyAPI 实现。"""
+    """按能力切分的 BodyAPI 实现：左右手臂/手部同时暴露。"""
+
+    SIDES = ("left", "right")
 
     def __init__(self, robot: Any, *, hand_side: str = "right", hand_dof: int = 6,
                  urdf_path: Any = None, pelvis_height: float = 0.0,
-                 ik_solver: str = "daqp"):
+                 ik_solver: str = "daqp", ik_max_iter: int = 100,
+                 ik_tol: float = 1e-3, ik_rot_tol: float = 0.02,
+                 ik_damping: float = 0.08, tcp_offset=None,
+                 reach_margin: float = 0.03):
         self._robot = robot
-        self.arm = TienkungDexArm(robot, side=hand_side, urdf_path=urdf_path,
-                                  pelvis_height=pelvis_height,
-                                  ik_solver=ik_solver)
-        self.gripper = TienkungDexGripper(robot, side=hand_side, dof=hand_dof)
+        self.default_side = hand_side
+        self.arms = {
+            side: TienkungDexArm(
+                robot, side=side, urdf_path=urdf_path,
+                pelvis_height=pelvis_height, ik_solver=ik_solver,
+                ik_max_iter=ik_max_iter, ik_tol=ik_tol,
+                ik_rot_tol=ik_rot_tol, ik_damping=ik_damping,
+                tcp_offset=tcp_offset, reach_margin=reach_margin)
+            for side in self.SIDES}
+        self.grippers = {
+            side: TienkungDexGripper(robot, side=side, dof=hand_dof)
+            for side in self.SIDES}
+        # 兼容别名：配置默认侧
+        self.arm = self.arms[hand_side]
+        self.gripper = self.grippers[hand_side]
         self.waist = TienkungDexWaist(robot)
         self.head = TienkungDexHead(robot)
         self.base = TienkungDexBase(robot)

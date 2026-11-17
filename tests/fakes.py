@@ -4,9 +4,11 @@ from __future__ import annotations
 from typing import Any, List, Mapping, Optional
 
 from thinker_skill_sdk import (
+    ErrorCode,
     Frame,
     Pose,
     SensorAPI,
+    SkillError,
     StateAPI,
     Step,
     StepCtx,
@@ -28,9 +30,14 @@ class _NullLog:
 
 
 class FakeArm:
+    """假手臂：位姿目标立即到位（``pose_targets`` 供断言）。"""
+
     def __init__(self):
         self._joints: dict = {}
         self._moving = False
+        self.pose = Pose(x=0.0, y=0.0, z=0.0)
+        self.pose_targets: list = []
+        self.reachable: Optional[bool] = True
 
     def move_to_joints(self, joints: Mapping[str, float], *, duration: float = 0.0):
         self._joints.update(joints)
@@ -41,17 +48,27 @@ class FakeArm:
     def is_moving(self):
         return self._moving
 
-    def move_to_pose(self, pose: Pose, *, duration: float = 0.0):
-        raise NotImplementedError("pose_ik not supported by FakeArm")
+    def move_to_pose(self, pose: Pose, *, tcp: bool = False,
+                     duration: float = 0.0):
+        if self.reachable is False:
+            raise SkillError(ErrorCode.MOTION_IK_UNREACHABLE, "FakeArm: 不可达")
+        self.pose_targets.append((pose, tcp))
+        self.pose = pose
 
     def get_tcp_pose(self):
-        return Pose(x=0.0, y=0.0, z=0.0)
+        return self.pose
+
+    def is_reachable(self, pose: Pose, *, tcp: bool = False):
+        return self.reachable
 
 
 class FakeGripper:
-    def __init__(self):
+    def __init__(self, side: str = "right"):
+        self.side = side
         self.width = 1.0
         self.holding = False
+        self.positions: List[float] = []
+        self.set_calls: list = []
 
     def grasp(self, *, force: float = 0.5):
         self.width = 0.0
@@ -62,10 +79,12 @@ class FakeGripper:
         self.holding = False
 
     def set_positions(self, positions):
-        self.width = float(positions[0]) if positions else 0.0
+        self.positions = [float(p) for p in positions]
+        self.set_calls.append(list(self.positions))
+        self.width = self.positions[0] if self.positions else 0.0
 
     def get_positions(self):
-        return [self.width]
+        return list(self.positions) or [self.width]
 
     def is_holding(self):
         return self.holding
@@ -124,11 +143,14 @@ class FakeBase:
 
 
 class FakeBody:
-    """满足 BodyAPI 的结构化鸭子类型。"""
+    """满足 BodyAPI 的结构化鸭子类型（左右手臂/手部同时暴露）。"""
 
-    def __init__(self):
-        self.arm = FakeArm()
-        self.gripper = FakeGripper()
+    def __init__(self, default_side: str = "right"):
+        self.default_side = default_side
+        self.arms = {"left": FakeArm(), "right": FakeArm()}
+        self.grippers = {s: FakeGripper(s) for s in self.arms}
+        self.arm = self.arms[default_side]
+        self.gripper = self.grippers[default_side]
         self.waist = FakeWaist()
         self.head = FakeHead()
         self.base = FakeBase()
@@ -173,6 +195,7 @@ def make_ctx(
     steps: Optional[List[Step]] = None,
     log=None,
     say=None,
+    call_skill=None,
 ) -> StepCtx:
     """构造可注入假时钟、与 ``steps`` 共享列表的 StepCtx。"""
     steps_list: List[Step] = steps if steps is not None else []
@@ -190,4 +213,5 @@ def make_ctx(
         check_cancel=lambda: None,
         now=clock or (lambda: 0.0),
         append_steps=steps_list.extend,
+        call_skill=call_skill,
     )
