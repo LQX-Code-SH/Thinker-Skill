@@ -66,6 +66,7 @@ def load_robot_adapter(node, config: Dict[str, Any]):
         pelvis_height=float(config.get("pelvis_height", 0.0) or 0.0),
         ik_solver=ik_cfg.get("solver", "daqp"),
         ik_max_iter=int(ik_cfg.get("max_iter", 100)),
+        # YAML 1.1 把 1e-3 解析为字符串，必须显式 float 转换
         ik_tol=float(ik_cfg.get("tol", 1e-3)),
         ik_rot_tol=float(ik_cfg.get("rot_tol", 0.02)),
         ik_damping=float(ik_cfg.get("damping", 0.08)),

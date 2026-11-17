@@ -281,6 +281,141 @@ def test_gripper_get_positions():
     assert body.gripper.get_positions() == pytest.approx([0.0, 0.4995, 1.0], abs=1e-3)
 
 
+# ---------- 手部变体分派（brainco 兼容 + inspire）----------
+class _FakeInspire:
+    def __init__(self):
+        self.commands = []
+        self.status = None
+
+    def set_positions(self, values):
+        self.commands.append(list(values))
+
+    def get_status(self):
+        return self.status
+
+    def set_force(self, forces):
+        self.forces = list(forces)
+
+    def get_force_threshold(self):
+        return [10] * 13
+
+    def get_touch(self):
+        return {"finger_forces": [100] * 5,
+                "finger_proximity": [0] * 5}
+
+    def contact_state(self, **kwargs):
+        return {"touched": [True] * 5, "count": 5, "any_contact": True}
+
+
+def test_gripper_vendor_defaults_to_brainco():
+    body = _body()
+    assert body.gripper.vendor == "brainco"
+    body.gripper.set_positions([0.0, 0.5, 1.0])
+    assert body._robot.hand_right.positions == [1, 500, 1000]
+
+
+def test_gripper_inspire_expands_pico6_to_13():
+    from tienkung_dex_robot.body import TienkungDexGripper
+    from tienkung_dex_robot.inspire_hand import pico6_to_inspire13
+    fake = _FakeInspire()
+    g = TienkungDexGripper(_Robot(), side="right", dof=13,
+                           vendor="inspire", inspire_hand=fake)
+    assert g.vendor == "inspire"
+    values = [0.0, 0.5, 1.0, 0.5, 0.5, 0.5]
+    g.set_positions(values)
+    assert fake.commands[-1] == pico6_to_inspire13(values)
+    assert len(fake.commands[-1]) == 13
+
+
+def test_gripper_inspire_release_is_open_codes():
+    from tienkung_dex_robot.body import TienkungDexGripper
+    from tienkung_dex_robot.inspire_hand import pico6_to_inspire13
+    fake = _FakeInspire()
+    g = TienkungDexGripper(_Robot(), side="right", dof=13,
+                           vendor="inspire", inspire_hand=fake)
+    g.release()
+    assert fake.commands[-1] == pico6_to_inspire13([0.0] * 6)
+    g.grasp()
+    assert fake.commands[-1] == pico6_to_inspire13([1.0] * 6)
+
+
+def test_gripper_inspire_holding_by_flex_rad():
+    from tienkung_dex_robot.body import TienkungDexGripper
+    from tienkung_dex_robot.inspire_hand import code_to_rad
+    fake = _FakeInspire()
+    g = TienkungDexGripper(_Robot(), side="right", dof=13,
+                           vendor="inspire", inspire_hand=fake)
+    # 屈曲通道取下限码（最大弯曲）
+    codes = [900, 900, 900, 0, 900, 0, 1150, 1150, 1150, 1150, 1750, 1600, 2040]
+    fake.status = SimpleNamespace(positions=tuple(codes))
+    assert g.is_holding() is True
+    rads = g.get_positions()
+    assert len(rads) == 13
+    assert rads[0] == pytest.approx(code_to_rad(0, 900))
+
+
+def test_gripper_bad_vendor_rejected():
+    from tienkung_dex_robot.body import TienkungDexGripper
+    with pytest.raises(ValueError):
+        TienkungDexGripper(_Robot(), vendor="unknown")
+
+
+def test_inspire_close_keeps_abduction_codes():
+    from tienkung_dex_robot.body import TienkungDexGripper
+    from tienkung_dex_robot.inspire_hand import (
+        close_codes_keep_abduction, pico6_to_inspire13)
+    # 抓取前手型：拇指侧摆（通道 10）= 942
+    base = [1600, 1610, 1620, 0, 1630, 0, 1870, 1880, 1890, 1880, 942, 1570, 2040]
+    grip = [0.95] * 6
+    codes = close_codes_keep_abduction(grip, base)
+    assert codes[10] == 942                       # 拇指侧摆保持抓取前值
+    assert codes[3] == 0 and codes[5] == 0        # 中指/食指侧摆中立
+    # 屈曲通道按闭合展开（不同于张开）
+    assert codes[0] == pico6_to_inspire13(grip)[0]
+
+    fake = _FakeInspire()
+    g = TienkungDexGripper(_Robot(), side="right", dof=13,
+                           vendor="inspire", inspire_hand=fake)
+    g.set_grip_keep_abduction(grip, base)
+    assert fake.commands[-1] == codes
+
+
+def test_gripper_force_touch_exposed_for_inspire():
+    from tienkung_dex_robot.body import TienkungDexGripper
+    fake = _FakeInspire()
+    g = TienkungDexGripper(_Robot(), side="right", dof=13,
+                           vendor="inspire", inspire_hand=fake)
+    assert g.get_force_threshold() == [10] * 13
+    assert g.get_force() == [10] * 13        # 兼容别名
+    assert g.get_touch()["finger_forces"] == [100] * 5
+    assert g.contact_state()["any_contact"] is True
+    g.set_force([500] * 13)
+    assert fake.forces == [500] * 13
+    # brainco 无此能力：返回空、忽略下发
+    assert _body().gripper.get_force_threshold() == []
+    assert _body().gripper.get_touch() == {}
+    assert _body().gripper.contact_state()["any_contact"] is False
+    _body().gripper.set_force([500] * 13)  # 不抛错
+
+
+def test_contact_state_from_touch_data():
+    from tienkung_dex_robot.inspire_hand import InspireHand
+    hand = InspireHand(None, "right")
+    hand._touch = {
+        "finger_forces": [0, 60, 0, 0, 0],           # 60 * 0.01N = 0.6N
+        "finger_proximity": [200000, 0, 0, 0, 0],    # 接近觉达标
+    }
+    state = hand.contact_state(force_threshold=50, proximity_threshold=100000)
+    assert state["touched"] == [True, True, False, False, False]
+    assert state["count"] == 2 and state["any_contact"] is True
+
+
+def test_adapter_passes_inspire_vendor_to_body():
+    from tienkung_dex_robot.adapter import HAND_VARIANTS
+    assert HAND_VARIANTS["inspire"]["hand_vendor"] == "inspire"
+    assert HAND_VARIANTS["brainco"]["hand_vendor"] == "brainco"
+
+
 def test_sensor_frame_has_k():
     frame = SimpleNamespace(color="c", depth="d", stamp=None,
                             frame_id="ob_camera_head")

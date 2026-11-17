@@ -83,6 +83,46 @@ class FakeGripper:
         self.set_calls.append(list(self.positions))
         self.width = self.positions[0] if self.positions else 0.0
 
+    def set_raw_codes(self, codes):
+        self.raw_codes = [int(v) for v in codes]
+        self.set_calls.append(list(self.raw_codes))
+
+    def set_grip_keep_abduction(self, grip_values, base_codes):
+        codes = list(base_codes)
+        self.raw_codes = codes
+        self.set_calls.append(list(codes))
+
+    def contact_state(self, **kwargs):
+        return {"touched": [True] * 5, "count": 5, "any_contact": True}
+
+    def get_touch(self):
+        return {"finger_forces": [100] * 5, "finger_proximity": [0] * 5}
+
+    def get_force_threshold(self):
+        return [0] * 13
+
+    def get_finger_forces(self):
+        return [60] * 5
+
+    def start_force_close(self, grip_values, base_codes, total_steps=8):
+        self._fc = {"base": list(base_codes), "total": int(total_steps),
+                    "step": 0}
+
+    def step_force_close(self, target_force):
+        fc = getattr(self, "_fc", None)
+        if fc is None:
+            return {"step": 0, "total": 1, "force_sum": 0.0,
+                    "reached": False, "done": True}
+        fc["step"] = min(fc["step"] + 1, fc["total"])
+        fsum = 300.0  # fake 固定 5 指力和
+        reached = fsum >= float(target_force)
+        return {"step": fc["step"], "total": fc["total"],
+                "force_sum": fsum, "reached": reached,
+                "done": reached or fc["step"] >= fc["total"]}
+
+    def set_force(self, forces):
+        self.forces = list(forces)
+
     def get_positions(self):
         return list(self.positions) or [self.width]
 

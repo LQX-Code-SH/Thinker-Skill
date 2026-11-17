@@ -71,6 +71,15 @@ class TienkungDexArm:
         if getattr(self._robot, "arm", None) is None:
             raise RuntimeError("tienkung_dex: arm 子系统未启用")
 
+    def _waist_pose(self):
+        """(pitch, roll, yaw)：SDK RealJointGroup 无 get_pose，直接从状态读。"""
+        from .joints import WAIST_JOINTS
+        states = self._robot.waist.get_states()
+        return tuple(float(states[jid].pos) if jid in states else 0.0
+                     for jid in (WAIST_JOINTS["waist_pitch"],
+                                 WAIST_JOINTS["waist_roll"],
+                                 WAIST_JOINTS["waist_yaw"]))
+
     def _to_ids(self, joints: Mapping[str, float]) -> dict:
         out = {}
         for name, pos in joints.items():
@@ -107,7 +116,7 @@ class TienkungDexArm:
         self._require()
         return self._ik_obj().is_reachable(
             [pose.x, pose.y, pose.z], tcp=tcp,
-            waist=self._robot.waist.get_pose())
+            waist=self._waist_pose())
 
     def move_to_pose(self, pose: Pose, *, tcp: bool = False,
                      duration: float = 0.0) -> None:
@@ -124,7 +133,7 @@ class TienkungDexArm:
         ik = self._ik_obj()
         current = self.get_joints()
         seed = [current.get(URDF_TO_BODY[n], 0.0) for n in ik.joint_names]
-        waist = self._robot.waist.get_pose()
+        waist = self._waist_pose()
         target = [pose.x, pose.y, pose.z]
 
         verdict = ik.is_reachable(target, tcp=tcp, waist=waist)
@@ -164,7 +173,7 @@ class TienkungDexArm:
         ik = self._ik_obj()
         current = self.get_joints()
         q = [current.get(URDF_TO_BODY[n], 0.0) for n in ik.joint_names]
-        p, R = ik.fk_pose(q, self._robot.waist.get_pose())
+        p, R = ik.fk_pose(q, self._waist_pose())
         tcp = p + R @ np.asarray(self._tcp_offset, dtype=float)
         qx, qy, qz, qw = matrix_to_quat(R)
         return Pose(x=float(tcp[0]), y=float(tcp[1]), z=float(tcp[2]),
@@ -172,20 +181,43 @@ class TienkungDexArm:
 
 
 class TienkungDexGripper:
-    """灵巧手：0..1 归一化 → brainco 1..1000。"""
+    """灵巧手：对外 0..1 归一化，按 ``vendor`` 分派到底层。
 
-    def __init__(self, robot: Any, side: str = "right", dof: int = 6):
+    - ``brainco``（保留原接口）：SDK ``robot.hand_<side>``，1..1000；
+    - ``inspire``：项目侧 :class:`InspireHand`，13 关节原始角度，走
+      ``angle_set`` / ``angle_actual``。
+
+    ``inspire_hand`` 可显式注入（单测/已建好的实例）；为 None 时按 vendor 懒建。
+    """
+
+    def __init__(self, robot: Any, side: str = "right", dof: int = 6,
+                 *, vendor: str = "brainco", inspire_hand: Any = None):
         self._robot = robot
         self._side = side
         self._dof = dof
+        self._vendor = str(vendor).lower()
+        if self._vendor not in ("brainco", "inspire"):
+            raise ValueError(f"未知手部 vendor: {vendor!r}（可选 brainco/inspire）")
+        self._inspire_hand = inspire_hand
+
+    @property
+    def vendor(self) -> str:
+        return self._vendor
 
     @property
     def _hand(self):
         # 严格按侧取手：双侧装配时不能把左手请求悄悄落到右手
         return getattr(self._robot, f"hand_{self._side}", None)
 
+    @property
+    def _inspire(self):
+        if self._inspire_hand is None:
+            raise RuntimeError(
+                "tienkung_dex: inspire 手未注入（create_adapter 应传入 node）")
+        return self._inspire_hand
+
     def _require(self):
-        if self._hand is None:
+        if self._vendor == "brainco" and self._hand is None:
             raise RuntimeError("tienkung_dex: 灵巧手未装配（hand 子系统缺失）")
 
     @staticmethod
@@ -195,34 +227,147 @@ class TienkungDexGripper:
 
     def set_positions(self, positions: Sequence[float]) -> None:
         self._require()
-        self._hand.set_positions([self._to_motor(p) for p in positions])
+        if self._vendor == "brainco":
+            self._hand.set_positions([self._to_motor(p) for p in positions])
+        else:
+            from .inspire_hand import pico6_to_inspire13
+            self._inspire.set_positions(pico6_to_inspire13(positions))
 
     def grasp(self, *, force: float = 0.5) -> None:
-        self._require()
-        self._hand.set_positions([1000] * self._dof)
+        # inspire 走 6 维 pico6 展开，brainco 走原 dof 个闭合度
+        n = 6 if self._vendor == "inspire" else self._dof
+        self.set_positions([1.0] * n)
 
     def release(self) -> None:
+        n = 6 if self._vendor == "inspire" else self._dof
+        self.set_positions([0.0] * n)
+
+    def set_raw_codes(self, codes: Sequence[int]) -> None:
+        """直接下发示教手型原始角码（inspire 13 码；brainco 按值域夹取）。
+
+        供示教轨迹在接近阶段设置"抓取前手型"；调用方保证角码口径匹配机型。
+        """
         self._require()
-        self._hand.set_positions([1] * self._dof)
+        if self._vendor == "inspire":
+            self._inspire.set_positions(codes)
+        else:
+            self._hand.set_positions(
+                [max(1, min(1000, int(round(float(v))))) for v in codes])
+
+    def set_grip_keep_abduction(self, grip_values: Sequence[float],
+                                base_codes: Sequence[int]) -> None:
+        """合手：屈曲到 ``grip_values``，侧摆保持 ``base_codes``（抓取前手型）。
+
+        inspire 用逐通道角码；brainco 无独立侧摆通道，等价于普通 set_positions。
+        """
+        self._require()
+        if self._vendor == "inspire":
+            from .inspire_hand import close_codes_keep_abduction
+            self.set_raw_codes(close_codes_keep_abduction(grip_values, base_codes))
+        else:
+            self.set_positions(list(grip_values))
+
+    # -- 力 / 触觉（inspire 专有；brainco 返回空、set_force 空操作）--
+    def get_force_threshold(self) -> list:
+        """力控阈值设定值（force_actual，单位 g，预留）；inspire 以外空。
+
+        不是实测接触力；接触判定用 :meth:`contact_state` / :meth:`get_touch`。
+        """
+        if self._vendor == "inspire":
+            return self._inspire.get_force_threshold()
+        return []
+
+    def get_force(self) -> list:
+        """:meth:`get_force_threshold` 的兼容别名。"""
+        return self.get_force_threshold()
+
+    def get_touch(self) -> dict:
+        """触觉（5 指法向/切向力 0.01N、接近觉、掌心）；inspire 以外空。"""
+        if self._vendor == "inspire":
+            return self._inspire.get_touch()
+        return {}
+
+    def contact_state(self, **kwargs) -> dict:
+        """基于 touch_data 的接触判定；inspire 以外返回 any_contact=False。"""
+        if self._vendor == "inspire":
+            return self._inspire.contact_state(**kwargs)
+        return {"touched": [False] * 5, "count": 0, "any_contact": False}
+
+    def set_force(self, forces: Sequence[int]) -> None:
+        """下发 13 通道力控阈值（0~1000，单位 g）；inspire 以外忽略。"""
+        if self._vendor == "inspire":
+            self._inspire.set_force(forces)
+
+    def get_finger_forces(self) -> list:
+        """5 指指尖法向力（0.01N 单位）；inspire 以外空。"""
+        if self._vendor == "inspire":
+            return list(self._inspire.get_touch().get("finger_forces", []))
+        return []
+
+    def start_force_close(self, grip_values: Sequence[float],
+                          base_codes: Sequence[int], *,
+                          total_steps: int = 8) -> None:
+        """初始化渐进闭合状态：从 base_codes 插值到目标闭合角码。
+
+        仅 inspire 有意义；目标闭码 = close_codes_keep_abduction(grip, base)。
+        """
+        if self._vendor != "inspire":
+            return
+        from .inspire_hand import close_codes_keep_abduction
+        self._close_base = [int(v) for v in base_codes]
+        self._close_target = close_codes_keep_abduction(grip_values, base_codes)
+        self._close_total = max(1, int(total_steps))
+        self._close_step = 0
+
+    def step_force_close(self, target_force: float) -> dict:
+        """下发下一步闭合角码并读力反馈。
+
+        返回 ``{step, total, force_sum, reached, done}``：
+        - 5 指法向力和 >= ``target_force`` → ``reached=True``，停止继续闭合；
+        - 走到最后一步 → ``done=True``（含到力和到上限两种）。
+        """
+        if self._vendor != "inspire" or not getattr(self, "_close_target", None):
+            return {"step": 0, "total": 1, "force_sum": 0.0,
+                    "reached": False, "done": True}
+        self._close_step = min(self._close_step + 1, self._close_total)
+        t = self._close_step / float(self._close_total)
+        codes = [int(round(a + (b - a) * t))
+                 for a, b in zip(self._close_base, self._close_target)]
+        self.set_raw_codes(codes)
+        forces = self.get_finger_forces()
+        fsum = float(sum(forces))
+        reached = fsum >= float(target_force)
+        done = reached or self._close_step >= self._close_total
+        return {"step": self._close_step, "total": self._close_total,
+                "force_sum": round(fsum, 1), "reached": reached, "done": done}
 
     def get_positions(self):
-        hand = self._hand
+        hand = self._hand if self._vendor == "brainco" else self._inspire
         if hand is None:
             return []
         st = hand.get_status()
         if st is None or not st.positions:
             return []
-        # brainco 1..1000 → 0..1
-        return [(p - 1) / 999.0 for p in st.positions]
+        if self._vendor == "brainco":
+            return [(p - 1) / 999.0 for p in st.positions]
+        # inspire：角码 → rad（供上层用，13 维）
+        from .inspire_hand import code_to_rad
+        return [code_to_rad(i, p) for i, p in enumerate(st.positions)]
 
     def is_holding(self) -> bool:
-        hand = self._hand
+        hand = self._hand if self._vendor == "brainco" else self._inspire
         if hand is None:
             return False
         st = hand.get_status()
-        if st is not None and st.positions:
+        if st is None or not st.positions:
+            return False
+        if self._vendor == "brainco":
             return (sum(st.positions) / len(st.positions)) > 800
-        return False
+        # inspire：四个屈曲指根（通道 0/1/2/4）rad 均值 > 0.9 rad 视为抓持
+        from .inspire_hand import code_to_rad
+        flex = [code_to_rad(i, st.positions[i]) for i in (0, 1, 2, 4)
+                if i < len(st.positions)]
+        return bool(flex) and (sum(flex) / len(flex)) > 0.9
 
 
 class TienkungDexWaist:
@@ -330,6 +475,7 @@ class TienkungDexBody(BodyAPI):
     SIDES = ("left", "right")
 
     def __init__(self, robot: Any, *, hand_side: str = "right", hand_dof: int = 6,
+                 hand_vendor: str = "brainco", inspire_hands=None,
                  urdf_path: Any = None, pelvis_height: float = 0.0,
                  ik_solver: str = "daqp", ik_max_iter: int = 100,
                  ik_tol: float = 1e-3, ik_rot_tol: float = 0.02,
@@ -345,8 +491,12 @@ class TienkungDexBody(BodyAPI):
                 ik_rot_tol=ik_rot_tol, ik_damping=ik_damping,
                 tcp_offset=tcp_offset, reach_margin=reach_margin)
             for side in self.SIDES}
+        inspire_hands = dict(inspire_hands or {})
         self.grippers = {
-            side: TienkungDexGripper(robot, side=side, dof=hand_dof)
+            side: TienkungDexGripper(
+                robot, side=side, dof=hand_dof, vendor=hand_vendor,
+                inspire_hand=inspire_hands.get(side) if hand_vendor == "inspire"
+                else None)
             for side in self.SIDES}
         # 兼容别名：配置默认侧
         self.arm = self.arms[hand_side]
