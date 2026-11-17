@@ -180,6 +180,34 @@ def lift_position(position: Sequence[float], dx: float, dz: float) -> Vec3:
             float(position[2]) + float(dz))
 
 
+def taught_tcp_pose(point: Mapping[str, Any], tcp_offset: Sequence[float]
+                    ) -> Tuple[Vec3, Quat]:
+    """把示教位姿条目转成 TCP 目标 ``(位置, 四元数)``。
+
+    示教条目两种口径（见 ``configs/robot.yaml`` 的 ``taught_poses``）：
+
+    - ``tcp_position``（末端抓取中心）：直接作为 TCP 目标；
+    - ``wrist_position``（腕 roll 末端）：按条目姿态把 ``tcp_offset`` 旋转后
+      叠加，得到 TCP 目标 —— 与 ``ArmIK.fk_pose`` / ``get_tcp_pose`` 的
+      ``p_tcp = p_wrist + R_wrist @ tcp_offset`` 口径一致。
+
+    两种条目都带 ``quat_xyzw``（腕 roll 帧姿态，也是 TCP 帧姿态）。
+    """
+    quat = tuple(float(v) for v in (point.get("quat_xyzw")
+                                    or (0.0, 0.0, 0.0, 1.0)))
+    if len(quat) != 4:
+        quat = (0.0, 0.0, 0.0, 1.0)
+    pos = point.get("tcp_position")
+    if pos is not None:
+        return (float(pos[0]), float(pos[1]), float(pos[2])), quat
+    wrist = point.get("wrist_position")
+    if wrist is None:
+        raise ValueError("示教位姿缺少 tcp_position / wrist_position")
+    dx, dy, dz = quat_rotate(quat, tcp_offset)
+    return (float(wrist[0]) + dx, float(wrist[1]) + dy,
+            float(wrist[2]) + dz), quat
+
+
 # ---------- 位姿误差（到位判据用） ----------
 def pose_delta(current: Sequence[float], target: Sequence[float]
                ) -> Tuple[float, float]:

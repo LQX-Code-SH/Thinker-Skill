@@ -8,7 +8,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from fetch_object.geometry import plan_grasp, pose_delta, quat_angle
+from fetch_object.geometry import plan_grasp, pose_delta, quat_angle, taught_tcp_pose
 from fetch_object.objects import normalize_object, resolve_params
 from fetch_object.plugin import DEFAULTS, FetchObject
 
@@ -217,6 +217,68 @@ def test_verify_fails_when_object_stays():
     assert result.retryable is True
 
 
+def test_force_feedback_close_stops_at_target():
+    """力反馈闭环：5 指力和达标即停，输出 force_close 状态。"""
+    caller = _Caller({"detect_object": [_detected([0.42, -0.14, 0.93])]})
+    body = FakeBody()
+    codes = [1600] * 13
+    taught = {
+        "side": "right", "tcp_offset": [0, 0, -0.1],
+        "pregrasp": {"tcp_position": [0.38, -0.26, 1.09],
+                     "quat_xyzw": _unit_quat(),
+                     "pregrasp_hand": {"joint_values": codes}},
+        "grasp": {"tcp_position": [0.40, -0.26, 1.03],
+                  "quat_xyzw": _unit_quat()},
+    }
+    cfg = {"taught_poses": taught, "close_force_control": True,
+           "close_force_target": 300, "close_steps": 8,
+           "close_settle_ticks": 2}
+    ctx = _ctx(caller, body=body, cfg=cfg)
+    steps = _steps(FetchObject(), ctx, {"arm": "right"})
+    steps["感知定位"].run(ctx)
+    steps["规划抓取"].run(ctx)
+    steps["接近"].run(ctx)   # 存下 pregrasp_hand_codes
+    # 第一次合手：到力但稳定计数 0 → running
+    r1 = steps["合手"].run(ctx)
+    assert r1.status == "running"
+    assert r1.data["force_close"]["reached"] is True
+    # 第二次：稳定计数达标 → done
+    r2 = steps["合手"].run(ctx)
+    assert r2.status == "done"
+    assert r2.data["force_close"]["step"] == 2   # 两次调用各推进一步；到力后靠稳定计数收尾
+
+
+def test_verify_uses_contact_when_vision_fails():
+    """启用接触辅助：视觉失败但合手时指尖有接触 → 判定成功。"""
+    caller = _Caller({"detect_object": [
+        _detected([0.40, -0.12, 0.62]),
+        _fail("PERCEPTION_OBJECT_NOT_FOUND", retryable=True),
+    ]})
+    body = FakeBody()
+    ctx = _ctx(caller, body=body, cfg={"verify_use_contact": True,
+                                       "grasp_settle_s": 0.0})
+    steps = _steps(FetchObject(), ctx)
+    steps["感知定位"].run(ctx)
+    steps["规划抓取"].run(ctx)
+    assert steps["合手"].run(ctx).status == "done"
+    result = steps["视觉确认"].run(ctx)
+    assert result.status == "done"
+    assert result.data["verified_by"] == "contact"
+
+
+def test_verify_contact_disabled_by_default():
+    caller = _Caller({"detect_object": [
+        _detected([0.40, -0.12, 0.62]),
+        _fail("PERCEPTION_OBJECT_NOT_FOUND", retryable=True),
+    ]})
+    ctx = _ctx(caller)
+    steps = _steps(FetchObject(), ctx)
+    steps["感知定位"].run(ctx)
+    steps["规划抓取"].run(ctx)
+    result = steps["视觉确认"].run(ctx)
+    assert result.status == "failed"
+
+
 def test_verify_fails_when_object_lost():
     caller = _Caller({"detect_object": [
         _detected([0.40, -0.12, 0.62]),
@@ -256,6 +318,29 @@ def test_hold_is_noop_without_config():
     steps["规划抓取"].run(ctx)
     assert steps["回收"].run(ctx).status == "done"
     assert body.arms["right"].get_joints() == {}
+
+
+def test_hold_returns_to_taught_end_pose():
+    caller = _Caller({"detect_object": [_detected([0.4, -0.12, 0.62])]})
+    body = FakeBody()
+    taught = {
+        "side": "right", "tcp_offset": [0, 0, -0.1],
+        "pregrasp": {"tcp_position": [0.38, -0.26, 1.09],
+                     "quat_xyzw": _unit_quat()},
+        "grasp": {"tcp_position": [0.40, -0.26, 1.03],
+                  "quat_xyzw": _unit_quat()},
+        "end": {"tcp_position": [0.34, -0.33, 1.12],
+                "quat_xyzw": _unit_quat()},
+    }
+    ctx = _ctx(caller, body=body, cfg={"taught_poses": taught, "settle_ticks": 1})
+    steps = _steps(FetchObject(), ctx, {"arm": "right"})
+    steps["感知定位"].run(ctx)
+    steps["规划抓取"].run(ctx)
+    result = steps["回收"].run(ctx)
+    assert result.status == "done"
+    assert result.data["return_to"] == "taught_end"
+    last = body.arms["right"].pose_targets[-1][0]
+    assert (last.x, last.y, last.z) == pytest.approx((0.34, -0.33, 1.12))
 
 
 def test_hold_uses_side_joints():
@@ -327,6 +412,144 @@ def test_extra_yaw_mirrors_by_side():
     assert right["yaw"] == pytest.approx(-left["yaw"], abs=1e-9)
 
 
+# ---------- 示教位姿 ----------
+def _unit_quat():
+    return [0.0, 0.0, 0.0, 1.0]
+
+
+def test_taught_tcp_pose_prefers_tcp_position():
+    point = {"tcp_position": [0.4, -0.2, 1.0],
+             "wrist_position": [0.3, -0.3, 1.1],
+             "quat_xyzw": _unit_quat()}
+    pos, quat = taught_tcp_pose(point, [0.0, 0.0, -0.1])
+    assert list(pos) == pytest.approx([0.4, -0.2, 1.0])
+    assert list(quat) == pytest.approx(_unit_quat())
+
+
+def test_taught_tcp_pose_rotates_offset_for_wrist():
+    # 90° 绕 z：tcp_offset -y → +x 方向旋转后叠加到腕部
+    point = {"wrist_position": [0.3, -0.3, 1.1],
+             "quat_xyzw": [0.0, 0.0, 1.0, 0.0]}  # 绕 z 180°
+    pos, _ = taught_tcp_pose(point, [0.0, 0.0, -0.1])
+    # 180° 绕 z 不改变 z 分量，tcp_offset(0,0,-0.1) → (0,0,-0.1)
+    assert list(pos) == pytest.approx([0.3, -0.3, 1.0])
+
+
+def test_taught_tcp_pose_requires_a_point():
+    with pytest.raises(ValueError):
+        taught_tcp_pose({"quat_xyzw": _unit_quat()}, [0, 0, -0.1])
+
+
+def test_plan_uses_taught_poses_when_configured():
+    caller = _Caller({"detect_object": [_detected([0.9, 0.9, 0.9])]})
+    body = FakeBody()
+    taught = {
+        "side": "right",
+        "tcp_offset": [0.0, 0.0, -0.1],
+        "pregrasp": {"wrist_position": [0.30, -0.31, 1.12],
+                     "quat_xyzw": _unit_quat()},
+        "grasp": {"tcp_position": [0.40, -0.26, 1.03],
+                  "quat_xyzw": _unit_quat()},
+    }
+    ctx = _ctx(caller, body=body, cfg={"taught_poses": taught})
+    steps = _steps(FetchObject(), ctx, {"arm": "right"})
+    steps["感知定位"].run(ctx)
+    result = steps["规划抓取"].run(ctx)
+    assert result.status == "done"
+    assert result.data["source"] == "taught"
+
+    # 接近 = 腕部(0.30,-0.31,1.12) + R@(0,0,-0.1) = (0.30,-0.31,1.02)
+    steps["接近"].run(ctx)
+    steps["抓取位姿"].run(ctx)
+    right = body.arms["right"]
+    approach, grasp = right.pose_targets[0][0], right.pose_targets[1][0]
+    assert (approach.x, approach.y, approach.z) == pytest.approx(
+        (0.30, -0.31, 1.02), abs=1e-6)
+    assert (grasp.x, grasp.y, grasp.z) == pytest.approx(
+        (0.40, -0.26, 1.03), abs=1e-6)
+
+
+def test_taught_poses_shift_with_object_xy():
+    """示教位姿相对化：苹果移动后，两段目标按 x/y 平移、z 不变。"""
+    caller = _Caller({"detect_object": [_detected([0.42, -0.14, 0.93])]})
+    body = FakeBody()
+    taught = {
+        "side": "right", "tcp_offset": [0.0, 0.0, -0.1],
+        "relative_to_object": True,
+        "apple_pose_recorded": [0.40, -0.20, 0.92],
+        "pregrasp": {"tcp_position": [0.38, -0.26, 1.09],
+                     "quat_xyzw": _unit_quat()},
+        "grasp": {"tcp_position": [0.40, -0.26, 1.03],
+                  "quat_xyzw": _unit_quat()},
+    }
+    ctx = _ctx(caller, body=body, cfg={"taught_poses": taught})
+    steps = _steps(FetchObject(), ctx, {"arm": "right"})
+    steps["感知定位"].run(ctx)
+    result = steps["规划抓取"].run(ctx)
+    # 苹果从 [0.40,-0.20] 移到 [0.42,-0.14] → shift (+0.02, +0.06)
+    assert result.data["source"] == "taught"
+    assert result.data["shift_xy"] == pytest.approx([0.02, 0.06])
+    steps["接近"].run(ctx)
+    steps["抓取位姿"].run(ctx)
+    _, grasp = (p for p, _ in body.arms["right"].pose_targets)
+    assert (grasp.x, grasp.y, grasp.z) == pytest.approx(
+        (0.42, -0.20, 1.03), abs=1e-6)   # x/y 跟随，z 保持
+
+
+def test_taught_poses_without_relative_flag_no_shift():
+    caller = _Caller({"detect_object": [_detected([0.42, -0.14, 0.93])]})
+    body = FakeBody()
+    taught = {
+        "side": "right", "tcp_offset": [0.0, 0.0, -0.1],
+        "apple_pose_recorded": [0.40, -0.20, 0.92],  # 但未启用 relative
+        "pregrasp": {"tcp_position": [0.38, -0.26, 1.09],
+                     "quat_xyzw": _unit_quat()},
+        "grasp": {"tcp_position": [0.40, -0.26, 1.03],
+                  "quat_xyzw": _unit_quat()},
+    }
+    ctx = _ctx(caller, body=body, cfg={"taught_poses": taught})
+    steps = _steps(FetchObject(), ctx, {"arm": "right"})
+    steps["感知定位"].run(ctx)
+    result = steps["规划抓取"].run(ctx)
+    assert result.data["shift_xy"] == pytest.approx([0.0, 0.0])
+
+
+def test_plan_ignores_taught_poses_for_other_side():
+    caller = _Caller({"detect_object": [_detected([0.9, 0.9, 0.9])]})
+    taught = {"side": "left",
+              "pregrasp": {"tcp_position": [1, 1, 1], "quat_xyzw": _unit_quat()},
+              "grasp": {"tcp_position": [2, 2, 2], "quat_xyzw": _unit_quat()}}
+    ctx = _ctx(caller, cfg={"taught_poses": taught})
+    steps = _steps(FetchObject(), ctx, {"arm": "right"})
+    steps["感知定位"].run(ctx)
+    result = steps["规划抓取"].run(ctx)
+    assert result.data["source"] == "planned"
+
+
+def test_taught_mode_sends_pregrasp_hand_on_approach():
+    caller = _Caller({"detect_object": [_detected([0.9, 0.9, 0.9])]})
+    body = FakeBody()
+    hand_codes = [1619, 1629, 1651, 0, 1641, 0, 1879,
+                  1891, 1890, 1889, 942, 1570, 2041]
+    taught = {
+        "side": "right", "tcp_offset": [0.0, 0.0, -0.1],
+        "pregrasp": {"wrist_position": [0.30, -0.31, 1.12],
+                     "quat_xyzw": _unit_quat(),
+                     "pregrasp_hand": {"joint_values": hand_codes}},
+        "grasp": {"tcp_position": [0.40, -0.26, 1.03],
+                  "quat_xyzw": _unit_quat()},
+    }
+    ctx = _ctx(caller, body=body, cfg={"taught_poses": taught, "settle_ticks": 1})
+    steps = _steps(FetchObject(), ctx, {"arm": "right"})
+    steps["感知定位"].run(ctx)
+    steps["规划抓取"].run(ctx)
+    steps["接近"].run(ctx)
+    assert body.grippers["right"].raw_codes == hand_codes
+    # 合手：屈曲闭合，但侧摆保持抓取前示教值
+    steps["合手"].run(ctx)
+    assert body.grippers["right"].raw_codes == hand_codes
+
+
 def test_pose_delta_reports_distance_and_angle():
     a = (0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0)
     b = (0.03, 0.04, 0.0, 0.0, 0.0, 0.0, 1.0)
@@ -348,7 +571,7 @@ def test_repo_config_section_resolves():
     assert config["ik"]["rot_tol"] > 0
 
     params = resolve_params(DEFAULTS, section, "apple", None)
-    assert params["grasp_positions"][0] == pytest.approx(0.95)   # 类别覆写
+    assert params["grasp_positions"][0] == pytest.approx(0.65)   # apple 类别覆写（降力）
     assert params["grasp_delta_z"] == pytest.approx(0.135)       # 通用配置
 
     bottle = resolve_params(DEFAULTS, section, "bottle", None)
