@@ -1,0 +1,20 @@
+
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
+  <name>fetch_object</name>
+  <version>0.1.0</version>
+  <description>抓取物体到持物位：低头→定位→选臂→接近→抓取→提拉→视觉确认→回收</description>
+  <maintainer email="1627049654@qq.com">qingxiangliu</maintainer>
+  <license>Apache-2.0</license>
+
+  <exec_depend>python3</exec_depend>
+  <exec_depend>thinker_skill_sdk</exec_depend>
+  <!-- 设计期依赖声明：运行期经 ctx.call_skill 调用，不 import 源码（D-006） -->
+  <exec_depend>look_down_table</exec_depend>
+  <exec_depend>detect_object</exec_depend>
+
+  <export>
+    <build_type>ament_python</build_type>
+  </export>
+</package>

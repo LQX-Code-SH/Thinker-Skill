@@ -1,0 +1,21 @@
+name: fetch_object
+version: 0.1.0
+category: manipulation
+min_core: 0.1.0
+entry: fetch_object.plugin:FetchObject
+commands: [fetch_object]
+# 只声明手臂与手部（占 upper 区域）；低头/定位走子技能，故不声明 body.head
+requires: [body.arm.left, body.arm.right, body.gripper.left, body.gripper.right]
+precondition: []
+postcondition: {holding: true}
+timeout: 120
+interfaces: [service, action]
+errors:
+  - PERCEPTION_OBJECT_NOT_FOUND
+  - PERCEPTION_POSE_INVALID
+  - MOTION_IK_UNREACHABLE
+  - MOTION_GRASP_FAILED
+  - PRECOND_BODY_BUSY
+  - PRECOND_CAPABILITY_MISSING
+  - SYS_CONFIG_ERROR
+mcp: {tools: [fetch_object], port: 8033}

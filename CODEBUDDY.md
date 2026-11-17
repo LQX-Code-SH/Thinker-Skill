@@ -18,7 +18,7 @@ make clean
 PYTHONPATH=core/skill_sdk:core/skill_core:core/common:core/sensor:core/body:\
 robots/tienkung_dex:\
 skills/perception/detect_object/skill:skills/manipulation/look_down_table/skill:\
-skills/mock/fetch_object_mock/skill:tests \
+skills/manipulation/fetch_object/skill:skills/mock/fetch_object_mock/skill:tests \
   python3 -m pytest -q tests
 
 # 单个测试

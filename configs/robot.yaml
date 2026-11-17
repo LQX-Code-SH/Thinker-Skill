@@ -37,6 +37,46 @@ skills:
     threshold: 0.35          # 检测置信度阈值；低阈值召回高但误检多
     text_threshold: 0.35
 
+  fetch_object:
+    # —— 预备 ——
+    prepare_pitch_deg: 45.0      # 先低头再定位（look_down_table 的软上限 47.5°）
+    # —— 定位 ——
+    probe_retries: 2             # 检测失败重试次数
+    # —— 动作 ——
+    approach_tol: 0.01           # 到位判据：位置误差（米）
+    rot_tol: 0.05                # 到位判据：姿态误差（弧度）
+    settle_ticks: 3              # 连续满足判据的 tick 数（10Hz → 0.3s）
+    grasp_settle_s: 0.8          # 合手后等待
+    lift_x_delta: -0.05          # 提拉：base 系后退
+    lift_z_delta: 0.15           # 提拉：base 系抬升
+    # —— 成败判定（视觉二次确认）——
+    verify_min_lift_z: 0.05      # 物体随手上移的最小抬升量（米）
+    verify_max_xy_dist: 0.12     # 与抓取前位置的最大水平偏移（米）
+    # —— 抓取位姿（初值沿用参考实现的天轶 2.0，真机须按手型标定）——
+    z_bias: 0.02                 # 目标点高度补偿
+    base_orientation_deg: [0.0, -90.0, 0.0]   # 基准夹爪姿态（zyx）
+    yaw_map:                     # 目标横向方位角 → 额外 yaw（tanh 映射）
+      ref_x: 0.10
+      ref_y_abs: 0.20
+      max_extra_yaw_deg: 42.0
+      angle_scale_deg: 28.0
+      tanh_gain: 1.6
+    center_comp: {x_scale: 0.01, y_scale: 0.015}
+    tcp_delta_x: -0.03           # TCP 偏置（工具系）
+    prepare_delta_y: {left: 0.11, right: 0.095}
+    prepare_delta_z: 0.30
+    grasp_delta_y: 0.07
+    grasp_delta_z: 0.135
+    grasp_positions: [0.80, 0.80, 0.80, 0.80, 0.75, 0.75]   # 6 指归一化张角
+    # —— 回收（可选；留空表示不动作）——
+    hold_joints: {}
+    #  - right: {right_shoulder_pitch: 0.1, right_elbow_pitch: -0.6}
+    # —— 按物体类别的参数覆写（只改数值，不改流程）——
+    objects:
+      apple: {z_bias: 0.04, grasp_positions: [0.95, 0.95, 0.95, 0.95, 0.90, 0.90]}
+      banana: {grasp_delta_y: 0.05, grasp_positions: [0.65, 0.65, 0.65, 0.65, 0.60, 0.60]}
+      bottle: {}
+
 tick_rate: 10             # 动作循环频率（Hz）
 default_timeout: 300      # 缺省超时（秒，Action 通道兜底）
 
