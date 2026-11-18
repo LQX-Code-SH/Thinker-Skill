@@ -20,4 +20,5 @@
 ## 文档
 
 - [概要设计](docs/Thinker-Skill%20概要设计文档.md) · [详细设计](docs/Thinker-Skill%20详细设计文档.md) · [接口文档](docs/接口文档.md) · [决策记录](docs/决策记录.md)
+- [仿真说明](docs/仿真说明.md)：容器内仿真环境的启动、接口映射与排障
 - 架构图：[docs/assets/系统架构图.png](docs/assets/系统架构图.png)

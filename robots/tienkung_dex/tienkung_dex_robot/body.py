@@ -5,7 +5,7 @@
 
 映射与约定（与 SDK config/joints.yaml 一致）：
 - arm   → robot.arm（关节级；位姿级/IK 不支持）
-- gripper → robot.hand_left/right（0..1 归一化 → brainco 1..1000）
+- gripper → robot.hand_left/right（0..1 归一化 → brainco 1..1000 / inspire 0.1°）
 - waist → robot.waist（pitch/roll/yaw）
 - head  → robot.head（yaw/pitch；pitch 正值=低头）
 - base  → robot.walk（速度流 20Hz，无到位反馈）
@@ -113,13 +113,19 @@ class TienkungDexArm:
         return Pose(x=float(p[0]), y=float(p[1]), z=float(p[2]))
 
 
+# inspire 13 维手（0.1°）开/合预设；与 robot_sim 模型一致
+INSPIRE_OPEN = (1650, 1650, 1650, 0, 1650, 0, 1900, 1900, 1900, 1900, 1750, 1600, 2040)
+INSPIRE_CLOSED = (900, 900, 900, 0, 900, 0, 1150, 1150, 1150, 1150, 650, 1250, 1500)
+
+
 class TienkungDexGripper:
-    """灵巧手：0..1 归一化 → brainco 1..1000。"""
+    """灵巧手：0..1 归一化 → brainco 1..1000 或 inspire 0.1°。"""
 
     def __init__(self, robot: Any, side: str = "right", dof: int = 6):
         self._robot = robot
         self._side = side
         self._dof = dof
+        self._inspire = int(dof) == 13
 
     @property
     def _hand(self):
@@ -139,15 +145,21 @@ class TienkungDexGripper:
 
     def set_positions(self, positions: Sequence[float]) -> None:
         self._require()
-        self._hand.set_positions([self._to_motor(p) for p in positions])
+        if not self._inspire:
+            self._hand.set_positions([self._to_motor(p) for p in positions])
+            return
+        vals = [max(0.0, min(1.0, float(p))) for p in positions]
+        vals += [vals[-1] if vals else 0.0] * (13 - len(vals))
+        values = [int(round(INSPIRE_OPEN[i] +
+                              (INSPIRE_CLOSED[i] - INSPIRE_OPEN[i]) * vals[i]))
+                  for i in range(13)]
+        self._hand.set_positions(values)
 
     def grasp(self, *, force: float = 0.5) -> None:
-        self._require()
-        self._hand.set_positions([1000] * self._dof)
+        self.set_positions([1.0] * self._dof)
 
     def release(self) -> None:
-        self._require()
-        self._hand.set_positions([1] * self._dof)
+        self.set_positions([0.0] * self._dof)
 
     def get_positions(self):
         hand = self._hand
@@ -156,6 +168,14 @@ class TienkungDexGripper:
         st = hand.get_status()
         if st is None or not st.positions:
             return []
+        if self._inspire:
+            vals = list(st.positions)[:13]
+            out = []
+            for i, p in enumerate(vals):
+                span = INSPIRE_OPEN[i] - INSPIRE_CLOSED[i]
+                out.append(max(0.0, min(1.0, (INSPIRE_OPEN[i] - float(p)) / span))
+                           if span else 0.0)
+            return out
         # brainco 1..1000 → 0..1
         return [(p - 1) / 999.0 for p in st.positions]
 
@@ -164,9 +184,12 @@ class TienkungDexGripper:
         if hand is None:
             return False
         st = hand.get_status()
-        if st is not None and st.positions:
-            return (sum(st.positions) / len(st.positions)) > 800
-        return False
+        if st is None or not st.positions:
+            return False
+        if self._inspire:
+            pos = self.get_positions()
+            return bool(pos) and sum(pos) / len(pos) > 0.6
+        return (sum(st.positions) / len(st.positions)) > 800
 
 
 class TienkungDexWaist:

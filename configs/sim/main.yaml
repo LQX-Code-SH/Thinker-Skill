@@ -1,0 +1,4 @@
+# 仿真专用配置入口
+includes:
+  - ../robot.yaml
+  - sim.yaml

@@ -28,6 +28,27 @@ python3 -m pytest -q tests/test_pipeline.py::test_timeout
 source /opt/ros/humble/setup.bash && source .colcon/install/setup.bash
 python3 tools/demo_ros.py --selftest
 
+# 仿真（robot_sim 在 Jazzy 容器内；与真机共用话题/消息/SDK real backend）
+make sim-init       # 初始化 sim/robot_sim 子模块 + 选择性 LFS
+make sim-up         # 起 manip_local:v4 容器
+make sim-build      # 容器内构建 robot_sim + Thinker-Skill
+make sim-bridge     # 前台起 MuJoCo 桥 + 查看器窗口（需 DISPLAY）
+make sim-bridge-bg  # 后台起桥，无窗口（日志 /tmp/sim_bridge.log）
+# 初始位姿默认 (4.73, -2.60)（场景出生点），可覆盖：
+#   make sim-bridge-bg SIM_INIT_X=4.4 SIM_INIT_Y=-1.8 SIM_INIT_YAW=20
+# 当前基座位姿由桥发布：/manip/base_pose（Float64MultiArray: x,y,z,qw,qx,qy,qz）
+make sim-pose       # 换算成 x/y/z + yaw（度）打印一帧
+# 吊带高度（等 SWR 期间）默认 1.00，可覆盖：SIM_HANG_Z=0.98
+make sim-fsm        # 带 xmigcs FSM + 遥控器 GUI 的半身模式（前台，带窗口）
+make sim-fsm-bg     # 同上，后台无窗口（日志 /tmp/sim_fsm.log）
+make sim-host       # 起 thinker_host（configs/sim）
+make sim-probe      # 检查 /robot_state、/arm|head|waist/cmd、相机/手话题
+make sim-selftest   # 进程内装配后直接调技能（SIM_SKILL 指定技能）
+make sim-call SIM_SKILL=look_down_table SIM_PARAMS='{"pitch_deg":45}'  # 走 Service
+make sim-image-view # 网页相机视图（容器内取流，浏览器开 http://localhost:8090）
+make sim-logs       # 后台 bridge/host 日志
+make sim-down
+
 # 启动 host
 ros2 run thinker_skill_core thinker_host
 # 环境变量：THINKER_CONFIG_DIR（默认 configs）、THINKER_SKILLS_DIR（默认 skills，冒号分隔多路径）、
@@ -94,9 +115,39 @@ skills/<类别>/<技能> 两棵并列子树：skill/（colcon 包）+ mcp_interf
 - MCP 工具：`mcp_interface.py` 的函数签名与 docstring 就是 schema / LLM 描述（函数体不实现，host 注入）；工具名 = 技能名 = 目录名 = `metadata.json.functionNames`，改动需同步。`mcp_interface.py` 必须保持明文（需反射签名）。
 - 部署后模型路径：技能根目录优先（`ctx.skill_dir`），再试 cwd、`THINKER_WEIGHTS_DIR`，参见 `detect_object/plugin.py:resolve_model_path`。
 
+## 机器人接口（以 `docs/robots/dex.md` 为准）
+
+真机的对外话题以官方文档为准；技能只经 `BodyAPI`/`SensorAPI` 访问，不直接订阅这些话题。
+
+| 用途 | 话题 | 类型 |
+|---|---|---|
+| 全量状态 | `/robot_state` | `ros2_bridge_msgs/RobotState`（head/waist/leg/arm/imu） |
+| 手臂控制 | `/arm/cmd` | `ros2_bridge_msgs/ArmCtrl` |
+| 腰部控制 | `/waist/cmd` | `ros2_bridge_msgs/WaistCtrl` |
+| 头部控制 | `/head/cmd` | `ros2_bridge_msgs/HeadCtrl` |
+| 腿部控制 | `/leg/cmd` | `ros2_bridge_msgs/LegCtrl` |
+| 因时手 | `/left|right_hand/{angle_set,angle_actual,force_set,force_actual,speed_set,touch_data}` | `inspire_hand_msgs` |
+| 强脑手 | `/left|right_hand/{set_motor_single,set_motor_multi,motor_status,touch_status}` | `brainco_hand_msgs` |
+| 头/腰相机 | `/ob_camera_{head,waist}/{color,depth}/{image_raw,camera_info,metadata}` | `sensor_msgs` |
+| 雷达 / IMU | `/livox/lidar`、`/livox/imu` | `sensor_msgs` |
+| 遥控器 | `/sbus_data`、`/sbus_data/event` | `sensor_msgs/Joy`、`bodyctrl_msgs` |
+| 电源 / 灯效 | `/power/board/{status,ctrl,key_status}`、`/power/battery/status`、`/xsys/light/ctrl` | `bodyctrl_msgs` |
+
+控制消息用 `mode` 区分：`0` 位置模式（`pos/spd/cur`），`1` 力位混合（`kp/kd/pos/spd/tor`）；
+`ctrl[].name` 是电机 id（头 1/2、臂 11-17/21-27、腰 31-33、腿 51-66）。
+
+仿真侧约定：
+
+- `backend: robosim` 的适配器在 `robots/tienkung_dex/tienkung_dex_robot/robosim/`，把 robot_sim 的桥内话题
+  （`/arm|waist|head/cmd_ctrl`、`/arm|waist|head/status`）翻译成同一套 `BodyAPI`/`SensorAPI`；
+  话题与增益只在 `robots/tienkung_dex/resources/sim_mapping.yaml` 里改，不动技能。
+- robot_sim 已发布 `/robot_state` 并接受 `/arm|head|waist|leg/cmd`（类型为 `ros2_bridge_msgs`，副本在 `sim/robot_sim/src/ros2_bridge_msgs`）；宿主机适配器仍走 `cmd_ctrl`，等厂商 SDK 可用后可切 real backend 并删除 robosim 适配器。
+- `/robot_state` 由 4 路 `status` + `/imu/status` 聚合，默认 100 Hz；`/…/cmd` 只按 mode 0/1 的位置/力位混合语义执行，HBWALK 下忽略 `/leg/cmd`。
+- 官方未定义相机位姿话题；仿真额外发布 `/ob_camera_head/pose`（pelvis 系），供 `transform_to_base` 用，真机仍走 URDF 正运动学。
+- 头部符号：URDF 低头为正，MJCF 低头为负，映射在 `sim_mapping.yaml` 的 `head.pitch_sign`。
 ## 机型适配
 
-`configs/robot.yaml` 的 `model` 决定 `import <model>_robot` 并调用 `create_adapter(node, backend, hand_variant, ...)`（`core/skill_core/app.py:load_robot_adapter`）。`robots/<model>/capabilities.yaml` 声明基础能力 + `hand_variants`（brainco/inspire/fixed），装配期按 `hand_variant` 合并后用于技能 `requires` 子集校验；`fixed` 假手没有 `body.gripper`。`robot_dir` 显式路径不存在时走 ament_index，机器人上无需手配路径。IK（QP+DAQP）属于机型包内部实现（D-017）。
+`configs/robot.yaml` 的 `model` 决定 `import <model>_robot` 并调用 `create_adapter(node, backend, hand_variant, ...)`（`core/skill_core/app.py:load_robot_adapter`）。`robots/<model>/capabilities.yaml` 声明基础能力 + `hand_variants`（brainco/inspire/fixed），装配期按 `hand_variant` 合并后用于技能 `requires` 子集校验；`fixed` 假手没有 `body.gripper`。`robot_dir` 显式路径不存在时走 ament_index，机器人上无需手配路径。IK（QP+DAQP）属于机型包内部实现（D-017）。仿真能力差异只由 `capabilities.yaml` 的 `backend_variants.robosim` 表达，不新增 `robots/*_sim` 机型；`backend: robosim` 走 `tienkung_dex_robot/robosim/` 适配器（复用同一 `TienkungDexBody`/`TienkungDexSensor`，只换话题层），因此不需要 SDK 也能跑。仿真配置在 `configs/sim`，子模块在 `sim/robot_sim`，不参与默认 `make build`。
 
 ## 部署布局与发现
 
@@ -146,4 +197,4 @@ skills/<类别>/<技能> 两棵并列子树：skill/（colcon 包）+ mcp_interf
 
 ## 文档与决策
 
-`docs/` 四份文档：概要设计、详细设计、接口文档、决策记录。**代码注释里的 D-00x 指《决策记录》条目；文档与代码冲突时以《决策记录》为准。** 修改契约/接口时同步更新对应文档与技能 `DESIGN.md`（D-018）。
+`docs/` 四份设计文档：概要设计、详细设计、接口文档、决策记录；仿真操作与排障见 `docs/仿真说明.md`。**代码注释里的 D-00x 指《决策记录》条目；文档与代码冲突时以《决策记录》为准。** 修改契约/接口时同步更新对应文档与技能 `DESIGN.md`（D-018）。

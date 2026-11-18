@@ -1,0 +1,29 @@
+# robosim 后端参数（话题、增益、头部符号、手 id）
+# 改这里不用重编：host 启动时读取
+topics:
+  arm: /arm
+  waist: /waist
+  head: /head
+  camera: /ob_camera_head
+  hand:
+    left: /left_hand
+    right: /right_hand
+
+gains:
+  arm: {kp: 100.0, kd: 7.4}
+  waist: {kp: 120.0, kd: 8.0}
+  head: {kp: 40.0, kd: 2.0}
+
+# 头部符号/限位：真机与 MJCF 都是低头为正（+），不需要翻符号。
+# MJCF 实际范围是 -0.9599（抬）~ +0.2618（低）；相机再向下约 25°，
+# 所以关节到 +0.2618 时视线约下俯 40°。只改这里，不动技能。
+head:
+  yaw_sign: 1.0
+  pitch_sign: 1.0
+  pitch_offset: 0.0
+  yaw_limits: [-1.0472, 1.0472]
+  pitch_limits: [-0.9599, 0.2618]
+
+hand:
+  inspire:
+    hand_id: {left: 1, right: 2}

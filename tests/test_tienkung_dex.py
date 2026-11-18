@@ -7,6 +7,7 @@ import pytest
 
 from thinker_skill_sdk import Pose
 from tienkung_dex_robot import TienkungDexBody, TienkungDexSensor
+from tienkung_dex_robot.body import INSPIRE_CLOSED, INSPIRE_OPEN
 
 URDF = os.path.join(
     os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
@@ -144,6 +145,18 @@ def test_gripper_is_holding():
     body = _body()
     body._robot.hand_right.status = SimpleNamespace(positions=(950, 960, 940, 950, 930, 900))
     assert body.gripper.is_holding() is True
+
+
+def test_inspire_gripper_uses_13_values():
+    body = TienkungDexBody(_Robot(), hand_dof=13, urdf_path=URDF,
+                           pelvis_height=0.92)
+    body.gripper.grasp()
+    assert body._robot.hand_right.positions == list(INSPIRE_CLOSED)
+    body._robot.hand_right.status = SimpleNamespace(
+        positions=list(INSPIRE_CLOSED))
+    assert body.gripper.is_holding() is True
+    body.gripper.release()
+    assert body._robot.hand_right.positions == list(INSPIRE_OPEN)
 
 
 def test_head_look_at_clamp():

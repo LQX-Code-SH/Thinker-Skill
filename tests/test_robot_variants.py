@@ -26,6 +26,31 @@ def test_fixed_has_no_gripper():
     assert "body.arm" in caps
 
 
+def test_robosim_capabilities_remove_base():
+    caps = load_capabilities(ROBOT_DIR, "inspire", "robosim")
+    assert "body.base" not in caps
+    assert "sensor.pointcloud" not in caps
+    assert "sensor.imu" not in caps
+    assert {"body.arm", "body.head", "body.waist",
+            "body.gripper", "sensor.rgbd"} <= caps
+
+
+def test_robosim_uses_ros_adapter(monkeypatch):
+    from tienkung_dex_robot import adapter
+    from tienkung_dex_robot.robosim import adapter as sim_adapter
+
+    seen = {}
+
+    def _fake_create(node, **kwargs):
+        seen.update(kwargs)
+        return object()
+
+    monkeypatch.setattr(sim_adapter, "create_adapter", _fake_create)
+    adapter.create_adapter(None, backend="robosim", hand_variant="inspire")
+    assert seen["hand_side"] == "right"
+    assert seen["hand_dof"] == 13
+
+
 def test_urdf_default_in_package():
     from tienkung_dex_robot.kinematics import default_urdf_path
     assert os.path.isfile(default_urdf_path())

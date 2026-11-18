@@ -49,3 +49,19 @@ hand_variants:
     hand_vendor: none
     enable_hand: false
     capabilities: {}      # 拳头假手：无 body.gripper
+
+# 后端变体：装配期按 configs/robot.yaml 的 backend 合并（hand_variant 之后）
+# robosim 复用 SDK real backend，只启用 joint/camera/hand/imu
+backend_variants:
+  robosim:
+    remove:
+      - body.base
+      - sensor.audio_in
+      - sensor.audio_out
+      - sensor.pointcloud
+      - sensor.imu
+    add:
+      sensor.rgbd:
+        count: 1          # 目前只开 /ob_camera_head
+        depth_unit: mm
+        color_format: bgr8

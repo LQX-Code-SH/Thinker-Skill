@@ -1,0 +1,18 @@
+# robot_sim / MuJoCo 仿真覆盖项
+model: tienkung_dex
+backend: robosim
+hand_variant: inspire       # robot_sim 模型默认注入因时 13 维手
+hand_side: right
+
+# 相机内参取 /ob_camera_head/color/camera_info（640x480），不用 ../robot.yaml 的真机 K
+camera:
+  name: ob_camera_head
+
+skills:
+  look_down_table:
+    # 仿真 head pitch 上限 +0.2618 rad ≈ 15°；相机再向下 25°，视线可到约 40°
+    max_pitch_deg: 15.0
+    tol_deg: 1.0
+    settle_ticks: 3
+  detect_object:
+    model_path: weights/grounding-dino-tiny
