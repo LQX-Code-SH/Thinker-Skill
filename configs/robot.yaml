@@ -38,6 +38,15 @@ skills:
     threshold: 0.35          # 检测置信度阈值；低阈值召回高但误检多
     text_threshold: 0.35
 
+  play_action:
+    # 动作文件（schemaVersion 2）搜索顺序：绝对路径 → actions_dir →
+    # <技能根>/actions → $THINKER_ACTIONS_DIR → 当前工作目录
+    actions_dir: ""              # 留空表示只用技能包 actions/ 与绝对路径
+    transition_s: 2.0            # 起步与当前姿态的衔接时长（秒，smoothstep）
+    speed: 1.0                   # 播放速度倍率
+    play_hands: true             # 是否驱动手指（无手部能力时自动跳过）
+    max_transition_s: 10.0       # 衔接时长上限
+
   fetch_object:
     # —— 预备 ——
     prepare_pitch_deg: 45.0      # 先低头再定位（look_down_table 的软上限 47.5°）
