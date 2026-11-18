@@ -107,6 +107,15 @@ def create_adapter(
         raise ValueError(
             f"未知 hand_variant: {hand_variant!r}（可选 brainco/inspire/fixed）")
 
+    if backend == "robosim":
+        from .robosim.adapter import create_adapter as create_robosim
+        return create_robosim(
+            node, backend=backend, hand_variant=hand_variant,
+            hand_side=hand_side,
+            hand_dof=variant["hand_dof"] if hand_dof is None else hand_dof,
+            enable=enable, joints_table_path=joints_table_path,
+            camera=camera, urdf_path=urdf_path, camera_k=camera_k,
+            pelvis_height=pelvis_height, ik_solver=ik_solver)
     dof = variant["hand_dof"] if hand_dof is None else hand_dof
     create_robot = _import_create_robot()
     robot = create_robot(

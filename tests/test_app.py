@@ -84,6 +84,23 @@ def test_load_capabilities_merges_hand_variant(tmp_path):
     assert load_capabilities(str(d), "fixed") == {"body.arm"}
 
 
+def test_load_capabilities_merges_backend_variant(tmp_path):
+    d = tmp_path / "robot"
+    d.mkdir()
+    (d / "capabilities.yaml").write_text(textwrap.dedent("""
+        robot_model: x
+        capabilities:
+          body.arm: {}
+          body.base: {}
+        backend_variants:
+          robosim:
+            remove: [body.base]
+            add:
+              sensor.rgbd: {}
+    """), encoding="utf-8")
+    assert load_capabilities(str(d), None, "robosim") == {"body.arm", "sensor.rgbd"}
+
+
 def test_resolve_robot_dir_prefers_existing(tmp_path):
     from thinker_skill_core.app import _resolve_robot_dir
 

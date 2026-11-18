@@ -21,8 +21,9 @@ def _load_yaml(path: Path) -> Dict[str, Any]:
 
 
 def load_capabilities(robot_dir: str,
-                      hand_variant: Optional[str] = None) -> Optional[set]:
-    """合并「基础能力 + 手部变体能力」，返回能力名集合。"""
+                      hand_variant: Optional[str] = None,
+                      backend: Optional[str] = None) -> Optional[set]:
+    """合并「基础能力 + 手部变体 + 后端变体」，返回能力名集合。"""
     path = Path(robot_dir) / "capabilities.yaml"
     if not path.exists():
         return None
@@ -31,6 +32,11 @@ def load_capabilities(robot_dir: str,
     if hand_variant:
         variant = (data.get("hand_variants") or {}).get(hand_variant) or {}
         caps.update(variant.get("capabilities") or {})
+    if backend:
+        variant = (data.get("backend_variants") or {}).get(backend) or {}
+        for name in variant.get("remove") or []:
+            caps.pop(name, None)
+        caps.update(variant.get("add") or {})
     return set(caps)
 
 
@@ -107,7 +113,8 @@ def bootstrap_ros(node, *, config_dir: str, skills_dirs: List[str],
         config_dir=config_dir, skills_dirs=skills_dirs,
         body=adapter.body, sensor=adapter.sensor,
         min_core=min_core,
-        capabilities=load_capabilities(robot_dir, config.get("hand_variant")))
+        capabilities=load_capabilities(
+            robot_dir, config.get("hand_variant"), config.get("backend")))
 
     names = registry.names()
     services = create_services(node, host, names)

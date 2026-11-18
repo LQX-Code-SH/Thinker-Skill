@@ -1,0 +1,4 @@
+[submodule "sim/robot_sim"]
+	path = sim/robot_sim
+	url = git@gitlab.ubtrobot.com:tienkung/robot_sim.git
+	branch = v3
