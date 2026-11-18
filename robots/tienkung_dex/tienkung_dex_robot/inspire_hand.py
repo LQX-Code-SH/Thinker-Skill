@@ -13,7 +13,7 @@ SDK ``tienkung_dex`` 只实现 brainco 手，本模块在项目适配层补齐 i
 from __future__ import annotations
 
 import math
-from typing import Any, Optional, Sequence
+from typing import Any, Mapping, Optional, Sequence
 
 # 因时 RH56：13 通道，单位 0.1°。
 # (仿真关节短名, 码下限, 码上限, 0 rad 对应码, 方向)
@@ -35,6 +35,26 @@ INSPIRE_CHANNELS = (
 )
 N_CHANNELS = len(INSPIRE_CHANNELS)
 CODE_DEG = 0.1
+
+# URDF 短关节名 → inspire 通道号（用于 13 维关节角回放）。
+# 与 INSPIRE_CHANNELS 一一对应；``*_dip_joint`` 在 URDF 里是 mimic，不单独下发。
+INSPIRE_JOINT_TO_CHANNEL = {
+    "pinky_mcp": 0,
+    "ring_mcp": 1,
+    "middle_mcp": 2,
+    "middle_yaw": 3,
+    "index_mcp": 4,
+    "index_yaw": 5,
+    "pinky_pip": 6,
+    "ring_pip": 7,
+    "middle_pip": 8,
+    "index_pip": 9,
+    "thumb_yaw": 10,
+    "thumb_mcp": 11,
+    "thumb_pip": 12,
+}
+INSPIRE_MIMIC_JOINTS = ("thumb_dip", "index_dip", "middle_dip",
+                        "ring_dip", "pinky_dip")
 
 # 6 维归一化输入顺序：thumb_pitch, thumb_roll, index, middle, ring, little
 # 展开表：(输出通道, 输入通道 or None, 是否 ×1.2, 固定码 or None)
@@ -114,6 +134,51 @@ def rad_to_code(channel: int, rad: float) -> int:
     _, low, high, zero, direction = INSPIRE_CHANNELS[int(channel)]
     code = zero + float(rad) * 180.0 / math.pi / (direction * CODE_DEG)
     return int(round(min(max(code, low), high)))
+
+
+def joint_short_name(name: str) -> str:
+    """``left_index_yaw_joint`` → ``index_yaw``（也接受 ``index_yaw``）。"""
+    text = str(name).strip()
+    for side in ("left_", "right_"):
+        if text.startswith(side):
+            text = text[len(side):]
+            break
+    if text.endswith("_joint"):
+        text = text[:-len("_joint")]
+    return text
+
+
+def codes_from_joint_rads(joints: Mapping[str, float],
+                          base_codes: Optional[Sequence[int]] = None) -> list:
+    """URDF 关节角（rad）→ 13 路角码。
+
+    ``joints`` 为 ``{关节名: rad}``，键可带 ``left_/right_`` 前缀与 ``_joint``
+    后缀；未给出的通道沿用 ``base_codes``（读不到当前值时用零位/张开），
+    因此不会因为只回放部分通道而把其它手指突然抽回。
+    """
+    codes = [rad_to_code(i, 0.0) for i in range(N_CHANNELS)]
+    for i, value in enumerate(list(base_codes or [])[:N_CHANNELS]):
+        _, low, high, _, _ = INSPIRE_CHANNELS[i]
+        code = int(value)
+        # 未初始化时 status 可能是全 0；越界值不采用，保留零位，避免把手抽紧
+        if low <= code <= high:
+            codes[i] = code
+    for name, rad in (joints or {}).items():
+        channel = INSPIRE_JOINT_TO_CHANNEL.get(joint_short_name(name))
+        if channel is None:
+            continue
+        codes[channel] = rad_to_code(channel, float(rad))
+    return codes
+
+
+def joint_rads_from_codes(codes: Sequence[int], side: str = "") -> dict:
+    """13 路角码 → ``{``<side>_<short>_joint``: rad}``，供上层做起始姿态衔接。"""
+    prefix = f"{side}_" if side else ""
+    out = {}
+    for short, channel in INSPIRE_JOINT_TO_CHANNEL.items():
+        if channel < len(codes):
+            out[f"{prefix}{short}_joint"] = code_to_rad(channel, codes[channel])
+    return out
 
 
 class InspireHand:

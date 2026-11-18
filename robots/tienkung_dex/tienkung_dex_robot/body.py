@@ -12,7 +12,7 @@
 """
 from __future__ import annotations
 
-from typing import Any, Mapping, Optional, Sequence
+from typing import Any, Dict, Mapping, Optional, Sequence
 
 import numpy as np
 
@@ -205,6 +205,19 @@ class TienkungDexGripper:
         return self._vendor
 
     @property
+    def dof(self) -> int:
+        return int(self._dof)
+
+    @property
+    def hand_format(self) -> str:
+        """回放口径：``inspire13``（13 关节角）或 ``brainco6``（6 维归一化）。
+
+        上层据此选择 ``set_joint_positions`` 还是 ``set_positions``；不要靠
+        DOF 猜，brainco 也可能装配成 13 维接口。
+        """
+        return "inspire13" if self._vendor == "inspire" else "brainco6"
+
+    @property
     def _hand(self):
         # 严格按侧取手：双侧装配时不能把左手请求悄悄落到右手
         return getattr(self._robot, f"hand_{self._side}", None)
@@ -253,6 +266,37 @@ class TienkungDexGripper:
         else:
             self._hand.set_positions(
                 [max(1, min(1000, int(round(float(v))))) for v in codes])
+
+    def set_joint_positions(self, joints: Mapping[str, float]) -> None:
+        """按 URDF 关节角（rad）下发手型（inspire 专有，13 通道）。
+
+        键可写成 ``left_index_yaw_joint`` 或 ``index_yaw``；未给出的通道保持
+        当前角码（读不到时用零位/张开）。与 :meth:`set_positions` 的 6 维
+        归一化不同，这里不做 6→13 上采样，侧摆/指中关节可按文件原样回放。
+        """
+        self._require()
+        if self._vendor != "inspire":
+            raise NotImplementedError(
+                "brainco 手不支持关节角回放（只有 6 维归一化 set_positions）")
+        from .inspire_hand import codes_from_joint_rads
+        base = None
+        status = self._inspire.get_status()
+        if status is not None and getattr(status, "positions", None):
+            base = [int(v) for v in status.positions]
+        self._inspire.set_positions(codes_from_joint_rads(joints, base))
+
+    def get_joint_positions(self) -> Dict[str, float]:
+        """当前 13 通道关节角（rad，键为 ``<side>_<short>_joint``）。
+
+        非 inspire 手返回 ``{}``，供上层判断"能不能读起始姿态"。
+        """
+        if self._vendor != "inspire":
+            return {}
+        status = self._inspire.get_status()
+        if status is None or not getattr(status, "positions", None):
+            return {}
+        from .inspire_hand import joint_rads_from_codes
+        return joint_rads_from_codes(status.positions, side=self._side)
 
     def set_grip_keep_abduction(self, grip_values: Sequence[float],
                                 base_codes: Sequence[int]) -> None:
@@ -473,9 +517,11 @@ class TienkungDexBody(BodyAPI):
     """按能力切分的 BodyAPI 实现：左右手臂/手部同时暴露。"""
 
     SIDES = ("left", "right")
+    model = "tienkung_dex"
 
     def __init__(self, robot: Any, *, hand_side: str = "right", hand_dof: int = 6,
-                 hand_vendor: str = "brainco", inspire_hands=None,
+                 hand_vendor: str = "brainco", hand_variant: str = "",
+                 inspire_hands=None,
                  urdf_path: Any = None, pelvis_height: float = 0.0,
                  ik_solver: str = "daqp", ik_max_iter: int = 100,
                  ik_tol: float = 1e-3, ik_rot_tol: float = 0.02,
@@ -483,6 +529,8 @@ class TienkungDexBody(BodyAPI):
                  reach_margin: float = 0.03):
         self._robot = robot
         self.default_side = hand_side
+        # 只读标识：供技能做机型/末端绑定校验（不参与运动控制）
+        self.hand_variant = str(hand_variant or hand_vendor)
         self.arms = {
             side: TienkungDexArm(
                 robot, side=side, urdf_path=urdf_path,
@@ -504,3 +552,19 @@ class TienkungDexBody(BodyAPI):
         self.waist = TienkungDexWaist(robot)
         self.head = TienkungDexHead(robot)
         self.base = TienkungDexBase(robot)
+
+    def move_arms(self, targets: Mapping[str, Mapping[str, float]]) -> None:
+        """一次下发双臂关节目标，合并成同一条 ``ArmCtrl``。
+
+        控制桥每个周期只消费一条手臂命令：分成左右两条发布时，后一条会被
+        丢弃（真机实测：同 tick 先发左臂再发右臂，右臂完全不动）。因此双臂
+        动作必须合并；``targets`` 形如 ``{"left": {...}, "right": {...}}``。
+        """
+        ids: Dict[int, float] = {}
+        for joints in targets.values():
+            for name, value in (joints or {}).items():
+                jid = ARM_JOINTS.get(name)
+                if jid is not None:
+                    ids[jid] = float(value)
+        if ids:
+            self._robot.arm.move_to(ids)

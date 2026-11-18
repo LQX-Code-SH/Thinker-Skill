@@ -92,7 +92,8 @@ class TienkungDexAdapter:
                 inspire_hands[side] = hand
         self.body = TienkungDexBody(
             robot, hand_side=hand_side, hand_dof=hand_dof,
-            hand_vendor=vendor, inspire_hands=inspire_hands,
+            hand_vendor=vendor, hand_variant=self.hand_variant,
+            inspire_hands=inspire_hands,
             urdf_path=urdf_path, pelvis_height=pelvis_height,
             ik_solver=ik_solver, ik_max_iter=ik_max_iter,
             ik_tol=ik_tol, ik_rot_tol=ik_rot_tol, ik_damping=ik_damping,

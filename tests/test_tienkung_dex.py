@@ -281,6 +281,18 @@ def test_gripper_get_positions():
     assert body.gripper.get_positions() == pytest.approx([0.0, 0.4995, 1.0], abs=1e-3)
 
 
+def test_body_move_arms_batches_both_sides_in_one_command():
+    """双臂必须合并成一条 ArmCtrl（控制桥每周期只消费一条手臂命令）。"""
+    body = _body()
+    body.move_arms({
+        "left": {"left_shoulder_pitch": 0.1, "left_elbow_pitch": -0.2},
+        "right": {"right_shoulder_pitch": 0.3, "right_elbow_pitch": -0.4},
+    })
+    assert len(body._robot.arm.calls) == 1
+    assert body._robot.arm.calls[0][0] == {
+        11: 0.1, 14: -0.2, 21: 0.3, 24: -0.4}
+
+
 # ---------- 手部变体分派（brainco 兼容 + inspire）----------
 class _FakeInspire:
     def __init__(self):
@@ -312,6 +324,21 @@ def test_gripper_vendor_defaults_to_brainco():
     assert body.gripper.vendor == "brainco"
     body.gripper.set_positions([0.0, 0.5, 1.0])
     assert body._robot.hand_right.positions == [1, 500, 1000]
+
+
+def test_body_exposes_model_and_hand_variant_for_binding():
+    """技能做机型/末端绑定校验用的只读标识。"""
+    from tienkung_dex_robot.body import TienkungDexBody
+
+    body = _body()
+    assert body.model == "tienkung_dex"
+    assert body.hand_variant == "brainco"          # 未显式给 variant 时回落到 vendor
+
+    inspire = TienkungDexBody(
+        _Robot(), hand_vendor="inspire", hand_variant="inspire", hand_dof=13,
+        inspire_hands={"left": _FakeInspire(), "right": _FakeInspire()})
+    assert inspire.model == "tienkung_dex"
+    assert inspire.hand_variant == "inspire"
 
 
 def test_gripper_inspire_expands_pico6_to_13():
@@ -358,6 +385,56 @@ def test_gripper_bad_vendor_rejected():
     from tienkung_dex_robot.body import TienkungDexGripper
     with pytest.raises(ValueError):
         TienkungDexGripper(_Robot(), vendor="unknown")
+
+
+def test_gripper_inspire_joint_angle_roundtrip():
+    from tienkung_dex_robot.body import TienkungDexGripper
+    from tienkung_dex_robot.inspire_hand import (
+        INSPIRE_JOINT_TO_CHANNEL, code_to_rad, rad_to_code)
+
+    fake = _FakeInspire()
+    g = TienkungDexGripper(_Robot(), side="left", dof=13,
+                           vendor="inspire", inspire_hand=fake)
+    assert g.hand_format == "inspire13"
+    assert g.dof == 13
+
+    g.set_joint_positions({"left_index_yaw_joint": 0.2, "index_mcp": 0.0})
+    codes = fake.commands[-1]
+    assert codes[INSPIRE_JOINT_TO_CHANNEL["index_yaw"]] == rad_to_code(5, 0.2)
+    assert codes[INSPIRE_JOINT_TO_CHANNEL["index_mcp"]] == rad_to_code(4, 0.0)
+    # 未给出的通道回零位（注意：码值 0 会被夹成满屈曲，不能用 0 兜底）
+    assert codes[INSPIRE_JOINT_TO_CHANNEL["pinky_mcp"]] == rad_to_code(0, 0.0)
+
+    fake.status = SimpleNamespace(positions=tuple(codes))
+    rads = g.get_joint_positions()
+    assert len(rads) == 13
+    assert rads["left_index_yaw_joint"] == pytest.approx(
+        code_to_rad(5, codes[5]), abs=1e-6)
+    assert rads["left_index_mcp_joint"] == pytest.approx(0.0, abs=1e-6)
+
+
+def test_gripper_joint_angle_ignores_uninitialized_zero_status():
+    from tienkung_dex_robot.body import TienkungDexGripper
+    from tienkung_dex_robot.inspire_hand import (
+        INSPIRE_JOINT_TO_CHANNEL, rad_to_code)
+
+    fake = _FakeInspire()
+    fake.status = SimpleNamespace(positions=(0,) * 13)   # 未初始化：全 0 不是合法码
+    g = TienkungDexGripper(_Robot(), side="right", dof=13,
+                           vendor="inspire", inspire_hand=fake)
+    g.set_joint_positions({"index_mcp": 0.0})
+    # 未给出的通道回零位，而不是把 0 当角码（0 会被夹成满屈曲）
+    assert fake.commands[-1][INSPIRE_JOINT_TO_CHANNEL["pinky_mcp"]] == \
+        rad_to_code(0, 0.0)
+
+
+def test_gripper_joint_angle_rejected_for_brainco():
+    from tienkung_dex_robot.body import TienkungDexGripper
+    g = TienkungDexGripper(_Robot(), side="right", vendor="brainco")
+    assert g.hand_format == "brainco6"
+    assert g.get_joint_positions() == {}
+    with pytest.raises(NotImplementedError):
+        g.set_joint_positions({"index_mcp": 0.0})
 
 
 def test_inspire_close_keeps_abduction_codes():

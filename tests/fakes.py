@@ -63,12 +63,16 @@ class FakeArm:
 
 
 class FakeGripper:
-    def __init__(self, side: str = "right"):
+    def __init__(self, side: str = "right", *, hand_format: str = "", dof: int = 6):
         self.side = side
         self.width = 1.0
         self.holding = False
         self.positions: List[float] = []
         self.set_calls: list = []
+        self.hand_format = hand_format
+        self.dof = dof
+        self.joint_positions: dict = {}
+        self.joint_calls: list = []
 
     def grasp(self, *, force: float = 0.5):
         self.width = 0.0
@@ -86,6 +90,13 @@ class FakeGripper:
     def set_raw_codes(self, codes):
         self.raw_codes = [int(v) for v in codes]
         self.set_calls.append(list(self.raw_codes))
+
+    def set_joint_positions(self, joints):
+        self.joint_positions.update({str(k): float(v) for k, v in joints.items()})
+        self.joint_calls.append(dict(self.joint_positions))
+
+    def get_joint_positions(self):
+        return dict(self.joint_positions)
 
     def set_grip_keep_abduction(self, grip_values, base_codes):
         codes = list(base_codes)
@@ -185,8 +196,11 @@ class FakeBase:
 class FakeBody:
     """满足 BodyAPI 的结构化鸭子类型（左右手臂/手部同时暴露）。"""
 
-    def __init__(self, default_side: str = "right"):
+    def __init__(self, default_side: str = "right",
+                 model: str = "tienkung_dex", hand_variant: str = ""):
         self.default_side = default_side
+        self.model = model
+        self.hand_variant = hand_variant
         self.arms = {"left": FakeArm(), "right": FakeArm()}
         self.grippers = {s: FakeGripper(s) for s in self.arms}
         self.arm = self.arms[default_side]
@@ -194,6 +208,15 @@ class FakeBody:
         self.waist = FakeWaist()
         self.head = FakeHead()
         self.base = FakeBase()
+        self.arm_batch_calls: list = []
+
+    def move_arms(self, targets):
+        """双臂合并下发（与真机 BodyAPI 的可选批量接口一致）。"""
+        self.arm_batch_calls.append({s: dict(v) for s, v in targets.items()})
+        for side, joints in targets.items():
+            arm = self.arms.get(side)
+            if arm is not None:
+                arm.move_to_joints(joints)
 
 
 class FakeSensor(SensorAPI):

@@ -1,5 +1,5 @@
 name: play_action
-version: 0.1.0
+version: 0.3.0
 category: motion
 min_core: 0.1.0
 entry: play_action.plugin:PlayAction

@@ -74,6 +74,14 @@ HAND_CHANNEL_JOINTS: Tuple[Tuple[str, str], ...] = (
     ("little", "pinky_mcp"),
 )
 
+# 13 维回放可驱动的 URDF 手关节后缀（顺序 = inspire 通道 INSPIRE_CHANNELS）。
+# ``*_dip_joint`` 在 URDF 里是 mimic，不单独下发。
+HAND_DRIVE_JOINT_SUFFIXES: Tuple[str, ...] = (
+    "pinky_mcp", "ring_mcp", "middle_mcp", "middle_yaw", "index_mcp",
+    "index_yaw", "pinky_pip", "ring_pip", "middle_pip", "index_pip",
+    "thumb_yaw", "thumb_mcp", "thumb_pip",
+)
+
 LEG_JOINT_RE = re.compile(r"^(hip|knee|ankle)_")
 
 
@@ -145,10 +153,12 @@ def select_clip(doc: Mapping[str, Any],
         if chosen is None:
             chosen = candidates[0]
 
-    limits = ((doc.get("robot") or {}).get("joints") or {})
+    robot = doc.get("robot") or {}
+    limits = (robot.get("joints") or {}) if isinstance(robot, dict) else {}
     if not isinstance(limits, dict):
         limits = {}
-    return Clip(chosen, limits=limits)
+    robot_name = str(robot.get("name") or "") if isinstance(robot, dict) else ""
+    return Clip(chosen, limits=limits, robot_name=robot_name)
 
 
 def resolve_action_path(name: str, *, skill_dir: Optional[str] = None,
@@ -296,12 +306,14 @@ class Track:
 class Clip:
     """一个片段：可播放时间范围 + 关节轨道。"""
 
-    def __init__(self, data: Mapping[str, Any], *, limits: Mapping[str, Any]):
+    def __init__(self, data: Mapping[str, Any], *, limits: Mapping[str, Any],
+                 robot_name: str = ""):
         self.id = str(data.get("id", ""))
         self.name = str(data.get("name") or self.id or "clip")
         self.loop = bool(data.get("loop", False))
         self.fps = data.get("fps")
         self.limits: Mapping[str, Any] = limits or {}
+        self.robot_name = str(robot_name or "")
 
         tracks: Dict[str, Track] = {}
         for track in data.get("tracks") or []:
@@ -372,6 +384,21 @@ class Clip:
             norm = 0.0 if abs(span) < 1e-9 else (raw - low) / span
             values.append(min(1.0, max(0.0, norm)))
         return values if found else None
+
+    def sample_hand_joints(self, side: str,
+                           t_ms: float) -> Optional[Dict[str, float]]:
+        """采样单侧 13 个可驱动手关节的原始角（rad），供 13 维回放。
+
+        只返回文件里真实存在的通道（``*_dip`` mimic 不算）；整侧都没有时返回
+        ``None``。与 :meth:`sample_hand` 的 6 维归一化互不影响。
+        """
+        out: Dict[str, float] = {}
+        for suffix in HAND_DRIVE_JOINT_SUFFIXES:
+            joint = f"{side}_{suffix}_joint"
+            track = self.tracks.get(joint)
+            if track is not None:
+                out[joint] = track.value_at(t_ms)
+        return out or None
 
     def _limit(self, joint: str) -> Tuple[float, float]:
         entry = self.limits.get(joint)

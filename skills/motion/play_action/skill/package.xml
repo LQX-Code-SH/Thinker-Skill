@@ -2,12 +2,13 @@
 <?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
   <name>play_action</name>
-  <version>0.1.0</version>
+  <version>0.3.0</version>
   <description>固定动作播放：按动作文件（schemaVersion 2）回放腰/头/双臂/手指动作</description>
   <maintainer email="1627049654@qq.com">qingxiangliu</maintainer>
   <license>Apache-2.0</license>
 
   <exec_depend>python3</exec_depend>
+  <exec_depend>python3-yaml</exec_depend>
   <exec_depend>thinker_skill_sdk</exec_depend>
 
   <export>
