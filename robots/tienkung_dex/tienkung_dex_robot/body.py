@@ -12,6 +12,8 @@
 """
 from __future__ import annotations
 
+import threading
+import time
 from typing import Any, Dict, Mapping, Optional, Sequence
 
 import numpy as np
@@ -27,6 +29,79 @@ from .joints import (
     WAIST_LIMITS,
     clamp,
 )
+
+# 手臂伺服下发频率：body 层是"高频率喂本体"的那一层，与技能 tick（10–20 Hz）
+# 解耦。真机驱动自身有速度规划，仿真桥没有（直接写 data.ctrl），所以插值必须
+# 在这里做，否则换到没有速度规划的机型上就会看到阶跃。
+SERVO_HZ = 100.0
+# move_to_pose 未指定 duration 时的默认时长（秒）。
+DEFAULT_POSE_DURATION = 1.0
+
+
+class _JointServo:
+    """关节空间 min-jerk 伺服：按固定频率把稀疏目标展开成逐帧中间目标。
+
+    - 起点取下发瞬间的实际关节角（无状态时退回目标值）；
+    - ``duration`` 内按 min-jerk（10s³−15s⁴+6s⁵）插值，保证首末速度/加速度为 0；
+    - 任意时刻可被新目标打断，新轨迹从当前实际位置续接。
+    """
+
+    def __init__(self, emit, *, hz: float = SERVO_HZ):
+        self._emit = emit
+        self._hz = float(hz)
+        self._lock = threading.Lock()
+        self._job: Optional[dict] = None
+        self._stop = threading.Event()
+        self._thread = threading.Thread(
+            target=self._run, name="tienkung-arm-servo", daemon=True)
+        self._thread.start()
+
+    def command(self, target: Mapping[int, float],
+                start: Mapping[int, float], duration: float) -> None:
+        tgt = {int(k): float(v) for k, v in target.items()}
+        with self._lock:
+            job = self._job
+            # 幂等：技能每个 tick 都会重发同一个目标，这里必须保持原轨迹。
+            # 否则 t0 反复重置，运动退化成每 100 ms 只走一小段、永远到不了。
+            if job is not None and job["target"].keys() == tgt.keys() and all(
+                    abs(job["target"][k] - v) < 1e-4 for k, v in tgt.items()):
+                return
+            self._job = {
+                "start": {int(k): float(v) for k, v in start.items()},
+                "target": tgt,
+                "dur": max(float(duration), 1e-3),
+                "t0": time.monotonic(),
+            }
+
+    def reset(self) -> None:
+        with self._lock:
+            self._job = None
+
+    def busy(self) -> bool:
+        with self._lock:
+            return self._job is not None
+
+    def stop(self) -> None:
+        self._stop.set()
+
+    def _run(self) -> None:
+        period = 1.0 / self._hz
+        while not self._stop.wait(period):
+            with self._lock:
+                job = self._job
+                if job is None:
+                    continue
+                frac = (time.monotonic() - job["t0"]) / job["dur"]
+                done = frac >= 1.0
+                s = 1.0 if done else max(frac, 0.0)
+                k = s * s * s * (10.0 + s * (-15.0 + 6.0 * s))
+                out = {
+                    jid: (1.0 - k) * job["start"].get(jid, tgt) + k * tgt
+                    for jid, tgt in job["target"].items()
+                }
+                if done:
+                    self._job = None
+            self._emit(out)
 
 
 class TienkungDexArm:
@@ -51,6 +126,42 @@ class TienkungDexArm:
         self._tcp_offset = tuple(tcp_offset or (0.0, 0.0, 0.0))
         self._reach_margin = float(reach_margin)
         self._ik = None
+        # 100 Hz 伺服：move_to_pose/move_to_joints 带 duration 时走这里
+        self._servo = _JointServo(self._emit_ids)
+        # 上位姿目标缓存：技能每 tick 都会重发同一位姿，重复 IK 会得到
+        # 略有差异的关节解（零空间抖动），把伺服反复打断。
+        self._last_pose_key = None
+
+    def _emit_ids(self, ids: Mapping[int, float]) -> None:
+        """伺服环的输出：直接下发给底层（真机 SDK / 仿真 facade）。"""
+        arm = getattr(self._robot, "arm", None)
+        if arm is None:
+            return
+        try:
+            arm.move_to(dict(ids))
+        except Exception:  # noqa: BLE001 - 伺服线程里不抛
+            pass
+
+    def _current_ids(self, fallback: Mapping[int, float]) -> Dict[int, float]:
+        """下发瞬间的实际关节角；读不到时用目标值（等效于立即到位）。"""
+        out = {int(k): float(v) for k, v in fallback.items()}
+        arm = getattr(self._robot, "arm", None)
+        try:
+            states = arm.get_states() if arm is not None else {}
+        except Exception:  # noqa: BLE001
+            states = {}
+        for jid in out:
+            st = states.get(jid) if states else None
+            if st is not None:
+                out[jid] = float(st.pos)
+        return out
+
+    def close(self) -> None:
+        """停掉伺服线程（adapter shutdown 时调用）。"""
+        try:
+            self._servo.stop()
+        except Exception:  # noqa: BLE001
+            pass
 
     def _ik_obj(self):
         if self._ik is None:
@@ -90,10 +201,20 @@ class TienkungDexArm:
         return out
 
     def move_to_joints(self, joints: Mapping[str, float], *, duration: float = 0.0) -> None:
+        """下发关节目标。
+
+        ``duration > 0``：以 ``SERVO_HZ`` 在给定时长内平滑插值（body 层伺服）；
+        ``duration == 0``：立即下发，供逐帧回放（play_action）等调用方使用。
+        """
         self._require()
+        self._last_pose_key = None      # 关节级下发后，位姿缓存失效
         ids = self._to_ids(joints)
-        self._robot.arm.move_to(ids)
         self._target.update(ids)
+        if duration and duration > 0.0:
+            self._servo.command(ids, self._current_ids(ids), duration)
+        else:
+            self._servo.reset()
+            self._robot.arm.move_to(ids)
 
     def get_joints(self) -> Mapping[str, float]:
         self._require()
@@ -102,6 +223,8 @@ class TienkungDexArm:
 
     def is_moving(self) -> bool:
         self._require()
+        if self._servo.busy():
+            return True
         if not self._target:
             return False
         states = self._robot.arm.get_states()
@@ -130,6 +253,15 @@ class TienkungDexArm:
         from .ik import matrix_to_quat, quat_to_matrix
         from .joints import URDF_TO_BODY
 
+        # 幂等：API 约定可每 tick 重复下发同一位姿。若反复求解，dls 会在零空间
+        # 上给出略微不同的关节解，导致伺服轨迹被不断重置（表现为"永远接近不到"）。
+        key = (round(pose.x, 4), round(pose.y, 4), round(pose.z, 4),
+               round(pose.qx, 4), round(pose.qy, 4), round(pose.qz, 4),
+               round(pose.qw, 4), bool(tcp))
+        if key == self._last_pose_key:
+            return
+        self._last_pose_key = key
+
         ik = self._ik_obj()
         current = self.get_joints()
         seed = [current.get(URDF_TO_BODY[n], 0.0) for n in ik.joint_names]
@@ -157,8 +289,13 @@ class TienkungDexArm:
             raise SkillError(
                 ErrorCode.MOTION_IK_UNREACHABLE,
                 f"IK 未收敛: target=({pose.x:.3f},{pose.y:.3f},{pose.z:.3f})")
-        self.move_to_joints({URDF_TO_BODY[n]: float(v)
-                             for n, v in zip(ik.joint_names, q)})
+        # duration=0 → 默认 1.0 s 的平滑伺服；显式时长按调用方给的值
+        span = float(duration) if duration and duration > 0.0 else DEFAULT_POSE_DURATION
+        self.move_to_joints(
+            {URDF_TO_BODY[n]: float(v) for n, v in zip(ik.joint_names, q)},
+            duration=span)
+        # move_to_joints 清空了位姿缓存，这里补回，保证后续 tick 的重复下发幂等
+        self._last_pose_key = key
 
     def get_tcp_pose(self) -> Pose:
         """FK 返回 **TCP 抓取中心** 位姿（位置 + 四元数）。
@@ -557,6 +694,35 @@ class TienkungDexBody(BodyAPI):
         self.waist = TienkungDexWaist(robot)
         self.head = TienkungDexHead(robot)
         self.base = TienkungDexBase(robot)
+
+    def close(self) -> None:
+        """停掉双臂伺服线程（adapter shutdown 时调用）。"""
+        for arm in getattr(self, "arms", {}).values():
+            fn = getattr(arm, "close", None)
+            if fn is not None:
+                fn()
+
+    def set_streaming(self, on: bool) -> None:
+        """开/关命令流保持心跳（Host 在技能开始/结束时调用）。
+
+        仅对实现了 ``set_streaming`` 的 robot 生效：仿真 ``SimRobot`` 有，
+        真机厂商 SDK 没有 —— 真机保持原来的常驻心跳行为不变。
+        """
+        robot = getattr(self, "_robot", None)
+        fn = getattr(robot, "set_streaming", None)
+        if fn is None:
+            return
+        try:
+            fn(bool(on))
+        except Exception:  # noqa: BLE001 - 控制流开关不影响主链
+            return
+        for gripper in getattr(self, "grippers", {}).values():
+            hand = getattr(gripper, "_inspire_hand", None)
+            if hand is not None and hasattr(hand, "set_streaming"):
+                try:
+                    hand.set_streaming(bool(on))
+                except Exception:  # noqa: BLE001
+                    pass
 
     def move_arms(self, targets: Mapping[str, Mapping[str, float]]) -> None:
         """一次下发双臂关节目标，合并成同一条 ``ArmCtrl``。
