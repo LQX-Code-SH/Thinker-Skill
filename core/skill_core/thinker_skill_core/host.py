@@ -36,6 +36,20 @@ class Host:
         self._say = say or (lambda s: None)
         self._clock = clock
         self._tick_rate = tick_rate
+        # 命令流开关：技能执行期间开、全部结束后关。
+        # 适配器可选实现 set_streaming(bool)（当前的 robosim 适配器有），
+        # 真机适配器没有该方法时这里自动退化为 no-op。
+        self._active_calls = 0
+        self._stream_lock = threading.Lock()
+
+    def _set_streaming(self, on: bool) -> None:
+        fn = getattr(self._body, "set_streaming", None)
+        if fn is None:
+            return
+        try:
+            fn(bool(on))
+        except Exception:  # noqa: BLE001 - 控制流开关不影响主链
+            pass
 
     def _cfg_for(self, skill_name: str) -> Dict[str, Any]:
         skills_cfg = (self._config or {}).get("skills", {})
@@ -78,5 +92,18 @@ class Host:
                 "failed", ErrorCode.INPUT_UNSUPPORTED_COMMAND,
                 f"未知技能: {skill_name}")
         ctx = self.make_ctx(skill_name, params, cancel_event)
-        return self._runtime.execute(
-            skill, params or {}, ctx, preempt=preempt, on_feedback=on_feedback)
+        with self._stream_lock:
+            first = self._active_calls == 0
+            self._active_calls += 1
+        if first:
+            self._set_streaming(True)
+        try:
+            return self._runtime.execute(
+                skill, params or {}, ctx, preempt=preempt, on_feedback=on_feedback)
+        finally:
+            with self._stream_lock:
+                self._active_calls -= 1
+                last = self._active_calls == 0
+            if last:
+                # 没有技能在跑 → 停止保持心跳（动作播完即停）
+                self._set_streaming(False)
