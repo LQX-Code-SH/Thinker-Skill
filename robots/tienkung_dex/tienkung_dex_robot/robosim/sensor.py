@@ -52,10 +52,12 @@ class SimSensor(TienkungDexSensor):
                 frame = replace(frame, k=list(k))
         return frame
 
-    def transform_to_base(self, point):
+    def transform_to_base(self, point, angles=None):
+        # angles 与真机侧签名保持一致（SensorAPI 协议）；仿真不用它 ——
+        # 相机位姿来自 /ob_camera_head/pose，不依赖取帧时刻的关节角。
         pose = self._pose
         if pose is None:
-            return super().transform_to_base(point)
+            return super().transform_to_base(point, angles)
         position, quat, _ = pose
         out = plant.transform_point(point, position, quat)
         # /pose 是 pelvis 系；真机链是 pelvis → base(地面)，补同样的高度偏移

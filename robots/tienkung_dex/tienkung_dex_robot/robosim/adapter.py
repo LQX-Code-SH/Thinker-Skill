@@ -41,12 +41,38 @@ class SimAdapter:
         pass
 
     def shutdown(self) -> None:
+        close = getattr(self.body, "close", None)
+        if close is not None:
+            try:
+                close()          # 停掉 100 Hz 手臂伺服线程
+            except Exception:    # noqa: BLE001 - 关停路径不抛错
+                pass
         for gripper in getattr(self.body, "grippers", {}).values():
             hand = getattr(gripper, "_inspire_hand", None)
             if hand is not None:
                 try:
                     hand.stop()
                 except Exception:  # noqa: BLE001 - 关停路径不抛错
+                    pass
+
+    def set_streaming(self, on: bool) -> None:
+        """技能执行期间开、结束后关：不再持续重发保持指令。
+
+        桥侧 0.25 s 看门狗超时后会撤软阻抗，所以"动作播完"就等于松手停住，
+        不会一直占着手/臂的命令通道。
+        """
+        robot = getattr(self, "robot", None)
+        if robot is not None and hasattr(robot, "set_streaming"):
+            try:
+                robot.set_streaming(on)
+            except Exception:  # noqa: BLE001 - 控制流开关不应影响主链
+                pass
+        for gripper in getattr(self.body, "grippers", {}).values():
+            hand = getattr(gripper, "_inspire_hand", None)
+            if hand is not None and hasattr(hand, "set_streaming"):
+                try:
+                    hand.set_streaming(on)
+                except Exception:  # noqa: BLE001
                     pass
 
 

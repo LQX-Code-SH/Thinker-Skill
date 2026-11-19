@@ -34,11 +34,12 @@ def _inspire_msgs():
 class SimJointGroup:
     """一个 /{group}/cmd_ctrl + /{group}/status 关节组。
 
-    以 20 Hz 心跳重发目标：桥有 0.25 s 看门狗，停发会掉软阻抗。
+    以 ``hz`` 心跳重发目标（手臂默认 100 Hz，与 body 层伺服同频；腰/头 20 Hz
+    足够）。桥有 0.25 s 看门狗，停发会掉软阻抗。
     """
 
     def __init__(self, node, topic: str, ids: Sequence[int],
-                 kp: float, kd: float):
+                 kp: float, kd: float, hz: float = 20.0):
         CmdMotorCtrl, MotorCtrl, MotorStatusMsg = _body_msgs()
         self._node = node
         self._CmdMotorCtrl = CmdMotorCtrl
@@ -52,7 +53,10 @@ class SimJointGroup:
         self._pub = node.create_publisher(CmdMotorCtrl, f"{topic}/cmd_ctrl", 10)
         self._sub = node.create_subscription(
             MotorStatusMsg, f"{topic}/status", self._on_status, 20)
-        self._timer = node.create_timer(0.05, self._flush)
+        # streaming：只有技能执行期间才 20 Hz 重发目标。技能结束后停发，
+        # 桥侧看门狗 0.25 s 后会撤掉软阻抗（这正是"动作播完就停"的语义）。
+        self._streaming = True
+        self._timer = node.create_timer(1.0 / max(float(hz), 1.0), self._flush)
 
     def _on_status(self, msg) -> None:
         with self._lock:
@@ -61,7 +65,13 @@ class SimJointGroup:
                     pos=float(s.pos), vel=float(s.speed),
                     effort=float(s.current))
 
+    def set_streaming(self, on: bool) -> None:
+        """开关心跳重发：False = 不再发保持指令（技能结束后由 Host 调用）。"""
+        self._streaming = bool(on)
+
     def _flush(self) -> None:
+        if not self._streaming:
+            return
         with self._lock:
             targets = dict(self._targets)
         if not targets:
@@ -218,10 +228,13 @@ class SimRobot:
         arm = gains.get("arm") or {}
         waist = gains.get("waist") or {}
         head = gains.get("head") or {}
+        # 手臂下发频率与 body 层伺服（100 Hz）对齐，否则中间目标会被心跳丢弃
+        arm_hz = float(arm.get("control_hz", 100.0))
 
         self.arm = SimJointGroup(node, topics.get("arm", "/arm"),
                                  plant.ARM_IDS,
-                                 arm.get("kp", 100.0), arm.get("kd", 7.4))
+                                 arm.get("kp", 100.0), arm.get("kd", 7.4),
+                                 hz=arm_hz)
         self.waist = SimJointGroup(node, topics.get("waist", "/waist"),
                                    plant.WAIST_IDS,
                                    waist.get("kp", 120.0), waist.get("kd", 8.0))
@@ -246,6 +259,11 @@ class SimRobot:
 
     def shutdown(self) -> None:
         pass
+
+    def set_streaming(self, on: bool) -> None:
+        """统一开关心跳：arm / waist / head 三类命令流。"""
+        for group in (self.arm, self.waist, self.head):
+            group.set_streaming(on)
 
 
 class SimHead(TienkungDexHead):

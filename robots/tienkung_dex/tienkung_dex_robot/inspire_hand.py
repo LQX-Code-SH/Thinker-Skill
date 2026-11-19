@@ -232,8 +232,14 @@ class InspireHand:
         self._pub = None
         self._force_pub = None
 
+    def set_streaming(self, on: bool) -> None:
+        """开关心跳重发：False = 不再发保持手型（技能结束后由 Host 调用）。"""
+        self._streaming = bool(on)
+
     def _publish_target(self) -> None:
         """定时器回调：持续重发锁存的手型角码。"""
+        if not getattr(self, "_streaming", True):
+            return
         if self._pub is None or not self._target_codes:
             return
         from inspire_hand_msgs.msg import SetAngle
