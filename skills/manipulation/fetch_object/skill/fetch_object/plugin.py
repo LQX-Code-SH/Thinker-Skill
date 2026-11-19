@@ -189,7 +189,9 @@ class FetchObject:
 
             # 示教位姿优先：配置了 taught_poses 且侧别匹配时，两段轨迹直接
             # 用示教的预备/抓取位姿，不再由物体位置规划偏置。
-            use_taught = bool(taught) and \
+            # use_taught=False 可强制走 plan_grasp（仿真/换机型时示教位姿
+            # 可能不在臂展或姿态约束内，需要按当前机型重新规划）。
+            use_taught = bool(taught) and bool(cfg.get("use_taught", True)) and \
                 str(taught.get("side", side)).lower() == side and \
                 taught.get("pregrasp") and taught.get("grasp")
             a_quat = g_quat = None
