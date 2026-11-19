@@ -60,6 +60,8 @@ def _resolve_robot_dir(explicit: Optional[str], model: str) -> Optional[str]:
 def load_robot_adapter(node, config: Dict[str, Any]):
     model = config.get("model", "tienkung_dex")
     module = importlib.import_module(f"{model}_robot")
+    ik_cfg = config.get("ik") or {}
+    ee_cfg = config.get("end_effector") or {}
     return module.create_adapter(
         node,
         backend=config.get("backend", "real"),
@@ -68,13 +70,20 @@ def load_robot_adapter(node, config: Dict[str, Any]):
         urdf_path=config.get("urdf_path"),
         camera_k=(config.get("camera") or {}).get("k"),
         pelvis_height=float(config.get("pelvis_height", 0.0) or 0.0),
-        ik_solver=(config.get("ik") or {}).get("solver", "daqp"),
+        ik_solver=ik_cfg.get("solver", "daqp"),
+        ik_max_iter=int(ik_cfg.get("max_iter", 100)),
+        # YAML 1.1 把 1e-3 解析为字符串，必须显式 float 转换
+        ik_tol=float(ik_cfg.get("tol", 1e-3)),
+        ik_rot_tol=float(ik_cfg.get("rot_tol", 0.02)),
+        ik_damping=float(ik_cfg.get("damping", 0.08)),
+        tcp_offset=ee_cfg.get("tcp_offset"),
+        reach_margin=float(ik_cfg.get("reach_margin", 0.03)),
     )
 
 
 def bootstrap_core(*, config_dir: str, skills_dirs: List[str], body: Any,
                    sensor: Any, min_core: str = "0.1.0",
-                   capabilities=None) -> Tuple[Host, Registry, List]:
+                   capabilities=None, estop=None) -> Tuple[Host, Registry, List]:
     """不依赖 ROS 的装配核心（可单测）。"""
     config = ConfigLoader(config_dir).load()
     errors_path = Path(config_dir) / "errors.yaml"
@@ -86,8 +95,10 @@ def bootstrap_core(*, config_dir: str, skills_dirs: List[str], body: Any,
 
     tick_rate = float(config.get("tick_rate", 10))
     state = StateStore(DEFAULT_STATE_KEYS)
-    runtime = SkillRuntime(arbiter=BodyArbiter(), state=state,
-                           tick=1.0 / tick_rate, catalog=catalog)
+    runtime = SkillRuntime(
+        arbiter=BodyArbiter(), state=state, tick=1.0 / tick_rate,
+        catalog=catalog, estop=estop,
+        default_timeout=float(config.get("default_timeout", 300)))
     host = Host(registry=registry, runtime=runtime, body=body, sensor=sensor,
                 state=state, config=config, tick_rate=tick_rate)
     return host, registry, skipped
@@ -114,7 +125,8 @@ def bootstrap_ros(node, *, config_dir: str, skills_dirs: List[str],
         body=adapter.body, sensor=adapter.sensor,
         min_core=min_core,
         capabilities=load_capabilities(
-            robot_dir, config.get("hand_variant"), config.get("backend")))
+            robot_dir, config.get("hand_variant"), config.get("backend")),
+        estop=getattr(adapter, "emergency_stop", None))
 
     names = registry.names()
     services = create_services(node, host, names)

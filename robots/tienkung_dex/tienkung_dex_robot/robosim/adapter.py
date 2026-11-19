@@ -41,7 +41,13 @@ class SimAdapter:
         pass
 
     def shutdown(self) -> None:
-        pass
+        for gripper in getattr(self.body, "grippers", {}).values():
+            hand = getattr(gripper, "_inspire_hand", None)
+            if hand is not None:
+                try:
+                    hand.stop()
+                except Exception:  # noqa: BLE001 - 关停路径不抛错
+                    pass
 
 
 def create_adapter(node, *, backend: str = "robosim",
@@ -59,11 +65,26 @@ def create_adapter(node, *, backend: str = "robosim",
     robot = SimRobot(node, mapping)
     if hand_dof is None:
         hand_dof = 13 if hand_variant == "inspire" else 6
+    vendor = "inspire" if hand_variant == "inspire" else "brainco"
+    # 因时手与真机同路径：走项目侧 InspireHand（13 通道 angle_set/angle_actual）
+    inspire_hands = None
+    if vendor == "inspire":
+        if node is None:
+            raise ValueError("inspire 手需要传入 ROS node 以创建话题")
+        from ..inspire_hand import InspireHand
+        inspire_hands = {}
+        for side in TienkungDexBody.SIDES:
+            hand = InspireHand(node, side)
+            hand.start()
+            inspire_hands[side] = hand
 
     body = TienkungDexBody(
         robot,
         hand_side=hand_side,
         hand_dof=int(hand_dof),
+        hand_vendor=vendor,
+        hand_variant=hand_variant,
+        inspire_hands=inspire_hands,
         urdf_path=urdf_path,
         pelvis_height=pelvis_height,
         ik_solver=ik_solver,

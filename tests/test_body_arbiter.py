@@ -28,6 +28,26 @@ def test_areas_for():
     assert areas_for(["body.head", "body.base"]) == {"head", "lower"}
 
 
+def test_areas_for_per_side_capabilities():
+    """按侧能力（D-021）同属上肢，映射成同一区域。"""
+    assert areas_for(["body.arm.left", "body.arm.right"]) == {"upper"}
+    assert areas_for(["body.gripper.left", "body.gripper.right",
+                      "body.arm.right"]) == {"upper"}
+    # 未登记的能力不占区域（避免拼写错误静默占用）
+    assert areas_for(["body.arm.both"]) == set()
+
+
+def test_both_side_capabilities_share_one_lease():
+    arb = BodyArbiter()
+    lease = arb.acquire("fetch", ["body.arm.left", "body.arm.right",
+                                  "body.gripper.right"])
+    assert lease.areas == {"upper"}
+    with pytest.raises(BodyBusyError):
+        arb.acquire("other", ["body.arm.left"])
+    arb.release(lease)
+    assert arb.acquire("other", ["body.arm.left"]) is not None
+
+
 def test_readonly_exempt():
     arb = BodyArbiter()
     assert arb.acquire("cam", ["sensor.rgbd"]) is None

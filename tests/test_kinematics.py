@@ -48,10 +48,17 @@ class _Waist:
     def get_pose(self):
         return (0.0, 0.0, 0.0)
 
+    def get_states(self):
+        # sensor._joint_angles() 直接读关节状态；缺省视为全零
+        return {}
+
 
 class _Head:
     def get_pose(self):
         return (0.0, 0.0)
+
+    def get_states(self):
+        return {}
 
 
 class _Robot:

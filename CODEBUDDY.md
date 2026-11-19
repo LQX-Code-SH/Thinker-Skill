@@ -18,7 +18,7 @@ make clean
 PYTHONPATH=core/skill_sdk:core/skill_core:core/common:core/sensor:core/body:\
 robots/tienkung_dex:\
 skills/perception/detect_object/skill:skills/manipulation/look_down_table/skill:\
-skills/mock/fetch_object_mock/skill:tests \
+skills/manipulation/fetch_object/skill:skills/mock/fetch_object_mock/skill:tests \
   python3 -m pytest -q tests
 
 # 单个测试
@@ -145,6 +145,7 @@ skills/<类别>/<技能> 两棵并列子树：skill/（colcon 包）+ mcp_interf
 - `/robot_state` 由 4 路 `status` + `/imu/status` 聚合，默认 100 Hz；`/…/cmd` 只按 mode 0/1 的位置/力位混合语义执行，HBWALK 下忽略 `/leg/cmd`。
 - 官方未定义相机位姿话题；仿真额外发布 `/ob_camera_head/pose`（pelvis 系），供 `transform_to_base` 用，真机仍走 URDF 正运动学。
 - 头部符号：URDF 低头为正，MJCF 低头为负，映射在 `sim_mapping.yaml` 的 `head.pitch_sign`。
+
 ## 机型适配
 
 `configs/robot.yaml` 的 `model` 决定 `import <model>_robot` 并调用 `create_adapter(node, backend, hand_variant, ...)`（`core/skill_core/app.py:load_robot_adapter`）。`robots/<model>/capabilities.yaml` 声明基础能力 + `hand_variants`（brainco/inspire/fixed），装配期按 `hand_variant` 合并后用于技能 `requires` 子集校验；`fixed` 假手没有 `body.gripper`。`robot_dir` 显式路径不存在时走 ament_index，机器人上无需手配路径。IK（QP+DAQP）属于机型包内部实现（D-017）。仿真能力差异只由 `capabilities.yaml` 的 `backend_variants.robosim` 表达，不新增 `robots/*_sim` 机型；`backend: robosim` 走 `tienkung_dex_robot/robosim/` 适配器（复用同一 `TienkungDexBody`/`TienkungDexSensor`，只换话题层），因此不需要 SDK 也能跑。仿真配置在 `configs/sim`，子模块在 `sim/robot_sim`，不参与默认 `make build`。

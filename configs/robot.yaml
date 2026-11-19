@@ -3,21 +3,25 @@ model: tienkung_dex       # 选择 robots/<model>
 backend: real             # real | sim | mock（部署实机用 real，开发机可用 mock）
 
 # 手部变体：brainco(强脑 6 DOF) | inspire(因时 13 关节) | fixed(拳头假手，无夹爪)
-hand_variant: brainco
+# 当前技能按 inspire 手开发；brainco 接口仍保留（适配层按 vendor 分派）
+hand_variant: inspire
 hand_side: right
 
 # 头部相机正运动学 URDF；留空则用包内 resources/urdf/tienkung_dex_brainco.urdf
 urdf_path: null
 
-# pelvis 距地面高度（站立/半身运控），用于 pelvis → base(地面) 平移；待实测标定
-pelvis_height: 0.92
+# pelvis 距地面高度（站立/半身运控），用于 pelvis → base(地面) 平移
+# 由 home_standing 核算：tools/measure_pelvis_height.py；
+# 结果与真机复核见 resources/joints.yaml 的 home_standing_derived
+pelvis_height: 1.0006
 
 # 头部相机内参（自标定 2026-09-29，rational 8 参）
 camera:
   name: head_gemini336
   width: 1280
   height: 720
-  k: [694.64125721, 0.0, 640.01981966, 0.0, 694.60720736, 363.57411502, 0.0, 0.0, 1.0]
+  # 2026-11-12 真机 camera_info 实测（原自标定值与实测差约 0.6%）
+  k: [690.61303711, 0.0, 641.74291992, 0.0, 690.80194092, 361.81796265, 0.0, 0.0, 1.0]
   distortion_model: rational
   d: [-3.34663455, 4.14604418, 0.00053256, -0.00079030, -1.52466885, -3.34589408, 4.14748612, -1.52468165]
 
@@ -31,13 +35,129 @@ skills:
   detect_object:
     # 相对路径：部署包内解析到 <ver>/weights/...，源码树回退到仓库根
     model_path: weights/grounding-dino-tiny
+    threshold: 0.35          # 检测置信度阈值；低阈值召回高但误检多
+    text_threshold: 0.35
+
+  play_action:
+    # 动作文件（schemaVersion 2）搜索顺序：动作清单 actions.yaml 的注册名 →
+    # 绝对路径 → actions_dir → <技能根>/actions → $THINKER_ACTIONS_DIR → 当前工作目录
+    actions_dir: ""              # 留空表示只用技能包 actions/ 与绝对路径；也可放 actions.yaml
+    transition_s: 2.0            # 起步与当前姿态的衔接时长（秒，smoothstep）
+    speed: 1.0                   # 播放速度倍率
+    play_hands: true             # 是否驱动手指（无手部能力时自动跳过）
+    hand_mode: auto              # 手部口径：auto(因时手走13维) | 6d | 13d
+    max_transition_s: 10.0       # 衔接时长上限
+
+  fetch_object:
+    # —— 预备 ——
+    prepare_pitch_deg: 45.0      # 先低头再定位（look_down_table 的软上限 47.5°）
+    # —— 定位 ——
+    probe_retries: 2             # 检测失败重试次数
+    # —— 动作 ——
+    approach_tol: 0.01           # 到位判据：位置误差（米）
+    rot_tol: 0.05                # 到位判据：姿态误差（弧度）
+    settle_ticks: 3              # 连续满足判据的 tick 数（10Hz → 0.3s）
+    grasp_settle_s: 0.8          # 合手后等待
+    lift_x_delta: -0.05          # 提拉：base 系后退
+    lift_z_delta: 0.15           # 提拉：base 系抬升
+    # —— 成败判定（视觉二次确认）——
+    verify_min_lift_z: 0.05      # 物体随手上移的最小抬升量（米）
+    verify_max_xy_dist: 0.12     # 与抓取前位置的最大水平偏移（米）
+    # 接触辅助（inspire touch_data）：视觉失败但指尖持续接触时可判抓取成功
+    verify_use_contact: true
+    contact_force_threshold: 50       # 0.01N 单位，50=0.5N
+    contact_proximity_threshold: 100000  # 接近觉原始值 0~16e6
+    # —— 力反馈闭环合手（inspire touch_data）——
+    # 渐进闭合：从抓取前手型向目标闭合角码插值，每 tick 读 5 指法向力，
+    # 5 指力和 >= close_force_target 视为抓稳，立即停止继续闭合。
+    close_force_control: true
+    close_force_target: 300        # 5 指法向力和，0.01N 单位 → 300=3.0N
+    close_steps: 8                 # 从张到合最多 8 步（每 tick 一步，10Hz → 0.8s）
+    close_settle_ticks: 2          # 到力后额外保持的 tick 数（让手型到位）
+    # —— 抓取位姿（初值沿用参考实现的天轶 2.0，真机须按手型标定）——
+    z_bias: 0.02                 # 目标点高度补偿
+    base_orientation_deg: [0.0, -90.0, 0.0]   # 基准夹爪姿态（zyx）
+    yaw_map:                     # 目标横向方位角 → 额外 yaw（tanh 映射）
+      ref_x: 0.10
+      ref_y_abs: 0.20
+      max_extra_yaw_deg: 42.0
+      angle_scale_deg: 28.0
+      tanh_gain: 1.6
+    center_comp: {x_scale: 0.01, y_scale: 0.015}
+    tcp_delta_x: -0.03           # TCP 偏置（工具系）
+    prepare_delta_y: {left: 0.11, right: 0.095}
+    prepare_delta_z: 0.30
+    grasp_delta_y: 0.07
+    grasp_delta_z: 0.135
+    grasp_positions: [0.80, 0.80, 0.80, 0.80, 0.75, 0.75]   # 6 指归一化张角
+    # —— 示教两段轨迹位姿（2026-11-17 真机右臂）——
+    # 来源：读 /robot_state 当前关节角 → ArmIK.fk_pose（URDF + pelvis_height）
+    # frame = base（pelvis + pelvis_height 1.0006）；quat 顺序 xyzw
+    # 注：当前仅供记录/规划参考，plugin.py 仍按上面的偏移参数规划抓取
+    taught_poses:
+      side: right
+      frame: "base (pelvis + pelvis_height=1.0006)"
+      recorded_at: "2026-11-17 18:54:46 CST"
+      tcp_offset: [0.0, 0.0, -0.1]
+      # —— 相对化：示教位姿相对苹果，运行时按当前苹果位置平移 ——
+      # 基准 = 示教位姿对应的苹果位置（取自首次示教成功抓取那次的检测值）
+      # 只平移 x/y（桌面高度固定，z 保持示教值），对齐 IL-LAB shift_grasp_waypoints
+      relative_to_object: true
+      object_name: apple
+      apple_pose_recorded: [0.4735, -0.21, 0.931]
+      # 预备抓取位姿：腕 roll 末端在 base 系（腕部相对位姿）
+      pregrasp:
+        wrist_position: [0.302289, -0.312782, 1.120646]
+        quat_xyzw: [-0.257718, -0.538572, 0.675448, 0.432772]
+        joints_rad: [-0.2033, -0.672942, 0.42616, -1.524898, 0.702332, -0.244434, 0.18058]
+        waist_pry_rad: [0.008389, -0.000312, -0.00489]
+        # 抓取前手型（inspire 右手 13 关节实际角度，原始值）
+        pregrasp_hand:
+          joint_names: [little_root_bend, ring_root_bend, middle_root_bend, middle_side_swing, index_root_bend, index_side_swing, little_mid_bend, ring_mid_bend, middle_mid_bend, index_mid_bend, thumb_side_swing, thumb_joint1_bend, thumb_joint2_bend]
+          joint_values: [1619, 1629, 1651, 0, 1641, 0, 1879, 1891, 1890, 1889, 942, 1570, 2041]
+      # 抓取位姿：末端 TCP 抓取中心在 base 系（末端相对位姿）
+      grasp:
+        tcp_position: [0.3962, -0.261869, 1.029989]
+        wrist_position: [0.316622, -0.312142, 1.063752]
+        quat_xyzw: [-0.245406, -0.520536, 0.689922, 0.439119]
+        joints_rad: [-0.309827, -0.572121, 0.535603, -1.19719, 0.797224, -0.357471, 0.045094]
+        waist_pry_rad: [0.00894, -0.000288, -0.004938]
+      # 抓取后结束位姿（2026-11-17 记录：释放苹果后臂回到 home 附近）
+      end:
+        tcp_position: [0.339712, -0.334918, 1.128255]
+        wrist_position: [0.239854, -0.337881, 1.12381]
+        quat_xyzw: [-0.167509, -0.702969, 0.180098, 0.667338]
+        joints_rad: [0.166149, -0.4, -0.067919, -1.8, 0.003365, 0.013499, 0.006651]
+        waist_pry_rad: [0.00894, -0.000599, -0.004866]
+    # —— 回收（可选；留空表示不动作）——
+    hold_joints: {}
+    #  - right: {right_shoulder_pitch: 0.1, right_elbow_pitch: -0.6}
+    # —— 按物体类别的参数覆写（只改数值，不改流程）——
+    objects:
+      # apple 易损：闭合度从 0.95 降到 0.65（指根码 900→~1065，避免全力度握拳）
+      apple: {z_bias: 0.04, grasp_positions: [0.65, 0.65, 0.65, 0.65, 0.60, 0.60]}
+      banana: {grasp_delta_y: 0.05, grasp_positions: [0.65, 0.65, 0.65, 0.65, 0.60, 0.60]}
+      bottle: {}
 
 tick_rate: 10             # 动作循环频率（Hz）
 default_timeout: 300      # 缺省超时（秒，Action 通道兜底）
 
+# MCP 聚合端口（对外只暴露这一个；每技能独立端口 8022+ 仅平台注册用）
+mcp:
+  enabled: true
+  name: thinker_skills
+  host: localhost         # 对外暴露需改 0.0.0.0 并前置反代/白名单
+  port: 8010              # 本机 8000 被 interaction_orc 占用，改用 8010
+
 # 臂 IK（robots/tienkung_dex/ik.py）
 ik:
   solver: daqp            # daqp（QP+限位）| dls（无约束）
-  tol: 1e-3               # 收敛阈值（米）
-  max_iter: 30
+  tol: 0.001              # 位置收敛阈值（米）（YAML 1.1 不认 1e-3，必须写小数）
+  rot_tol: 0.02           # 姿态收敛阈值（弧度，约 1.1°）
+  max_iter: 100
   damping: 0.08
+  reach_margin: 0.03      # 球面预检留余量（米）
+
+# 末端执行器：腕 roll 系 → 抓取中心（米）；brainco 手约 100 mm，待实测标定
+end_effector:
+  tcp_offset: [0.0, 0.0, -0.10]

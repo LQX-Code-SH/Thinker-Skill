@@ -8,7 +8,9 @@
 | 参数 | `object_name`（默认 `bottle`） |
 | 步骤 | 取帧 → 检测（GroundingDINO）→ 定位（深度反投影 + 光线延伸） |
 | 前置 | 头部姿态由调用方负责（如先调 `look_down_table`），本技能不下发动作 |
-| 输出 | `data: {object_name, obj_pose:[x,y,z], label, score}`，base 系、米 |
+| 输出 | `data: {object_name, obj_pose:[x,y,z], label, score, box, stamp}`，base 系、米 |
+| 后置状态 | `last_detection`（含 object_name / obj_pose / label / score / box / stamp），供下游技能复用 |
+| 私有配置 | `threshold` / `text_threshold`（默认 0.35） |
 | 依赖 | `transformers>=4.55`（标准 GroundingDINO 权重，系统 5.0.0 已验证） |
 
 ## 算法（对齐参考实现）
@@ -16,7 +18,7 @@
 1. mask 质心（无 mask 退化用框中心）→ 3×3 中值深度（mm × 1e-3）
 2. 针孔反投影：`X=(u-cx)z/fx`、`Y=(v-cy)z/fy`、`Z=z`
 3. 沿光线单位向量延伸 0.03 m
-4. `cam→base` 变换（由 `sensor.transform_to_base` 提供）
+4. `cam→base` 变换（由 `sensor.transform_to_base` 提供，使用 **Frame.angles** 即取帧时刻的关节角）
 5. 有效空间过滤：`x∈(0.2,0.8) y∈(-0.4,0.4) z∈(0.4,1.3)`
 
 ## 失败语义

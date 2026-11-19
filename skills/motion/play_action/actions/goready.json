@@ -1,0 +1,5485 @@
+{
+  "schemaVersion": 2,
+  "robot": {
+    "name": "tienkung_dex_inspire.urdf",
+    "jointNames": [
+      "hip_pitch_l_joint",
+      "hip_roll_l_joint",
+      "hip_yaw_l_joint",
+      "knee_pitch_l_joint",
+      "ankle_pitch_l_joint",
+      "ankle_roll_l_joint",
+      "hip_pitch_r_joint",
+      "hip_roll_r_joint",
+      "hip_yaw_r_joint",
+      "knee_pitch_r_joint",
+      "ankle_pitch_r_joint",
+      "ankle_roll_r_joint",
+      "waist_yaw_joint",
+      "waist_roll_joint",
+      "waist_pitch_joint",
+      "head_yaw_joint",
+      "head_pitch_joint",
+      "shoulder_pitch_l_joint",
+      "shoulder_roll_l_joint",
+      "shoulder_yaw_l_joint",
+      "elbow_pitch_l_joint",
+      "elbow_yaw_l_joint",
+      "wrist_pitch_l_joint",
+      "wrist_roll_l_joint",
+      "shoulder_pitch_r_joint",
+      "shoulder_roll_r_joint",
+      "shoulder_yaw_r_joint",
+      "elbow_pitch_r_joint",
+      "elbow_yaw_r_joint",
+      "wrist_pitch_r_joint",
+      "wrist_roll_r_joint",
+      "left_thumb_yaw_joint",
+      "left_thumb_mcp_joint",
+      "left_thumb_pip_joint",
+      "left_thumb_dip_joint",
+      "left_index_yaw_joint",
+      "left_index_mcp_joint",
+      "left_index_pip_joint",
+      "left_index_dip_joint",
+      "left_middle_yaw_joint",
+      "left_middle_mcp_joint",
+      "left_middle_pip_joint",
+      "left_middle_dip_joint",
+      "left_ring_mcp_joint",
+      "left_ring_pip_joint",
+      "left_ring_dip_joint",
+      "left_pinky_mcp_joint",
+      "left_pinky_pip_joint",
+      "left_pinky_dip_joint",
+      "right_thumb_yaw_joint",
+      "right_thumb_mcp_joint",
+      "right_thumb_pip_joint",
+      "right_thumb_dip_joint",
+      "right_index_yaw_joint",
+      "right_index_mcp_joint",
+      "right_index_pip_joint",
+      "right_index_dip_joint",
+      "right_middle_yaw_joint",
+      "right_middle_mcp_joint",
+      "right_middle_pip_joint",
+      "right_middle_dip_joint",
+      "right_ring_mcp_joint",
+      "right_ring_pip_joint",
+      "right_ring_dip_joint",
+      "right_pinky_mcp_joint",
+      "right_pinky_pip_joint",
+      "right_pinky_dip_joint"
+    ],
+    "joints": {
+      "hip_pitch_l_joint": {
+        "lower": -3.0543261909900763,
+        "upper": 2.792526803190927,
+        "velocity": 16.755160819145562
+      },
+      "hip_roll_l_joint": {
+        "lower": -0.41887902047863906,
+        "upper": 2.6179938779914944,
+        "velocity": 16.755160819145562
+      },
+      "hip_yaw_l_joint": {
+        "lower": -1.3962634015954636,
+        "upper": 4.4505895925855405,
+        "velocity": 13.82300767579509
+      },
+      "knee_pitch_l_joint": {
+        "lower": -0.08726646259971647,
+        "upper": 2.5307274153917776,
+        "velocity": 11.100294042683936
+      },
+      "ankle_pitch_l_joint": {
+        "lower": -1.1868238913561442,
+        "upper": 0.5235987755982988,
+        "velocity": 14.137166941154069
+      },
+      "ankle_roll_l_joint": {
+        "lower": -0.5235987755982988,
+        "upper": 0.5235987755982988,
+        "velocity": 14.137166941154069
+      },
+      "hip_pitch_r_joint": {
+        "lower": -3.0543261909900763,
+        "upper": 2.792526803190927,
+        "velocity": 16.755160819145562
+      },
+      "hip_roll_r_joint": {
+        "lower": -2.6179938779914944,
+        "upper": 0.41887902047863906,
+        "velocity": 16.755160819145562
+      },
+      "hip_yaw_r_joint": {
+        "lower": -4.4505895925855405,
+        "upper": 1.3962634015954636,
+        "velocity": 13.82300767579509
+      },
+      "knee_pitch_r_joint": {
+        "lower": -0.08726646259971647,
+        "upper": 2.5307274153917776,
+        "velocity": 11.100294042683936
+      },
+      "ankle_pitch_r_joint": {
+        "lower": -1.1868238913561442,
+        "upper": 0.5235987755982988,
+        "velocity": 14.137166941154069
+      },
+      "ankle_roll_r_joint": {
+        "lower": -0.5235987755982988,
+        "upper": 0.5235987755982988,
+        "velocity": 14.137166941154069
+      },
+      "waist_yaw_joint": {
+        "lower": -2.6179938779914944,
+        "upper": 3.2288591161895095,
+        "velocity": 10.053096491487338
+      },
+      "waist_roll_joint": {
+        "lower": -0.4363323129985824,
+        "upper": 0.4363323129985824,
+        "velocity": 13.82300767579509
+      },
+      "waist_pitch_joint": {
+        "lower": -0.5235987755982988,
+        "upper": 0.8726646259971648,
+        "velocity": 13.82300767579509
+      },
+      "head_yaw_joint": {
+        "lower": -1.0471975511965976,
+        "upper": 1.0471975511965976,
+        "velocity": 7.644542123735163
+      },
+      "head_pitch_joint": {
+        "lower": -0.2617993877991494,
+        "upper": 0.8726646259971648,
+        "velocity": 7.644542123735163
+      },
+      "shoulder_pitch_l_joint": {
+        "lower": -2.844886680750757,
+        "upper": 2.844886680750757,
+        "velocity": 7.218332720398149
+      },
+      "shoulder_roll_l_joint": {
+        "lower": -0.19198621771937624,
+        "upper": 3.3335788713091694,
+        "velocity": 7.218332720398149
+      },
+      "shoulder_yaw_l_joint": {
+        "lower": -2.844886680750757,
+        "upper": 2.844886680750757,
+        "velocity": 11.455294012539582
+      },
+      "elbow_pitch_l_joint": {
+        "lower": -2.548180707911721,
+        "upper": 0.19198621771937624,
+        "velocity": 11.455294012539582
+      },
+      "elbow_yaw_l_joint": {
+        "lower": -2.844886680750757,
+        "upper": 2.844886680750757,
+        "velocity": 18.325957145940457
+      },
+      "wrist_pitch_l_joint": {
+        "lower": -1.3264502315156903,
+        "upper": 1.3264502315156903,
+        "velocity": 18.325957145940457
+      },
+      "wrist_roll_l_joint": {
+        "lower": -1.3264502315156903,
+        "upper": 1.3264502315156903,
+        "velocity": 18.325957145940457
+      },
+      "shoulder_pitch_r_joint": {
+        "lower": -2.844886680750757,
+        "upper": 2.844886680750757,
+        "velocity": 7.218332720398149
+      },
+      "shoulder_roll_r_joint": {
+        "lower": -3.3335788713091694,
+        "upper": 0.19198621771937624,
+        "velocity": 7.218332720398149
+      },
+      "shoulder_yaw_r_joint": {
+        "lower": -2.844886680750757,
+        "upper": 2.844886680750757,
+        "velocity": 11.455294012539582
+      },
+      "elbow_pitch_r_joint": {
+        "lower": -2.548180707911721,
+        "upper": 0.19198621771937624,
+        "velocity": 11.455294012539582
+      },
+      "elbow_yaw_r_joint": {
+        "lower": -2.844886680750757,
+        "upper": 2.844886680750757,
+        "velocity": 18.325957145940457
+      },
+      "wrist_pitch_r_joint": {
+        "lower": -1.3264502315156903,
+        "upper": 1.3264502315156903,
+        "velocity": 18.325957145940457
+      },
+      "wrist_roll_r_joint": {
+        "lower": -1.3264502315156903,
+        "upper": 1.3264502315156903,
+        "velocity": 18.325957145940457
+      },
+      "left_thumb_yaw_joint": {
+        "lower": 0,
+        "upper": 1.9198622,
+        "velocity": 2
+      },
+      "left_thumb_mcp_joint": {
+        "lower": 0,
+        "upper": 0.6108652,
+        "velocity": 2
+      },
+      "left_thumb_pip_joint": {
+        "lower": 0,
+        "upper": 1.041888,
+        "velocity": 2
+      },
+      "left_thumb_dip_joint": {
+        "lower": 0,
+        "upper": 0.9424778,
+        "velocity": 2
+      },
+      "left_index_yaw_joint": {
+        "lower": -0.26118,
+        "upper": 0.26118,
+        "velocity": 2
+      },
+      "left_index_mcp_joint": {
+        "lower": 0,
+        "upper": 1.3089969,
+        "velocity": 2
+      },
+      "left_index_pip_joint": {
+        "lower": 0,
+        "upper": 1.4835299,
+        "velocity": 2
+      },
+      "left_index_dip_joint": {
+        "lower": 0,
+        "upper": 1.568,
+        "velocity": 2
+      },
+      "left_middle_yaw_joint": {
+        "lower": -0.26118,
+        "upper": 0.26118,
+        "velocity": 2
+      },
+      "left_middle_mcp_joint": {
+        "lower": 0,
+        "upper": 1.3089969,
+        "velocity": 2
+      },
+      "left_middle_pip_joint": {
+        "lower": 0,
+        "upper": 1.4835299,
+        "velocity": 2
+      },
+      "left_middle_dip_joint": {
+        "lower": 0,
+        "upper": 1.568,
+        "velocity": 2
+      },
+      "left_ring_mcp_joint": {
+        "lower": 0,
+        "upper": 1.3089969,
+        "velocity": 2
+      },
+      "left_ring_pip_joint": {
+        "lower": 0,
+        "upper": 1.4835299,
+        "velocity": 2
+      },
+      "left_ring_dip_joint": {
+        "lower": 0,
+        "upper": 1.568,
+        "velocity": 2
+      },
+      "left_pinky_mcp_joint": {
+        "lower": 0,
+        "upper": 1.3089969,
+        "velocity": 2
+      },
+      "left_pinky_pip_joint": {
+        "lower": 0,
+        "upper": 1.4835299,
+        "velocity": 2
+      },
+      "left_pinky_dip_joint": {
+        "lower": 0,
+        "upper": 1.568,
+        "velocity": 2
+      },
+      "right_thumb_yaw_joint": {
+        "lower": 0,
+        "upper": 1.9198622,
+        "velocity": 2
+      },
+      "right_thumb_mcp_joint": {
+        "lower": 0,
+        "upper": 0.6108652,
+        "velocity": 2
+      },
+      "right_thumb_pip_joint": {
+        "lower": 0,
+        "upper": 1.041888,
+        "velocity": 2
+      },
+      "right_thumb_dip_joint": {
+        "lower": 0,
+        "upper": 0.9424778,
+        "velocity": 2
+      },
+      "right_index_yaw_joint": {
+        "lower": -0.26118,
+        "upper": 0.26118,
+        "velocity": 2
+      },
+      "right_index_mcp_joint": {
+        "lower": 0,
+        "upper": 1.3089969,
+        "velocity": 2
+      },
+      "right_index_pip_joint": {
+        "lower": 0,
+        "upper": 1.4835299,
+        "velocity": 2
+      },
+      "right_index_dip_joint": {
+        "lower": 0,
+        "upper": 1.568,
+        "velocity": 2
+      },
+      "right_middle_yaw_joint": {
+        "lower": -0.26118,
+        "upper": 0.26118,
+        "velocity": 2
+      },
+      "right_middle_mcp_joint": {
+        "lower": 0,
+        "upper": 1.3089969,
+        "velocity": 2
+      },
+      "right_middle_pip_joint": {
+        "lower": 0,
+        "upper": 1.4835299,
+        "velocity": 2
+      },
+      "right_middle_dip_joint": {
+        "lower": 0,
+        "upper": 1.568,
+        "velocity": 2
+      },
+      "right_ring_mcp_joint": {
+        "lower": 0,
+        "upper": 1.3089969,
+        "velocity": 2
+      },
+      "right_ring_pip_joint": {
+        "lower": 0,
+        "upper": 1.4835299,
+        "velocity": 2
+      },
+      "right_ring_dip_joint": {
+        "lower": 0,
+        "upper": 1.568,
+        "velocity": 2
+      },
+      "right_pinky_mcp_joint": {
+        "lower": 0,
+        "upper": 1.3089969,
+        "velocity": 2
+      },
+      "right_pinky_pip_joint": {
+        "lower": 0,
+        "upper": 1.4835299,
+        "velocity": 2
+      },
+      "right_pinky_dip_joint": {
+        "lower": 0,
+        "upper": 1.568,
+        "velocity": 2
+      }
+    }
+  },
+  "settings": {
+    "snapToFrames": true
+  },
+  "mediaAssets": [],
+  "poseAssets": [
+    {
+      "id": "pose-mwipl72x-zus3uyjme48",
+      "name": "home",
+      "values": {
+        "hip_pitch_l_joint": -0.15557920932769775,
+        "hip_roll_l_joint": -0.00589623861014843,
+        "hip_yaw_l_joint": 0.0037151097785681486,
+        "knee_pitch_l_joint": 0.29941388964653015,
+        "ankle_pitch_l_joint": -0.11941614001989365,
+        "ankle_roll_l_joint": -0.14470498263835907,
+        "hip_pitch_r_joint": -0.15543539822101593,
+        "hip_roll_r_joint": -0.003355582943186164,
+        "hip_yaw_r_joint": -0.012535499408841133,
+        "knee_pitch_r_joint": 0.29823940992355347,
+        "ankle_pitch_r_joint": -0.12971951067447662,
+        "ankle_roll_r_joint": -0.11434441804885864,
+        "waist_yaw_joint": -0.000838895735796541,
+        "waist_roll_joint": -0.003403519978746772,
+        "waist_pitch_joint": 0.014740596525371075,
+        "head_yaw_joint": 0.000621848099399358,
+        "head_pitch_joint": 0.027827370911836624,
+        "shoulder_pitch_l_joint": 0.19231192767620087,
+        "shoulder_roll_l_joint": 0.1223767027258873,
+        "shoulder_yaw_l_joint": 0.056391242891550064,
+        "elbow_pitch_l_joint": -0.45204538106918335,
+        "elbow_yaw_l_joint": -0.00011441236711107194,
+        "wrist_pitch_l_joint": 0.01164387259632349,
+        "wrist_roll_l_joint": -0.006159359123557806,
+        "shoulder_pitch_r_joint": 0.16840055584907532,
+        "shoulder_roll_r_joint": -0.1274368017911911,
+        "shoulder_yaw_r_joint": -0.05792665854096413,
+        "elbow_pitch_r_joint": -0.43606433272361755,
+        "elbow_yaw_r_joint": 0.0036043222062289715,
+        "wrist_pitch_r_joint": 0.01377812959253788,
+        "wrist_roll_r_joint": 0.006563627161085606,
+        "left_thumb_yaw_joint": 0,
+        "left_thumb_mcp_joint": 0,
+        "left_thumb_pip_joint": 0,
+        "left_thumb_dip_joint": 0,
+        "left_index_yaw_joint": 0,
+        "left_index_mcp_joint": 0,
+        "left_index_pip_joint": 0,
+        "left_index_dip_joint": 0,
+        "left_middle_yaw_joint": 0,
+        "left_middle_mcp_joint": 0,
+        "left_middle_pip_joint": 0,
+        "left_middle_dip_joint": 0,
+        "left_ring_mcp_joint": 0,
+        "left_ring_pip_joint": 0,
+        "left_ring_dip_joint": 0,
+        "left_pinky_mcp_joint": 0,
+        "left_pinky_pip_joint": 0,
+        "left_pinky_dip_joint": 0,
+        "right_thumb_yaw_joint": 0,
+        "right_thumb_mcp_joint": 0,
+        "right_thumb_pip_joint": 0,
+        "right_thumb_dip_joint": 0,
+        "right_index_yaw_joint": 0,
+        "right_index_mcp_joint": 0,
+        "right_index_pip_joint": 0,
+        "right_index_dip_joint": 0,
+        "right_middle_yaw_joint": 0,
+        "right_middle_mcp_joint": 0,
+        "right_middle_pip_joint": 0,
+        "right_middle_dip_joint": 0,
+        "right_ring_mcp_joint": 0,
+        "right_ring_pip_joint": 0,
+        "right_ring_dip_joint": 0,
+        "right_pinky_mcp_joint": 0,
+        "right_pinky_pip_joint": 0,
+        "right_pinky_dip_joint": 0
+      }
+    }
+  ],
+  "inputMappings": [],
+  "activeClipId": "clip-mwkisdz4-3f52m7btj28",
+  "clips": [
+    {
+      "id": "clip-mwkisdz4-3f52m7btj28",
+      "name": "goready",
+      "durationMs": 10000,
+      "fps": 30,
+      "loop": true,
+      "playRange": {
+        "startMs": 0,
+        "endMs": 10000
+      },
+      "recordRange": {
+        "startMs": 0,
+        "endMs": 10000
+      },
+      "markers": [],
+      "tracks": [
+        {
+          "id": "track-mwkisdz4-l8s2a5ghp6g",
+          "type": "joint",
+          "jointName": "hip_pitch_l_joint",
+          "name": "hip_pitch_l_joint",
+          "color": "#0a84ff",
+          "muted": false,
+          "locked": false,
+          "visible": true,
+          "recordArmed": false,
+          "keyframes": [
+            {
+              "id": "key-mwkiyll7-kkh08cobsej",
+              "timeMs": 0,
+              "value": -0.14601579308509827,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": 0,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 1166.6666666666667,
+                "dy": -0.000543286403020223
+              }
+            },
+            {
+              "id": "key-mwkissct-bb8xrewh3nw",
+              "timeMs": 3500,
+              "value": -0.14764565229415894,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": -1166.6666666666667,
+                "dy": 0.0002742551685561303
+              },
+              "outHandle": {
+                "dxMs": 1144.4443333333331,
+                "dy": -0.0002690312344640927
+              }
+            },
+            {
+              "id": "key-mwkiuav5-ivr886a4wvg",
+              "timeMs": 6933.333,
+              "value": -0.14764565229415894,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": -1144.4443333333331,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 1022.2223333333335,
+                "dy": 0
+              }
+            },
+            {
+              "id": "key-mwkivxc9-t2xqbm42rf",
+              "timeMs": 10000,
+              "value": -0.14764565229415894,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": -1022.2223333333335,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 0,
+                "dy": 0
+              }
+            }
+          ],
+          "valueRange": {
+            "lower": -3.0543261909900763,
+            "upper": 2.792526803190927,
+            "velocity": 16.755160819145562
+          }
+        },
+        {
+          "id": "track-mwkisdz4-lgt834v1n4k",
+          "type": "joint",
+          "jointName": "hip_roll_l_joint",
+          "name": "hip_roll_l_joint",
+          "color": "#ff9f0a",
+          "muted": false,
+          "locked": false,
+          "visible": true,
+          "recordArmed": false,
+          "keyframes": [
+            {
+              "id": "key-mwkiyllf-e4rlzdz9hqr",
+              "timeMs": 0,
+              "value": -0.004769721534103155,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": 0,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 1166.6666666666667,
+                "dy": -0.00013582113509376845
+              }
+            },
+            {
+              "id": "key-mwkisscz-xij6o9hlmbd",
+              "timeMs": 3500,
+              "value": -0.0051771849393844604,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": -1166.6666666666667,
+                "dy": 0.00006856355706962143
+              },
+              "outHandle": {
+                "dxMs": 1144.4443333333331,
+                "dy": -0.000067257578024147
+              }
+            },
+            {
+              "id": "key-mwkiuav7-jf564l9gfc",
+              "timeMs": 6933.333,
+              "value": -0.0051771849393844604,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": -1144.4443333333331,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 1022.2223333333335,
+                "dy": 0
+              }
+            },
+            {
+              "id": "key-mwkivxcb-c6gvwizorji",
+              "timeMs": 10000,
+              "value": -0.0051771849393844604,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": -1022.2223333333335,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 0,
+                "dy": 0
+              }
+            }
+          ],
+          "valueRange": {
+            "lower": -0.41887902047863906,
+            "upper": 2.6179938779914944,
+            "velocity": 16.755160819145562
+          }
+        },
+        {
+          "id": "track-mwkisdz4-sljr7x29lj8",
+          "type": "joint",
+          "jointName": "hip_yaw_l_joint",
+          "name": "hip_yaw_l_joint",
+          "color": "#30d158",
+          "muted": false,
+          "locked": false,
+          "visible": true,
+          "recordArmed": false,
+          "keyframes": [
+            {
+              "id": "key-mwkiyllo-hwvu4toxjy",
+              "timeMs": 0,
+              "value": -0.0015339808305725455,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": 0,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 1166.6666666666667,
+                "dy": 0.000007989505926767986
+              }
+            },
+            {
+              "id": "key-mwkissd1-8jbrprbgq35",
+              "timeMs": 3500,
+              "value": -0.0015100123127922416,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": -1166.6666666666667,
+                "dy": -0.000004033164243472504
+              },
+              "outHandle": {
+                "dxMs": 1144.4443333333331,
+                "dy": 0.00000395634168329548
+              }
+            },
+            {
+              "id": "key-mwkiuava-ztif3biwnrc",
+              "timeMs": 6933.333,
+              "value": -0.0015100123127922416,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": -1144.4443333333331,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 1022.2223333333335,
+                "dy": 0
+              }
+            },
+            {
+              "id": "key-mwkivxcd-exkt65px6ui",
+              "timeMs": 10000,
+              "value": -0.0015100123127922416,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": -1022.2223333333335,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 0,
+                "dy": 0
+              }
+            }
+          ],
+          "valueRange": {
+            "lower": -1.3962634015954636,
+            "upper": 4.4505895925855405,
+            "velocity": 13.82300767579509
+          }
+        },
+        {
+          "id": "track-mwkisdz4-wrji8w947rf",
+          "type": "joint",
+          "jointName": "knee_pitch_l_joint",
+          "name": "knee_pitch_l_joint",
+          "color": "#ff375f",
+          "muted": false,
+          "locked": false,
+          "visible": true,
+          "recordArmed": false,
+          "keyframes": [
+            {
+              "id": "key-mwkiylls-knhutsmdm38",
+              "timeMs": 0,
+              "value": 0.29756829142570496,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": 0,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 1166.6666666666667,
+                "dy": -0.000023961067199707035
+              }
+            },
+            {
+              "id": "key-mwkissd2-k2x0udy6dq",
+              "timeMs": 3500,
+              "value": 0.29749640822410583,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": -1166.6666666666667,
+                "dy": 0.000012095731619839205
+              },
+              "outHandle": {
+                "dxMs": 1144.4443333333331,
+                "dy": -0.000011865335579867826
+              }
+            },
+            {
+              "id": "key-mwkiuavd-ld1adpoo08m",
+              "timeMs": 6933.333,
+              "value": 0.29749640822410583,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": -1144.4443333333331,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 1022.2223333333335,
+                "dy": 0
+              }
+            },
+            {
+              "id": "key-mwkivxce-5t3hlsr9585",
+              "timeMs": 10000,
+              "value": 0.29749640822410583,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": -1022.2223333333335,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 0,
+                "dy": 0
+              }
+            }
+          ],
+          "valueRange": {
+            "lower": -0.08726646259971647,
+            "upper": 2.5307274153917776,
+            "velocity": 11.100294042683936
+          }
+        },
+        {
+          "id": "track-mwkisdz4-kudz1b5zaq",
+          "type": "joint",
+          "jointName": "ankle_pitch_l_joint",
+          "name": "ankle_pitch_l_joint",
+          "color": "#bf5af2",
+          "muted": false,
+          "locked": false,
+          "visible": true,
+          "recordArmed": false,
+          "keyframes": [
+            {
+              "id": "key-mwkiyllv-ns1fhee53jl",
+              "timeMs": 0,
+              "value": -0.12140393257141113,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": 0,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 1166.6666666666667,
+                "dy": 0.0003217135866483053
+              }
+            },
+            {
+              "id": "key-mwkissd4-rof8f2ulwr",
+              "timeMs": 3500,
+              "value": -0.12043879181146622,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": -1166.6666666666667,
+                "dy": -0.00016240350106782242
+              },
+              "outHandle": {
+                "dxMs": 1144.4443333333331,
+                "dy": 0.00015931008558048282
+              }
+            },
+            {
+              "id": "key-mwkiuavh-g34qk4kgrj4",
+              "timeMs": 6933.333,
+              "value": -0.12043879181146622,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": -1144.4443333333331,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 1022.2223333333335,
+                "dy": 0
+              }
+            },
+            {
+              "id": "key-mwkivxcg-tvvojh9dddg",
+              "timeMs": 10000,
+              "value": -0.12043879181146622,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": -1022.2223333333335,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 0,
+                "dy": 0
+              }
+            }
+          ],
+          "valueRange": {
+            "lower": -1.1868238913561442,
+            "upper": 0.5235987755982988,
+            "velocity": 14.137166941154069
+          }
+        },
+        {
+          "id": "track-mwkisdz4-2297ymkhnfj",
+          "type": "joint",
+          "jointName": "ankle_roll_l_joint",
+          "name": "ankle_roll_l_joint",
+          "color": "#64d2ff",
+          "muted": false,
+          "locked": false,
+          "visible": true,
+          "recordArmed": false,
+          "keyframes": [
+            {
+              "id": "key-mwkiyllx-r6rrxqufrxd",
+              "timeMs": 0,
+              "value": -0.14902463555335999,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": 0,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 1166.6666666666667,
+                "dy": -0.00022867818673451742
+              }
+            },
+            {
+              "id": "key-mwkissd5-0479m4d5ny8w",
+              "timeMs": 3500,
+              "value": -0.14971067011356354,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": -1166.6666666666667,
+                "dy": 0.0001154385132764878
+              },
+              "outHandle": {
+                "dxMs": 1144.4443333333331,
+                "dy": -0.0001132396734580296
+              }
+            },
+            {
+              "id": "key-mwkiuavj-inzcxj5yh1",
+              "timeMs": 6933.333,
+              "value": -0.14971067011356354,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": -1144.4443333333331,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 1022.2223333333335,
+                "dy": 0
+              }
+            },
+            {
+              "id": "key-mwkivxci-cdhzbq490zn",
+              "timeMs": 10000,
+              "value": -0.14971067011356354,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": -1022.2223333333335,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 0,
+                "dy": 0
+              }
+            }
+          ],
+          "valueRange": {
+            "lower": -0.5235987755982988,
+            "upper": 0.5235987755982988,
+            "velocity": 14.137166941154069
+          }
+        },
+        {
+          "id": "track-mwkisdz4-kyenca7w36k",
+          "type": "joint",
+          "jointName": "hip_pitch_r_joint",
+          "name": "hip_pitch_r_joint",
+          "color": "#ffd60a",
+          "muted": false,
+          "locked": false,
+          "visible": true,
+          "recordArmed": false,
+          "keyframes": [
+            {
+              "id": "key-mwkiyllz-5uz0vqrqq4",
+              "timeMs": 0,
+              "value": -0.15078552067279816,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": 0,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 1166.6666666666667,
+                "dy": 0
+              }
+            },
+            {
+              "id": "key-mwkissd7-n5o50gfee8h",
+              "timeMs": 3500,
+              "value": -0.15078552067279816,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": -1166.6666666666667,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 1144.4443333333331,
+                "dy": 0
+              }
+            },
+            {
+              "id": "key-mwkiuavl-6zm100yi9mx",
+              "timeMs": 6933.333,
+              "value": -0.15078552067279816,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": -1144.4443333333331,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 1022.2223333333335,
+                "dy": 0
+              }
+            },
+            {
+              "id": "key-mwkivxck-ynhwftiyusa",
+              "timeMs": 10000,
+              "value": -0.15078552067279816,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": -1022.2223333333335,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 0,
+                "dy": 0
+              }
+            }
+          ],
+          "valueRange": {
+            "lower": -3.0543261909900763,
+            "upper": 2.792526803190927,
+            "velocity": 16.755160819145562
+          }
+        },
+        {
+          "id": "track-mwkisdz4-dn5f5pqg2c5",
+          "type": "joint",
+          "jointName": "hip_roll_r_joint",
+          "name": "hip_roll_r_joint",
+          "color": "#0a84ff",
+          "muted": false,
+          "locked": false,
+          "visible": true,
+          "recordArmed": false,
+          "keyframes": [
+            {
+              "id": "key-mwkiylm1-nelxtz0fvh",
+              "timeMs": 0,
+              "value": -0.004050667863339186,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": 0,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 1166.6666666666667,
+                "dy": -0.0001677791588008404
+              }
+            },
+            {
+              "id": "key-mwkissd9-zztxzg0bpyo",
+              "timeMs": 3500,
+              "value": -0.004554005339741707,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": -1166.6666666666667,
+                "dy": 0.00008469621404351145
+              },
+              "outHandle": {
+                "dxMs": 1144.4443333333331,
+                "dy": -0.00008308294475732893
+              }
+            },
+            {
+              "id": "key-mwkiuavn-suhc5lvmr8h",
+              "timeMs": 6933.333,
+              "value": -0.004554005339741707,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": -1144.4443333333331,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 1022.2223333333335,
+                "dy": 0
+              }
+            },
+            {
+              "id": "key-mwkivxcm-06kj5arbxkmq",
+              "timeMs": 10000,
+              "value": -0.004554005339741707,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": -1022.2223333333335,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 0,
+                "dy": 0
+              }
+            }
+          ],
+          "valueRange": {
+            "lower": -2.6179938779914944,
+            "upper": 0.41887902047863906,
+            "velocity": 16.755160819145562
+          }
+        },
+        {
+          "id": "track-mwkisdz4-sjsy6hcnx5",
+          "type": "joint",
+          "jointName": "hip_yaw_r_joint",
+          "name": "hip_yaw_r_joint",
+          "color": "#ff9f0a",
+          "muted": false,
+          "locked": false,
+          "visible": true,
+          "recordArmed": false,
+          "keyframes": [
+            {
+              "id": "key-mwkiylm3-zc6c77s9l09",
+              "timeMs": 0,
+              "value": -0.01152882445603609,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": 0,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 1166.6666666666667,
+                "dy": 0
+              }
+            },
+            {
+              "id": "key-mwkissdb-aezi31uzfre",
+              "timeMs": 3500,
+              "value": -0.01152882445603609,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": -1166.6666666666667,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 1144.4443333333331,
+                "dy": 0
+              }
+            },
+            {
+              "id": "key-mwkiuavo-j7w2h3lwlck",
+              "timeMs": 6933.333,
+              "value": -0.01152882445603609,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": -1144.4443333333331,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 1022.2223333333335,
+                "dy": 0
+              }
+            },
+            {
+              "id": "key-mwkivxcn-cdjmkkofyb5",
+              "timeMs": 10000,
+              "value": -0.01152882445603609,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": -1022.2223333333335,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 0,
+                "dy": 0
+              }
+            }
+          ],
+          "valueRange": {
+            "lower": -4.4505895925855405,
+            "upper": 1.3962634015954636,
+            "velocity": 13.82300767579509
+          }
+        },
+        {
+          "id": "track-mwkisdz4-k59rppre8jc",
+          "type": "joint",
+          "jointName": "knee_pitch_r_joint",
+          "name": "knee_pitch_r_joint",
+          "color": "#30d158",
+          "muted": false,
+          "locked": false,
+          "visible": true,
+          "recordArmed": false,
+          "keyframes": [
+            {
+              "id": "key-mwkiylm4-kr5xr5kexd8",
+              "timeMs": 0,
+              "value": 0.30602917075157166,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": 0,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 1166.6666666666667,
+                "dy": -0.0005033413569132488
+              }
+            },
+            {
+              "id": "key-mwkissdc-kvnb4vs79nj",
+              "timeMs": 3500,
+              "value": 0.3045191466808319,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": -1166.6666666666667,
+                "dy": 0.0002540906010422939
+              },
+              "outHandle": {
+                "dxMs": 1144.4443333333331,
+                "dy": -0.0002492507558709548
+              }
+            },
+            {
+              "id": "key-mwkiuavq-wbgakhae7yk",
+              "timeMs": 6933.333,
+              "value": 0.3045191466808319,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": -1144.4443333333331,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 1022.2223333333335,
+                "dy": 0
+              }
+            },
+            {
+              "id": "key-mwkivxcp-24fj3udd7z8",
+              "timeMs": 10000,
+              "value": 0.3045191466808319,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": -1022.2223333333335,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 0,
+                "dy": 0
+              }
+            }
+          ],
+          "valueRange": {
+            "lower": -0.08726646259971647,
+            "upper": 2.5307274153917776,
+            "velocity": 11.100294042683936
+          }
+        },
+        {
+          "id": "track-mwkisdz4-uebnr2apeoe",
+          "type": "joint",
+          "jointName": "ankle_pitch_r_joint",
+          "name": "ankle_pitch_r_joint",
+          "color": "#ff375f",
+          "muted": false,
+          "locked": false,
+          "visible": true,
+          "recordArmed": false,
+          "keyframes": [
+            {
+              "id": "key-mwkiylm6-gvscyf253ve",
+              "timeMs": 0,
+              "value": -0.13937653601169586,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": 0,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 1166.6666666666667,
+                "dy": 0.00022618969281514487
+              }
+            },
+            {
+              "id": "key-mwkissdd-drf7nd985zk",
+              "timeMs": 3500,
+              "value": -0.13869796693325043,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": -1166.6666666666667,
+                "dy": -0.00011418230234333286
+              },
+              "outHandle": {
+                "dxMs": 1144.4443333333331,
+                "dy": 0.00011200739047181199
+              }
+            },
+            {
+              "id": "key-mwkiuavr-3ishtxub78g",
+              "timeMs": 6933.333,
+              "value": -0.13869796693325043,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": -1144.4443333333331,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 1022.2223333333335,
+                "dy": 0
+              }
+            },
+            {
+              "id": "key-mwkivxcr-bfr6o7hj8mr",
+              "timeMs": 10000,
+              "value": -0.13869796693325043,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": -1022.2223333333335,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 0,
+                "dy": 0
+              }
+            }
+          ],
+          "valueRange": {
+            "lower": -1.1868238913561442,
+            "upper": 0.5235987755982988,
+            "velocity": 14.137166941154069
+          }
+        },
+        {
+          "id": "track-mwkisdz4-41g2sh2r7x2",
+          "type": "joint",
+          "jointName": "ankle_roll_r_joint",
+          "name": "ankle_roll_r_joint",
+          "color": "#bf5af2",
+          "muted": false,
+          "locked": false,
+          "visible": true,
+          "recordArmed": false,
+          "keyframes": [
+            {
+              "id": "key-mwkiylm8-vmz672shev",
+              "timeMs": 0,
+              "value": -0.12793399393558502,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": 0,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 1166.6666666666667,
+                "dy": 0.00016706685225168863
+              }
+            },
+            {
+              "id": "key-mwkissdf-mypqldqcbfo",
+              "timeMs": 3500,
+              "value": -0.12743279337882996,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": -1166.6666666666667,
+                "dy": -0.0000843366362009311
+              },
+              "outHandle": {
+                "dxMs": 1144.4443333333331,
+                "dy": 0.00008273021605075751
+              }
+            },
+            {
+              "id": "key-mwkiuavt-jm3i9710hri",
+              "timeMs": 6933.333,
+              "value": -0.12743279337882996,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": -1144.4443333333331,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 1022.2223333333335,
+                "dy": 0
+              }
+            },
+            {
+              "id": "key-mwkivxct-6zpcqr9mth7",
+              "timeMs": 10000,
+              "value": -0.12743279337882996,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": -1022.2223333333335,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 0,
+                "dy": 0
+              }
+            }
+          ],
+          "valueRange": {
+            "lower": -0.5235987755982988,
+            "upper": 0.5235987755982988,
+            "velocity": 14.137166941154069
+          }
+        },
+        {
+          "id": "track-mwkisdz4-i7vu9no3q4",
+          "type": "joint",
+          "jointName": "waist_yaw_joint",
+          "name": "waist_yaw_joint",
+          "color": "#64d2ff",
+          "muted": false,
+          "locked": false,
+          "visible": true,
+          "recordArmed": false,
+          "keyframes": [
+            {
+              "id": "key-mwkiylma-kyzzd6rwxgb",
+              "timeMs": 0,
+              "value": -0.004889563657343388,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": 0,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 1166.6666666666667,
+                "dy": 0
+              }
+            },
+            {
+              "id": "key-mwkissdh-nl2rpp61q9n",
+              "timeMs": 3500,
+              "value": -0.004889563657343388,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": -1166.6666666666667,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 1144.4443333333331,
+                "dy": 0
+              }
+            },
+            {
+              "id": "key-mwkiuavv-yhfdbyfvfhj",
+              "timeMs": 6933.333,
+              "value": -0.004889563657343388,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": -1144.4443333333331,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 1022.2223333333335,
+                "dy": 0
+              }
+            },
+            {
+              "id": "key-mwkivxcu-vqy5hek1one",
+              "timeMs": 10000,
+              "value": -0.004889563657343388,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": -1022.2223333333335,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 0,
+                "dy": 0
+              }
+            }
+          ],
+          "valueRange": {
+            "lower": -2.6179938779914944,
+            "upper": 3.2288591161895095,
+            "velocity": 10.053096491487338
+          }
+        },
+        {
+          "id": "track-mwkisdz4-brrm1lu3ald",
+          "type": "joint",
+          "jointName": "waist_roll_joint",
+          "name": "waist_roll_joint",
+          "color": "#ffd60a",
+          "muted": false,
+          "locked": false,
+          "visible": true,
+          "recordArmed": false,
+          "keyframes": [
+            {
+              "id": "key-mwkiylmc-ajqya67cs1l",
+              "timeMs": 0,
+              "value": -0.0005992112564854324,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": 0,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 1166.6666666666667,
+                "dy": 0
+              }
+            },
+            {
+              "id": "key-mwkissdj-pgnbqnte9j",
+              "timeMs": 3500,
+              "value": -0.0005992112564854324,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": -1166.6666666666667,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 1144.4443333333331,
+                "dy": 0
+              }
+            },
+            {
+              "id": "key-mwkiuavx-w4ex3mci7vs",
+              "timeMs": 6933.333,
+              "value": -0.0005992112564854324,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": -1144.4443333333331,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 1022.2223333333335,
+                "dy": 0
+              }
+            },
+            {
+              "id": "key-mwkivxcw-tsmdm42ipwr",
+              "timeMs": 10000,
+              "value": -0.0005992112564854324,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": -1022.2223333333335,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 0,
+                "dy": 0
+              }
+            }
+          ],
+          "valueRange": {
+            "lower": -0.4363323129985824,
+            "upper": 0.4363323129985824,
+            "velocity": 13.82300767579509
+          }
+        },
+        {
+          "id": "track-mwkisdz4-0q1nds5lmbf",
+          "type": "joint",
+          "jointName": "waist_pitch_joint",
+          "name": "waist_pitch_joint",
+          "color": "#0a84ff",
+          "muted": false,
+          "locked": false,
+          "visible": true,
+          "recordArmed": false,
+          "keyframes": [
+            {
+              "id": "key-mwkiylmd-dgn3fkr4ujl",
+              "timeMs": 0,
+              "value": 0.008748483844101429,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": 0,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 1166.6666666666667,
+                "dy": 0.000007989505926767986
+              }
+            },
+            {
+              "id": "key-mwkissdl-2sgt0006xby",
+              "timeMs": 3500,
+              "value": 0.008772452361881733,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": -1166.6666666666667,
+                "dy": -0.000004033164243472504
+              },
+              "outHandle": {
+                "dxMs": 1144.4443333333331,
+                "dy": 0.00000395634168329548
+              }
+            },
+            {
+              "id": "key-mwkiuavy-gnmxfyggv4v",
+              "timeMs": 6933.333,
+              "value": 0.008772452361881733,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": -1144.4443333333331,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 1022.2223333333335,
+                "dy": 0
+              }
+            },
+            {
+              "id": "key-mwkivxcy-yjfzjqf05i",
+              "timeMs": 10000,
+              "value": 0.008772452361881733,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": -1022.2223333333335,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 0,
+                "dy": 0
+              }
+            }
+          ],
+          "valueRange": {
+            "lower": -0.5235987755982988,
+            "upper": 0.8726646259971648,
+            "velocity": 13.82300767579509
+          }
+        },
+        {
+          "id": "track-mwkisdz4-qgswhy1wsjq",
+          "type": "joint",
+          "jointName": "head_yaw_joint",
+          "name": "head_yaw_joint",
+          "color": "#ff9f0a",
+          "muted": false,
+          "locked": false,
+          "visible": true,
+          "recordArmed": false,
+          "keyframes": [
+            {
+              "id": "key-mwkiylmf-4m84cjrirgh",
+              "timeMs": 0,
+              "value": 0,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": 0,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 1166.6666666666667,
+                "dy": 0.0002135855223362645
+              }
+            },
+            {
+              "id": "key-mwkissdl-4jfqgud3jo5",
+              "timeMs": 3500,
+              "value": 0.0006407565670087934,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": -1166.6666666666667,
+                "dy": -0.00010781961982453831
+              },
+              "outHandle": {
+                "dxMs": 1144.4443333333331,
+                "dy": 0.00010576590251172615
+              }
+            },
+            {
+              "id": "key-mwkiuaw0-ri94owtdr6j",
+              "timeMs": 6933.333,
+              "value": 0.0006407565670087934,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": -1144.4443333333331,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 1022.2223333333335,
+                "dy": 0
+              }
+            },
+            {
+              "id": "key-mwkivxcz-s9xski25bjf",
+              "timeMs": 10000,
+              "value": 0.0006407565670087934,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": -1022.2223333333335,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 0,
+                "dy": 0
+              }
+            }
+          ],
+          "valueRange": {
+            "lower": -1.0471975511965976,
+            "upper": 1.0471975511965976,
+            "velocity": 7.644542123735163
+          }
+        },
+        {
+          "id": "track-mwkisdz4-4w28brxv0aw",
+          "type": "joint",
+          "jointName": "head_pitch_joint",
+          "name": "head_pitch_joint",
+          "color": "#30d158",
+          "muted": false,
+          "locked": false,
+          "visible": true,
+          "recordArmed": false,
+          "keyframes": [
+            {
+              "id": "key-mwkiylmh-wrzd3ow81c",
+              "timeMs": 0,
+              "value": 0,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": 0,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 1166.6666666666667,
+                "dy": 0
+              }
+            },
+            {
+              "id": "key-mwkissdn-kvdyvz3dkra",
+              "timeMs": 3500,
+              "value": 0,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": -1166.6666666666667,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 966.6666666666666,
+                "dy": 0
+              }
+            },
+            {
+              "id": "key-mwkj44jj-0iypnljgzs8",
+              "timeMs": 6400,
+              "value": 0,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": -966.6666666666666,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 177.77766666666653,
+                "dy": 0
+              }
+            },
+            {
+              "id": "key-mwkiuaw2-3x2d7tgkht8",
+              "timeMs": 6933.333,
+              "value": 0,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": -177.77766666666653,
+                "dy": -0.03881479055555553
+              },
+              "outHandle": {
+                "dxMs": 1022.2223333333335,
+                "dy": 0.2231852094444445
+              }
+            },
+            {
+              "id": "key-mwkivxd1-1p8e0nlzylz",
+              "timeMs": 10000,
+              "value": 0.786,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": -1022.2223333333335,
+                "dy": -0.262
+              },
+              "outHandle": {
+                "dxMs": 0,
+                "dy": 0
+              }
+            }
+          ],
+          "valueRange": {
+            "lower": -0.2617993877991494,
+            "upper": 0.8726646259971648,
+            "velocity": 7.644542123735163
+          }
+        },
+        {
+          "id": "track-mwkisdz4-khd8blpscv",
+          "type": "joint",
+          "jointName": "shoulder_pitch_l_joint",
+          "name": "shoulder_pitch_l_joint",
+          "color": "#ff375f",
+          "muted": false,
+          "locked": false,
+          "visible": true,
+          "recordArmed": false,
+          "keyframes": [
+            {
+              "id": "key-mwkiylmj-m4fufgjjf7j",
+              "timeMs": 0,
+              "value": 0.19160659611225128,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": 0,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 1166.6666666666667,
+                "dy": -0.000010122855504353842
+              }
+            },
+            {
+              "id": "key-mwkissdp-np0aj8b6vtk",
+              "timeMs": 3500,
+              "value": 0.19157622754573822,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": -1166.6666666666667,
+                "dy": 0.0000051100955723947555
+              },
+              "outHandle": {
+                "dxMs": 1144.4443333333331,
+                "dy": -0.000005012759931959085
+              }
+            },
+            {
+              "id": "key-mwkiuaw3-bunl4rxrd2o",
+              "timeMs": 6933.333,
+              "value": 0.19157622754573822,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": -1144.4443333333331,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 1022.2223333333335,
+                "dy": 0
+              }
+            },
+            {
+              "id": "key-mwkivxd3-7wkhpi66k9d",
+              "timeMs": 10000,
+              "value": 0.19157622754573822,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": -1022.2223333333335,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 0,
+                "dy": 0
+              }
+            }
+          ],
+          "valueRange": {
+            "lower": -2.844886680750757,
+            "upper": 2.844886680750757,
+            "velocity": 7.218332720398149
+          }
+        },
+        {
+          "id": "track-mwkisdz4-sfkdoekyon9",
+          "type": "joint",
+          "jointName": "shoulder_roll_l_joint",
+          "name": "shoulder_roll_l_joint",
+          "color": "#bf5af2",
+          "muted": false,
+          "locked": false,
+          "visible": true,
+          "recordArmed": false,
+          "keyframes": [
+            {
+              "id": "key-mwkiylml-9k0chxfaert",
+              "timeMs": 0,
+              "value": 0.12777000665664673,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": 0,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 1166.6666666666667,
+                "dy": 0.2907433311144511
+              }
+            },
+            {
+              "id": "key-mwkissdr-vy57y99n4zq",
+              "timeMs": 3500,
+              "value": 1,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": -1166.6666666666667,
+                "dy": -0.1467694770899622
+              },
+              "outHandle": {
+                "dxMs": 1144.4443333333331,
+                "dy": 0.1439738540244889
+              }
+            },
+            {
+              "id": "key-mwkiuaw5-5axa5vgtid",
+              "timeMs": 6933.333,
+              "value": 1,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": -1144.4443333333331,
+                "dy": 0.10564101538461536
+              },
+              "outHandle": {
+                "dxMs": 1022.2223333333335,
+                "dy": -0.09435898461538463
+              }
+            },
+            {
+              "id": "key-mwkivxd5-856mk50qfeo",
+              "timeMs": 10000,
+              "value": 0.4,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": -1022.2223333333335,
+                "dy": 0.2
+              },
+              "outHandle": {
+                "dxMs": 0,
+                "dy": 0
+              }
+            }
+          ],
+          "valueRange": {
+            "lower": -0.19198621771937624,
+            "upper": 3.3335788713091694,
+            "velocity": 7.218332720398149
+          }
+        },
+        {
+          "id": "track-mwkisdz4-qhy6wjm98q",
+          "type": "joint",
+          "jointName": "shoulder_yaw_l_joint",
+          "name": "shoulder_yaw_l_joint",
+          "color": "#64d2ff",
+          "muted": false,
+          "locked": false,
+          "visible": true,
+          "recordArmed": false,
+          "keyframes": [
+            {
+              "id": "key-mwkiylmm-wfo23yfc6u",
+              "timeMs": 0,
+              "value": 0.05959535762667656,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": 0,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 1166.6666666666667,
+                "dy": -2.7691324551900226e-7
+              }
+            },
+            {
+              "id": "key-mwkissds-vvvu0zxst3h",
+              "timeMs": 3500,
+              "value": 0.05959452688694,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": -1166.6666666666667,
+                "dy": 1.3978794316045516e-7
+              },
+              "outHandle": {
+                "dxMs": 1144.4443333333331,
+                "dy": -1.371253023585471e-7
+              }
+            },
+            {
+              "id": "key-mwkiuaw7-fa529rk6yd",
+              "timeMs": 6933.333,
+              "value": 0.05959452688694,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": -1144.4443333333331,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 1022.2223333333335,
+                "dy": 0
+              }
+            },
+            {
+              "id": "key-mwkivxd7-sk6b2egomie",
+              "timeMs": 10000,
+              "value": 0.05959452688694,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": -1022.2223333333335,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 0,
+                "dy": 0
+              }
+            }
+          ],
+          "valueRange": {
+            "lower": -2.844886680750757,
+            "upper": 2.844886680750757,
+            "velocity": 11.455294012539582
+          }
+        },
+        {
+          "id": "track-mwkisdz4-ebmpwahvqxs",
+          "type": "joint",
+          "jointName": "elbow_pitch_l_joint",
+          "name": "elbow_pitch_l_joint",
+          "color": "#ffd60a",
+          "muted": false,
+          "locked": false,
+          "visible": true,
+          "recordArmed": false,
+          "keyframes": [
+            {
+              "id": "key-mwkiylmo-dy17n2nqi08",
+              "timeMs": 0,
+              "value": -0.46373122930526733,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": 0,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 1166.6666666666667,
+                "dy": -8.245309193929038e-7
+              }
+            },
+            {
+              "id": "key-mwkissdu-9sgfqq0sihm",
+              "timeMs": 3500,
+              "value": -0.4637337028980255,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": -1166.6666666666667,
+                "dy": 0.2248529289559853
+              },
+              "outHandle": {
+                "dxMs": 1144.4443333333331,
+                "dy": -0.22056999460892562
+              }
+            },
+            {
+              "id": "key-mwkiuaw9-vvr5voylqt",
+              "timeMs": 6933.333,
+              "value": -1.8,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": -1144.4443333333331,
+                "dy": 0.23527421408348784
+              },
+              "outHandle": {
+                "dxMs": 1022.2223333333335,
+                "dy": -0.21014788495050366
+              }
+            },
+            {
+              "id": "key-mwkivxd8-n31qdvkvore",
+              "timeMs": 10000,
+              "value": -1.8,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": -1022.2223333333335,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 0,
+                "dy": 0
+              }
+            }
+          ],
+          "valueRange": {
+            "lower": -2.548180707911721,
+            "upper": 0.19198621771937624,
+            "velocity": 11.455294012539582
+          }
+        },
+        {
+          "id": "track-mwkisdz4-49gaukjty7h",
+          "type": "joint",
+          "jointName": "elbow_yaw_l_joint",
+          "name": "elbow_yaw_l_joint",
+          "color": "#0a84ff",
+          "muted": false,
+          "locked": false,
+          "visible": true,
+          "recordArmed": false,
+          "keyframes": [
+            {
+              "id": "key-mwkiylmq-yx1tqaamc1d",
+              "timeMs": 0,
+              "value": -0.000023753917048452422,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": 0,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 1166.6666666666667,
+                "dy": -1.6274922624385607e-7
+              }
+            },
+            {
+              "id": "key-mwkissdw-8s8ejb6im1v",
+              "timeMs": 3500,
+              "value": -0.00002424216472718399,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": -1166.6666666666667,
+                "dy": 8.215706527488241e-8
+              },
+              "outHandle": {
+                "dxMs": 1144.4443333333331,
+                "dy": -8.059216096897365e-8
+              }
+            },
+            {
+              "id": "key-mwkiuawa-vm267li84km",
+              "timeMs": 6933.333,
+              "value": -0.00002424216472718399,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": -1144.4443333333331,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 1022.2223333333335,
+                "dy": 0
+              }
+            },
+            {
+              "id": "key-mwkivxda-hcxt1nai78q",
+              "timeMs": 10000,
+              "value": -0.00002424216472718399,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": -1022.2223333333335,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 0,
+                "dy": 0
+              }
+            }
+          ],
+          "valueRange": {
+            "lower": -2.844886680750757,
+            "upper": 2.844886680750757,
+            "velocity": 18.325957145940457
+          }
+        },
+        {
+          "id": "track-mwkisdz4-ruiufacpl8l",
+          "type": "joint",
+          "jointName": "wrist_pitch_l_joint",
+          "name": "wrist_pitch_l_joint",
+          "color": "#ff9f0a",
+          "muted": false,
+          "locked": false,
+          "visible": true,
+          "recordArmed": false,
+          "keyframes": [
+            {
+              "id": "key-mwkiylms-mimz8xvknz",
+              "timeMs": 0,
+              "value": 0.011933624744415283,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": 0,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 1166.6666666666667,
+                "dy": -0.0000026632721225420637
+              }
+            },
+            {
+              "id": "key-mwkissdx-7p2rb0jupnc",
+              "timeMs": 3500,
+              "value": 0.011925634928047657,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": -1166.6666666666667,
+                "dy": 0.0000013444403188044225
+              },
+              "outHandle": {
+                "dxMs": 1144.4443333333331,
+                "dy": -0.0000013188318037376408
+              }
+            },
+            {
+              "id": "key-mwkiuawc-vcglw078pf",
+              "timeMs": 6933.333,
+              "value": 0.011925634928047657,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": -1144.4443333333331,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 1022.2223333333335,
+                "dy": 0
+              }
+            },
+            {
+              "id": "key-mwkivxdc-qluhj9ju25",
+              "timeMs": 10000,
+              "value": 0.011925634928047657,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": -1022.2223333333335,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 0,
+                "dy": 0
+              }
+            }
+          ],
+          "valueRange": {
+            "lower": -1.3264502315156903,
+            "upper": 1.3264502315156903,
+            "velocity": 18.325957145940457
+          }
+        },
+        {
+          "id": "track-mwkisdz4-d20tn6s18k7",
+          "type": "joint",
+          "jointName": "wrist_roll_l_joint",
+          "name": "wrist_roll_l_joint",
+          "color": "#30d158",
+          "muted": false,
+          "locked": false,
+          "visible": true,
+          "recordArmed": false,
+          "keyframes": [
+            {
+              "id": "key-mwkiylmu-bvc9pocxn8b",
+              "timeMs": 0,
+              "value": -0.0065108961425721645,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": 0,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 1166.6666666666667,
+                "dy": -0.000034798712780078254
+              }
+            },
+            {
+              "id": "key-mwkissdz-wscstmg8bm",
+              "timeMs": 3500,
+              "value": -0.006615292280912399,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": -1166.6666666666667,
+                "dy": 0.000017566658738340406
+              },
+              "outHandle": {
+                "dxMs": 1144.4443333333331,
+                "dy": -0.000017232054041737848
+              }
+            },
+            {
+              "id": "key-mwkiuawd-dfz73x5yqy",
+              "timeMs": 6933.333,
+              "value": -0.006615292280912399,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": -1144.4443333333331,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 1022.2223333333335,
+                "dy": 0
+              }
+            },
+            {
+              "id": "key-mwkivxde-yy9tvcs59j",
+              "timeMs": 10000,
+              "value": -0.006615292280912399,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": -1022.2223333333335,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 0,
+                "dy": 0
+              }
+            }
+          ],
+          "valueRange": {
+            "lower": -1.3264502315156903,
+            "upper": 1.3264502315156903,
+            "velocity": 18.325957145940457
+          }
+        },
+        {
+          "id": "track-mwkisdz4-kfykx9omhge",
+          "type": "joint",
+          "jointName": "shoulder_pitch_r_joint",
+          "name": "shoulder_pitch_r_joint",
+          "color": "#ff375f",
+          "muted": false,
+          "locked": false,
+          "visible": true,
+          "recordArmed": false,
+          "keyframes": [
+            {
+              "id": "key-mwkiylmw-4ytc1a32yjo",
+              "timeMs": 0,
+              "value": 0.16615435481071472,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": 0,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 1166.6666666666667,
+                "dy": -4.1723251342773443e-7
+              }
+            },
+            {
+              "id": "key-mwkisse0-6cfy7lhftu9",
+              "timeMs": 3500,
+              "value": 0.16615310311317444,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": -1166.6666666666667,
+                "dy": 2.106221923852598e-7
+              },
+              "outHandle": {
+                "dxMs": 1144.4443333333331,
+                "dy": -2.0661032104247457e-7
+              }
+            },
+            {
+              "id": "key-mwkiuawf-bo27omqoss",
+              "timeMs": 6933.333,
+              "value": 0.16615310311317444,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": -1144.4443333333331,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 1022.2223333333335,
+                "dy": 0
+              }
+            },
+            {
+              "id": "key-mwkivxdf-cjuf70ov87j",
+              "timeMs": 10000,
+              "value": 0.16615310311317444,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": -1022.2223333333335,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 0,
+                "dy": 0
+              }
+            }
+          ],
+          "valueRange": {
+            "lower": -2.844886680750757,
+            "upper": 2.844886680750757,
+            "velocity": 7.218332720398149
+          }
+        },
+        {
+          "id": "track-mwkisdz4-lmg5gfqk14l",
+          "type": "joint",
+          "jointName": "shoulder_roll_r_joint",
+          "name": "shoulder_roll_r_joint",
+          "color": "#bf5af2",
+          "muted": false,
+          "locked": false,
+          "visible": true,
+          "recordArmed": false,
+          "keyframes": [
+            {
+              "id": "key-mwkiylmy-374wzesv4gq",
+              "timeMs": 0,
+              "value": -0.13143861293792725,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": 0,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 1166.6666666666667,
+                "dy": -0.28952046235402423
+              }
+            },
+            {
+              "id": "key-mwkisse2-2usr5pxkpnr",
+              "timeMs": 3500,
+              "value": -1,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": -1166.6666666666667,
+                "dy": 0.14615216350333743
+              },
+              "outHandle": {
+                "dxMs": 1144.4443333333331,
+                "dy": -0.1433682988506868
+              }
+            },
+            {
+              "id": "key-mwkiuawh-a2p91ijvkni",
+              "timeMs": 6933.333,
+              "value": -1,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": -1144.4443333333331,
+                "dy": -0.10564101538461536
+              },
+              "outHandle": {
+                "dxMs": 1022.2223333333335,
+                "dy": 0.09435898461538463
+              }
+            },
+            {
+              "id": "key-mwkivxdg-gwrgekbot4m",
+              "timeMs": 10000,
+              "value": -0.4,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": -1022.2223333333335,
+                "dy": -0.2
+              },
+              "outHandle": {
+                "dxMs": 0,
+                "dy": 0
+              }
+            }
+          ],
+          "valueRange": {
+            "lower": -3.3335788713091694,
+            "upper": 0.19198621771937624,
+            "velocity": 7.218332720398149
+          }
+        },
+        {
+          "id": "track-mwkisdz4-lr1n7zg1fg",
+          "type": "joint",
+          "jointName": "shoulder_yaw_r_joint",
+          "name": "shoulder_yaw_r_joint",
+          "color": "#64d2ff",
+          "muted": false,
+          "locked": false,
+          "visible": true,
+          "recordArmed": false,
+          "keyframes": [
+            {
+              "id": "key-mwkiylmz-3mpb95cb7nj",
+              "timeMs": 0,
+              "value": -0.06791850924491882,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": 0,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 1166.6666666666667,
+                "dy": -4.1474898656209313e-7
+              }
+            },
+            {
+              "id": "key-mwkisse4-kye1vem68op",
+              "timeMs": 3500,
+              "value": -0.06791975349187851,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": -1166.6666666666667,
+                "dy": 2.0936848885915708e-7
+              },
+              "outHandle": {
+                "dxMs": 1144.4443333333331,
+                "dy": -2.0538049770293605e-7
+              }
+            },
+            {
+              "id": "key-mwkiuawj-69dygx6m66r",
+              "timeMs": 6933.333,
+              "value": -0.06791975349187851,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": -1144.4443333333331,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 1022.2223333333335,
+                "dy": 0
+              }
+            },
+            {
+              "id": "key-mwkivxdj-pp2m1jw1wjj",
+              "timeMs": 10000,
+              "value": -0.06791975349187851,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": -1022.2223333333335,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 0,
+                "dy": 0
+              }
+            }
+          ],
+          "valueRange": {
+            "lower": -2.844886680750757,
+            "upper": 2.844886680750757,
+            "velocity": 11.455294012539582
+          }
+        },
+        {
+          "id": "track-mwkisdz4-dko0yxhk1f4",
+          "type": "joint",
+          "jointName": "elbow_pitch_r_joint",
+          "name": "elbow_pitch_r_joint",
+          "color": "#ffd60a",
+          "muted": false,
+          "locked": false,
+          "visible": true,
+          "recordArmed": false,
+          "keyframes": [
+            {
+              "id": "key-mwkiyln1-a834srqsrnt",
+              "timeMs": 0,
+              "value": -0.42922794818878174,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": 0,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 1166.6666666666667,
+                "dy": 4.271666208902995e-7
+              }
+            },
+            {
+              "id": "key-mwkisse5-877ksq0828s",
+              "timeMs": 3500,
+              "value": -0.42922666668891907,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": -1166.6666666666667,
+                "dy": 0.2306587698075978
+              },
+              "outHandle": {
+                "dxMs": 1144.4443333333331,
+                "dy": -0.2262652474628083
+              }
+            },
+            {
+              "id": "key-mwkiuawl-921dlqa9ts",
+              "timeMs": 6933.333,
+              "value": -1.8,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": -1144.4443333333331,
+                "dy": 0.24134981132189398
+              },
+              "outHandle": {
+                "dxMs": 1022.2223333333335,
+                "dy": -0.215574633115133
+              }
+            },
+            {
+              "id": "key-mwkivxdk-iwptepqp4tb",
+              "timeMs": 10000,
+              "value": -1.8,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": -1022.2223333333335,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 0,
+                "dy": 0
+              }
+            }
+          ],
+          "valueRange": {
+            "lower": -2.548180707911721,
+            "upper": 0.19198621771937624,
+            "velocity": 11.455294012539582
+          }
+        },
+        {
+          "id": "track-mwkisdz4-vmyt8qgou3f",
+          "type": "joint",
+          "jointName": "elbow_yaw_r_joint",
+          "name": "elbow_yaw_r_joint",
+          "color": "#0a84ff",
+          "muted": false,
+          "locked": false,
+          "visible": true,
+          "recordArmed": false,
+          "keyframes": [
+            {
+              "id": "key-mwkiyln3-6ue06xlnhup",
+              "timeMs": 0,
+              "value": 0.0034317495301365852,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": 0,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 1166.6666666666667,
+                "dy": -0.000001065277804931005
+              }
+            },
+            {
+              "id": "key-mwkisse7-xsebqq3jkkr",
+              "timeMs": 3500,
+              "value": 0.0034285536967217922,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": -1166.6666666666667,
+                "dy": 5.377604562276927e-7
+              },
+              "outHandle": {
+                "dxMs": 1144.4443333333331,
+                "dy": -5.275173487033122e-7
+              }
+            },
+            {
+              "id": "key-mwkiuawm-ztp6x0ob9sg",
+              "timeMs": 6933.333,
+              "value": 0.0034285536967217922,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": -1144.4443333333331,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 1022.2223333333335,
+                "dy": 0
+              }
+            },
+            {
+              "id": "key-mwkivxdm-mvumrinyu",
+              "timeMs": 10000,
+              "value": 0.0034285536967217922,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": -1022.2223333333335,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 0,
+                "dy": 0
+              }
+            }
+          ],
+          "valueRange": {
+            "lower": -2.844886680750757,
+            "upper": 2.844886680750757,
+            "velocity": 18.325957145940457
+          }
+        },
+        {
+          "id": "track-mwkisdz4-upbevm1bdgh",
+          "type": "joint",
+          "jointName": "wrist_pitch_r_joint",
+          "name": "wrist_pitch_r_joint",
+          "color": "#ff9f0a",
+          "muted": false,
+          "locked": false,
+          "visible": true,
+          "recordArmed": false,
+          "keyframes": [
+            {
+              "id": "key-mwkiyln5-mfc44jccrra",
+              "timeMs": 0,
+              "value": 0.013370133936405182,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": 0,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 1166.6666666666667,
+                "dy": 0.00000852222243944804
+              }
+            },
+            {
+              "id": "key-mwkisse9-6666lgfdgnl",
+              "timeMs": 3500,
+              "value": 0.013395700603723526,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": -1166.6666666666667,
+                "dy": -0.000004302083649821542
+              },
+              "outHandle": {
+                "dxMs": 1144.4443333333331,
+                "dy": 0.000004220138789626497
+              }
+            },
+            {
+              "id": "key-mwkiuawo-m8ny5lb0pe",
+              "timeMs": 6933.333,
+              "value": 0.013395700603723526,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": -1144.4443333333331,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 1022.2223333333335,
+                "dy": 0
+              }
+            },
+            {
+              "id": "key-mwkivxdo-6y0mebzgpsa",
+              "timeMs": 10000,
+              "value": 0.013395700603723526,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": -1022.2223333333335,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 0,
+                "dy": 0
+              }
+            }
+          ],
+          "valueRange": {
+            "lower": -1.3264502315156903,
+            "upper": 1.3264502315156903,
+            "velocity": 18.325957145940457
+          }
+        },
+        {
+          "id": "track-mwkisdz4-0scm1doh6xqg",
+          "type": "joint",
+          "jointName": "wrist_roll_r_joint",
+          "name": "wrist_roll_r_joint",
+          "color": "#30d158",
+          "muted": false,
+          "locked": false,
+          "visible": true,
+          "recordArmed": false,
+          "keyframes": [
+            {
+              "id": "key-mwkiyln7-zd1wi7rpgy",
+              "timeMs": 0,
+              "value": 0.006692524068057537,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": 0,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 1166.6666666666667,
+                "dy": 0.000010652467608451845
+              }
+            },
+            {
+              "id": "key-mwkissea-qh8hnxbv1og",
+              "timeMs": 3500,
+              "value": 0.006724481470882893,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": -1166.6666666666667,
+                "dy": -0.000005377447849336164
+              },
+              "outHandle": {
+                "dxMs": 1144.4443333333331,
+                "dy": 0.000005275019759115679
+              }
+            },
+            {
+              "id": "key-mwkiuawp-8i18n0ltybb",
+              "timeMs": 6933.333,
+              "value": 0.006724481470882893,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": -1144.4443333333331,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 1022.2223333333335,
+                "dy": 0
+              }
+            },
+            {
+              "id": "key-mwkivxdq-41nuzfo716l",
+              "timeMs": 10000,
+              "value": 0.006724481470882893,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": -1022.2223333333335,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 0,
+                "dy": 0
+              }
+            }
+          ],
+          "valueRange": {
+            "lower": -1.3264502315156903,
+            "upper": 1.3264502315156903,
+            "velocity": 18.325957145940457
+          }
+        },
+        {
+          "id": "track-mwkisdz4-6s3zztwfvwa",
+          "type": "joint",
+          "jointName": "left_thumb_yaw_joint",
+          "name": "left_thumb_yaw_joint",
+          "color": "#ff375f",
+          "muted": false,
+          "locked": false,
+          "visible": true,
+          "recordArmed": false,
+          "keyframes": [
+            {
+              "id": "key-mwkiyln9-abam4d3ls6",
+              "timeMs": 0,
+              "value": 0.0034906585454545455,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": 0,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 1166.6666666666667,
+                "dy": 0.0005817764242424244
+              }
+            },
+            {
+              "id": "key-mwkissec-tzrdhwk3sdh",
+              "timeMs": 3500,
+              "value": 0.005235987818181818,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": -1166.6666666666667,
+                "dy": -0.00029368522828032137
+              },
+              "outHandle": {
+                "dxMs": 1144.4443333333331,
+                "dy": 0.00028809119596210297
+              }
+            },
+            {
+              "id": "key-mwkiuawr-mqite8v2bb",
+              "timeMs": 6933.333,
+              "value": 0.005235987818181818,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": -1144.4443333333331,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 1022.2223333333335,
+                "dy": 0
+              }
+            },
+            {
+              "id": "key-mwkivxdr-qxt25swsd9",
+              "timeMs": 10000,
+              "value": 0.005235987818181818,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": -1022.2223333333335,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 0,
+                "dy": 0
+              }
+            }
+          ],
+          "valueRange": {
+            "lower": 0,
+            "upper": 1.9198622,
+            "velocity": 2
+          }
+        },
+        {
+          "id": "track-mwkisdz4-276kbezid8m",
+          "type": "joint",
+          "jointName": "left_thumb_mcp_joint",
+          "name": "left_thumb_mcp_joint",
+          "color": "#bf5af2",
+          "muted": false,
+          "locked": false,
+          "visible": true,
+          "recordArmed": false,
+          "keyframes": [
+            {
+              "id": "key-mwkiylnb-jkq1jbbuvuf",
+              "timeMs": 0,
+              "value": 0.06981316571428571,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": 0,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 1166.6666666666667,
+                "dy": 0
+              }
+            },
+            {
+              "id": "key-mwkissed-of6ierkj91",
+              "timeMs": 3500,
+              "value": 0.06981316571428571,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": -1166.6666666666667,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 1144.4443333333331,
+                "dy": 0
+              }
+            },
+            {
+              "id": "key-mwkiuawt-vqblbt1e87",
+              "timeMs": 6933.333,
+              "value": 0.06981316571428571,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": -1144.4443333333331,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 1022.2223333333335,
+                "dy": 0
+              }
+            },
+            {
+              "id": "key-mwkivxdt-t7w8tijut9",
+              "timeMs": 10000,
+              "value": 0.06981316571428571,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": -1022.2223333333335,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 0,
+                "dy": 0
+              }
+            }
+          ],
+          "valueRange": {
+            "lower": 0,
+            "upper": 0.6108652,
+            "velocity": 2
+          }
+        },
+        {
+          "id": "track-mwkisdz4-5ojrh009zz",
+          "type": "joint",
+          "jointName": "left_thumb_pip_joint",
+          "name": "left_thumb_pip_joint",
+          "color": "#64d2ff",
+          "muted": false,
+          "locked": false,
+          "visible": true,
+          "recordArmed": false,
+          "keyframes": [
+            {
+              "id": "key-mwkiylnd-c62zcyk4vei",
+              "timeMs": 0,
+              "value": 0,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": 0,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 1166.6666666666667,
+                "dy": 0
+              }
+            },
+            {
+              "id": "key-mwkissef-p2bzea4cul",
+              "timeMs": 3500,
+              "value": 0,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": -1166.6666666666667,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 1144.4443333333331,
+                "dy": 0
+              }
+            },
+            {
+              "id": "key-mwkiuawv-sown520qtoq",
+              "timeMs": 6933.333,
+              "value": 0,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": -1144.4443333333331,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 1022.2223333333335,
+                "dy": 0
+              }
+            },
+            {
+              "id": "key-mwkivxdv-m92vx0nkbnb",
+              "timeMs": 10000,
+              "value": 0,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": -1022.2223333333335,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 0,
+                "dy": 0
+              }
+            }
+          ],
+          "valueRange": {
+            "lower": 0,
+            "upper": 1.041888,
+            "velocity": 2
+          }
+        },
+        {
+          "id": "track-mwkisdz4-z3y1oqa2vda",
+          "type": "joint",
+          "jointName": "left_thumb_dip_joint",
+          "name": "left_thumb_dip_joint",
+          "color": "#ffd60a",
+          "muted": false,
+          "locked": false,
+          "visible": true,
+          "recordArmed": false,
+          "keyframes": [
+            {
+              "id": "key-mwkiylnf-xf281gn2na",
+              "timeMs": 0,
+              "value": 0,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": 0,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 1166.6666666666667,
+                "dy": 0
+              }
+            },
+            {
+              "id": "key-mwkisseh-gm95k9lojas",
+              "timeMs": 3500,
+              "value": 0,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": -1166.6666666666667,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 1144.4443333333331,
+                "dy": 0
+              }
+            },
+            {
+              "id": "key-mwkiuawx-r1wbo0qjo8d",
+              "timeMs": 6933.333,
+              "value": 0,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": -1144.4443333333331,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 1022.2223333333335,
+                "dy": 0
+              }
+            },
+            {
+              "id": "key-mwkivxdx-5oag91akhxf",
+              "timeMs": 10000,
+              "value": 0,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": -1022.2223333333335,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 0,
+                "dy": 0
+              }
+            }
+          ],
+          "valueRange": {
+            "lower": 0,
+            "upper": 0.9424778,
+            "velocity": 2
+          }
+        },
+        {
+          "id": "track-mwkisdz4-g42s3j1429b",
+          "type": "joint",
+          "jointName": "left_index_yaw_joint",
+          "name": "left_index_yaw_joint",
+          "color": "#0a84ff",
+          "muted": false,
+          "locked": false,
+          "visible": true,
+          "recordArmed": false,
+          "keyframes": [
+            {
+              "id": "key-mwkiylnh-lks2yh8eoic",
+              "timeMs": 0,
+              "value": 0.0017411999999999983,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": 0,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 1166.6666666666667,
+                "dy": 0
+              }
+            },
+            {
+              "id": "key-mwkissei-hs5cbjdwep",
+              "timeMs": 3500,
+              "value": 0.0017411999999999983,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": -1166.6666666666667,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 1144.4443333333331,
+                "dy": 0
+              }
+            },
+            {
+              "id": "key-mwkiuawy-e80y4g2aabo",
+              "timeMs": 6933.333,
+              "value": 0.0017411999999999983,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": -1144.4443333333331,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 1022.2223333333335,
+                "dy": 0
+              }
+            },
+            {
+              "id": "key-mwkivxdz-g9bdr6n6h5a",
+              "timeMs": 10000,
+              "value": 0.0017411999999999983,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": -1022.2223333333335,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 0,
+                "dy": 0
+              }
+            }
+          ],
+          "valueRange": {
+            "lower": -0.26118,
+            "upper": 0.26118,
+            "velocity": 2
+          }
+        },
+        {
+          "id": "track-mwkisdz4-x5252w5j6oe",
+          "type": "joint",
+          "jointName": "left_index_mcp_joint",
+          "name": "left_index_mcp_joint",
+          "color": "#ff9f0a",
+          "muted": false,
+          "locked": false,
+          "visible": true,
+          "recordArmed": false,
+          "keyframes": [
+            {
+              "id": "key-mwkiylni-yva95uk9oi",
+              "timeMs": 0,
+              "value": 0,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": 0,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 1166.6666666666667,
+                "dy": 0
+              }
+            },
+            {
+              "id": "key-mwkissek-fl5tw8gyczl",
+              "timeMs": 3500,
+              "value": 0,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": -1166.6666666666667,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 1144.4443333333331,
+                "dy": 0
+              }
+            },
+            {
+              "id": "key-mwkiuax0-ffch7r86sk",
+              "timeMs": 6933.333,
+              "value": 0,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": -1144.4443333333331,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 1022.2223333333335,
+                "dy": 0
+              }
+            },
+            {
+              "id": "key-mwkivxe1-ynzt096037",
+              "timeMs": 10000,
+              "value": 0,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": -1022.2223333333335,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 0,
+                "dy": 0
+              }
+            }
+          ],
+          "valueRange": {
+            "lower": 0,
+            "upper": 1.3089969,
+            "velocity": 2
+          }
+        },
+        {
+          "id": "track-mwkisdz4-9b622zlygjm",
+          "type": "joint",
+          "jointName": "left_index_pip_joint",
+          "name": "left_index_pip_joint",
+          "color": "#30d158",
+          "muted": false,
+          "locked": false,
+          "visible": true,
+          "recordArmed": false,
+          "keyframes": [
+            {
+              "id": "key-mwkiylnk-slae3kx8qws",
+              "timeMs": 0,
+              "value": 0.019780398666666667,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": 0,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 1166.6666666666667,
+                "dy": 0
+              }
+            },
+            {
+              "id": "key-mwkissel-21iuhzb6fkx",
+              "timeMs": 3500,
+              "value": 0.019780398666666667,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": -1166.6666666666667,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 1144.4443333333331,
+                "dy": 0
+              }
+            },
+            {
+              "id": "key-mwkiuax2-ospcrozc9zn",
+              "timeMs": 6933.333,
+              "value": 0.019780398666666667,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": -1144.4443333333331,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 1022.2223333333335,
+                "dy": 0
+              }
+            },
+            {
+              "id": "key-mwkivxe2-o42loze1oll",
+              "timeMs": 10000,
+              "value": 0.019780398666666667,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": -1022.2223333333335,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 0,
+                "dy": 0
+              }
+            }
+          ],
+          "valueRange": {
+            "lower": 0,
+            "upper": 1.4835299,
+            "velocity": 2
+          }
+        },
+        {
+          "id": "track-mwkisdz4-3pnn3pig7v4",
+          "type": "joint",
+          "jointName": "left_index_dip_joint",
+          "name": "left_index_dip_joint",
+          "color": "#ff375f",
+          "muted": false,
+          "locked": false,
+          "visible": true,
+          "recordArmed": false,
+          "keyframes": [
+            {
+              "id": "key-mwkiylnm-pvpvyeg053",
+              "timeMs": 0,
+              "value": 0,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": 0,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 1166.6666666666667,
+                "dy": 0
+              }
+            },
+            {
+              "id": "key-mwkissen-in4h981tbd",
+              "timeMs": 3500,
+              "value": 0,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": -1166.6666666666667,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 1144.4443333333331,
+                "dy": 0
+              }
+            },
+            {
+              "id": "key-mwkiuax3-ia9y6zgquf",
+              "timeMs": 6933.333,
+              "value": 0,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": -1144.4443333333331,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 1022.2223333333335,
+                "dy": 0
+              }
+            },
+            {
+              "id": "key-mwkivxe4-couztc53o9c",
+              "timeMs": 10000,
+              "value": 0,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": -1022.2223333333335,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 0,
+                "dy": 0
+              }
+            }
+          ],
+          "valueRange": {
+            "lower": 0,
+            "upper": 1.568,
+            "velocity": 2
+          }
+        },
+        {
+          "id": "track-mwkisdz4-n01agdrjk3",
+          "type": "joint",
+          "jointName": "left_middle_yaw_joint",
+          "name": "left_middle_yaw_joint",
+          "color": "#bf5af2",
+          "muted": false,
+          "locked": false,
+          "visible": true,
+          "recordArmed": false,
+          "keyframes": [
+            {
+              "id": "key-mwkiylno-fqie0jv4dzh",
+              "timeMs": 0,
+              "value": 0,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": 0,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 1166.6666666666667,
+                "dy": 0
+              }
+            },
+            {
+              "id": "key-mwkissep-cx4m0k5imcd",
+              "timeMs": 3500,
+              "value": 0,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": -1166.6666666666667,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 1144.4443333333331,
+                "dy": 0
+              }
+            },
+            {
+              "id": "key-mwkiuax5-gqet5pu4in",
+              "timeMs": 6933.333,
+              "value": 0,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": -1144.4443333333331,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 1022.2223333333335,
+                "dy": 0
+              }
+            },
+            {
+              "id": "key-mwkivxe6-op4bkh17xh8",
+              "timeMs": 10000,
+              "value": 0,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": -1022.2223333333335,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 0,
+                "dy": 0
+              }
+            }
+          ],
+          "valueRange": {
+            "lower": -0.26118,
+            "upper": 0.26118,
+            "velocity": 2
+          }
+        },
+        {
+          "id": "track-mwkisdz4-52dlaax2846",
+          "type": "joint",
+          "jointName": "left_middle_mcp_joint",
+          "name": "left_middle_mcp_joint",
+          "color": "#64d2ff",
+          "muted": false,
+          "locked": false,
+          "visible": true,
+          "recordArmed": false,
+          "keyframes": [
+            {
+              "id": "key-mwkiylnq-f2i4hrju3n",
+              "timeMs": 0,
+              "value": 0,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": 0,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 1166.6666666666667,
+                "dy": 0
+              }
+            },
+            {
+              "id": "key-mwkisseq-m3cxh3ehgs",
+              "timeMs": 3500,
+              "value": 0,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": -1166.6666666666667,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 1144.4443333333331,
+                "dy": 0
+              }
+            },
+            {
+              "id": "key-mwkiuax7-sdczvn1mcs",
+              "timeMs": 6933.333,
+              "value": 0,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": -1144.4443333333331,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 1022.2223333333335,
+                "dy": 0
+              }
+            },
+            {
+              "id": "key-mwkivxe8-5wzedb6zt0n",
+              "timeMs": 10000,
+              "value": 0,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": -1022.2223333333335,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 0,
+                "dy": 0
+              }
+            }
+          ],
+          "valueRange": {
+            "lower": 0,
+            "upper": 1.3089969,
+            "velocity": 2
+          }
+        },
+        {
+          "id": "track-mwkisdz4-2m19z8qciry",
+          "type": "joint",
+          "jointName": "left_middle_pip_joint",
+          "name": "left_middle_pip_joint",
+          "color": "#ffd60a",
+          "muted": false,
+          "locked": false,
+          "visible": true,
+          "recordArmed": false,
+          "keyframes": [
+            {
+              "id": "key-mwkiylns-7bmm0zk50bq",
+              "timeMs": 0,
+              "value": 0.021758438533333334,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": 0,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 1166.6666666666667,
+                "dy": 0.0006593466222222221
+              }
+            },
+            {
+              "id": "key-mwkisses-v7v37cku2k",
+              "timeMs": 3500,
+              "value": 0.0237364784,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": -1166.6666666666667,
+                "dy": -0.0003328432627969517
+              },
+              "outHandle": {
+                "dxMs": 1144.4443333333331,
+                "dy": 0.0003265033594252704
+              }
+            },
+            {
+              "id": "key-mwkiuax8-ek6wjyfaouo",
+              "timeMs": 6933.333,
+              "value": 0.0237364784,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": -1144.4443333333331,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 1022.2223333333335,
+                "dy": 0
+              }
+            },
+            {
+              "id": "key-mwkivxea-w87qrdeadn",
+              "timeMs": 10000,
+              "value": 0.0237364784,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": -1022.2223333333335,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 0,
+                "dy": 0
+              }
+            }
+          ],
+          "valueRange": {
+            "lower": 0,
+            "upper": 1.4835299,
+            "velocity": 2
+          }
+        },
+        {
+          "id": "track-mwkisdz4-fd0tb0t5hyv",
+          "type": "joint",
+          "jointName": "left_middle_dip_joint",
+          "name": "left_middle_dip_joint",
+          "color": "#0a84ff",
+          "muted": false,
+          "locked": false,
+          "visible": true,
+          "recordArmed": false,
+          "keyframes": [
+            {
+              "id": "key-mwkiylnu-a1s2ylyk4y",
+              "timeMs": 0,
+              "value": 0,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": 0,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 1166.6666666666667,
+                "dy": 0
+              }
+            },
+            {
+              "id": "key-mwkisseu-msdbhno403h",
+              "timeMs": 3500,
+              "value": 0,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": -1166.6666666666667,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 1144.4443333333331,
+                "dy": 0
+              }
+            },
+            {
+              "id": "key-mwkiuaxa-9f8rdo1103h",
+              "timeMs": 6933.333,
+              "value": 0,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": -1144.4443333333331,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 1022.2223333333335,
+                "dy": 0
+              }
+            },
+            {
+              "id": "key-mwkivxeb-gbu30lxfi98",
+              "timeMs": 10000,
+              "value": 0,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": -1022.2223333333335,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 0,
+                "dy": 0
+              }
+            }
+          ],
+          "valueRange": {
+            "lower": 0,
+            "upper": 1.568,
+            "velocity": 2
+          }
+        },
+        {
+          "id": "track-mwkisdz4-zhf83jj1cqe",
+          "type": "joint",
+          "jointName": "left_ring_mcp_joint",
+          "name": "left_ring_mcp_joint",
+          "color": "#ff9f0a",
+          "muted": false,
+          "locked": false,
+          "visible": true,
+          "recordArmed": false,
+          "keyframes": [
+            {
+              "id": "key-mwkiylnw-9sv4rjfddm",
+              "timeMs": 0,
+              "value": 0,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": 0,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 1166.6666666666667,
+                "dy": 0
+              }
+            },
+            {
+              "id": "key-mwkissev-wn0gmla00u9",
+              "timeMs": 3500,
+              "value": 0,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": -1166.6666666666667,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 1144.4443333333331,
+                "dy": 0
+              }
+            },
+            {
+              "id": "key-mwkiuaxc-8brsluqsx57",
+              "timeMs": 6933.333,
+              "value": 0,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": -1144.4443333333331,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 1022.2223333333335,
+                "dy": 0
+              }
+            },
+            {
+              "id": "key-mwkivxec-96v8cj6smhn",
+              "timeMs": 10000,
+              "value": 0,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": -1022.2223333333335,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 0,
+                "dy": 0
+              }
+            }
+          ],
+          "valueRange": {
+            "lower": 0,
+            "upper": 1.3089969,
+            "velocity": 2
+          }
+        },
+        {
+          "id": "track-mwkisdz4-v1spr9omjn",
+          "type": "joint",
+          "jointName": "left_ring_pip_joint",
+          "name": "left_ring_pip_joint",
+          "color": "#30d158",
+          "muted": false,
+          "locked": false,
+          "visible": true,
+          "recordArmed": false,
+          "keyframes": [
+            {
+              "id": "key-mwkiylny-dzb6jqjg26n",
+              "timeMs": 0,
+              "value": 0.021758438533333334,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": 0,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 1166.6666666666667,
+                "dy": 0
+              }
+            },
+            {
+              "id": "key-mwkissex-ly6e4cgfdnb",
+              "timeMs": 3500,
+              "value": 0.021758438533333334,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": -1166.6666666666667,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 1144.4443333333331,
+                "dy": 0
+              }
+            },
+            {
+              "id": "key-mwkiuaxe-jxp2ums1rc",
+              "timeMs": 6933.333,
+              "value": 0.021758438533333334,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": -1144.4443333333331,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 1022.2223333333335,
+                "dy": 0
+              }
+            },
+            {
+              "id": "key-mwkivxef-h4manij70we",
+              "timeMs": 10000,
+              "value": 0.021758438533333334,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": -1022.2223333333335,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 0,
+                "dy": 0
+              }
+            }
+          ],
+          "valueRange": {
+            "lower": 0,
+            "upper": 1.4835299,
+            "velocity": 2
+          }
+        },
+        {
+          "id": "track-mwkisdz4-kmzujmqiq",
+          "type": "joint",
+          "jointName": "left_ring_dip_joint",
+          "name": "left_ring_dip_joint",
+          "color": "#ff375f",
+          "muted": false,
+          "locked": false,
+          "visible": true,
+          "recordArmed": false,
+          "keyframes": [
+            {
+              "id": "key-mwkiylo0-loind81fs6",
+              "timeMs": 0,
+              "value": 0,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": 0,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 1166.6666666666667,
+                "dy": 0
+              }
+            },
+            {
+              "id": "key-mwkissey-chety3wc5aw",
+              "timeMs": 3500,
+              "value": 0,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": -1166.6666666666667,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 1144.4443333333331,
+                "dy": 0
+              }
+            },
+            {
+              "id": "key-mwkiuaxg-478jte72oxn",
+              "timeMs": 6933.333,
+              "value": 0,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": -1144.4443333333331,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 1022.2223333333335,
+                "dy": 0
+              }
+            },
+            {
+              "id": "key-mwkivxeg-mqja9nevzun",
+              "timeMs": 10000,
+              "value": 0,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": -1022.2223333333335,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 0,
+                "dy": 0
+              }
+            }
+          ],
+          "valueRange": {
+            "lower": 0,
+            "upper": 1.568,
+            "velocity": 2
+          }
+        },
+        {
+          "id": "track-mwkisdz4-so71vrrz97e",
+          "type": "joint",
+          "jointName": "left_pinky_mcp_joint",
+          "name": "left_pinky_mcp_joint",
+          "color": "#bf5af2",
+          "muted": false,
+          "locked": false,
+          "visible": true,
+          "recordArmed": false,
+          "keyframes": [
+            {
+              "id": "key-mwkiylo2-x362spuuj4i",
+              "timeMs": 0,
+              "value": 0.008726646,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": 0,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 1166.6666666666667,
+                "dy": 0
+              }
+            },
+            {
+              "id": "key-mwkissf0-yfrbqzu0ox",
+              "timeMs": 3500,
+              "value": 0.008726646,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": -1166.6666666666667,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 1144.4443333333331,
+                "dy": 0
+              }
+            },
+            {
+              "id": "key-mwkiuaxh-g7c6ggd724s",
+              "timeMs": 6933.333,
+              "value": 0.008726646,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": -1144.4443333333331,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 1022.2223333333335,
+                "dy": 0
+              }
+            },
+            {
+              "id": "key-mwkivxei-rr74bvhtk0f",
+              "timeMs": 10000,
+              "value": 0.008726646,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": -1022.2223333333335,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 0,
+                "dy": 0
+              }
+            }
+          ],
+          "valueRange": {
+            "lower": 0,
+            "upper": 1.3089969,
+            "velocity": 2
+          }
+        },
+        {
+          "id": "track-mwkisdz4-nhlty0efoob",
+          "type": "joint",
+          "jointName": "left_pinky_pip_joint",
+          "name": "left_pinky_pip_joint",
+          "color": "#64d2ff",
+          "muted": false,
+          "locked": false,
+          "visible": true,
+          "recordArmed": false,
+          "keyframes": [
+            {
+              "id": "key-mwkiylo4-rasasyz7vhf",
+              "timeMs": 0,
+              "value": 0.019780398666666667,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": 0,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 1166.6666666666667,
+                "dy": 0
+              }
+            },
+            {
+              "id": "key-mwkissf2-qv10xavygbk",
+              "timeMs": 3500,
+              "value": 0.019780398666666667,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": -1166.6666666666667,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 1144.4443333333331,
+                "dy": 0
+              }
+            },
+            {
+              "id": "key-mwkiuaxj-ks6njy7s9p",
+              "timeMs": 6933.333,
+              "value": 0.019780398666666667,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": -1144.4443333333331,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 1022.2223333333335,
+                "dy": 0
+              }
+            },
+            {
+              "id": "key-mwkivxek-sujn3ylkxad",
+              "timeMs": 10000,
+              "value": 0.019780398666666667,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": -1022.2223333333335,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 0,
+                "dy": 0
+              }
+            }
+          ],
+          "valueRange": {
+            "lower": 0,
+            "upper": 1.4835299,
+            "velocity": 2
+          }
+        },
+        {
+          "id": "track-mwkisdz4-5h8tskrgq82",
+          "type": "joint",
+          "jointName": "left_pinky_dip_joint",
+          "name": "left_pinky_dip_joint",
+          "color": "#ffd60a",
+          "muted": false,
+          "locked": false,
+          "visible": true,
+          "recordArmed": false,
+          "keyframes": [
+            {
+              "id": "key-mwkiylo6-6hx13vh65xh",
+              "timeMs": 0,
+              "value": 0,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": 0,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 1166.6666666666667,
+                "dy": 0
+              }
+            },
+            {
+              "id": "key-mwkissf4-htj95tx3t2h",
+              "timeMs": 3500,
+              "value": 0,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": -1166.6666666666667,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 1144.4443333333331,
+                "dy": 0
+              }
+            },
+            {
+              "id": "key-mwkiuaxk-029bazntqb8",
+              "timeMs": 6933.333,
+              "value": 0,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": -1144.4443333333331,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 1022.2223333333335,
+                "dy": 0
+              }
+            },
+            {
+              "id": "key-mwkivxem-spbdc5870ik",
+              "timeMs": 10000,
+              "value": 0,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": -1022.2223333333335,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 0,
+                "dy": 0
+              }
+            }
+          ],
+          "valueRange": {
+            "lower": 0,
+            "upper": 1.568,
+            "velocity": 2
+          }
+        },
+        {
+          "id": "track-mwkisdz4-u06n9p1bmp",
+          "type": "joint",
+          "jointName": "right_thumb_yaw_joint",
+          "name": "right_thumb_yaw_joint",
+          "color": "#0a84ff",
+          "muted": false,
+          "locked": false,
+          "visible": true,
+          "recordArmed": false,
+          "keyframes": [
+            {
+              "id": "key-mwkiylo8-lyj5r2t9ins",
+              "timeMs": 0,
+              "value": 0.0017453292727272727,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": 0,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 1166.6666666666667,
+                "dy": -0.0005817764242424243
+              }
+            },
+            {
+              "id": "key-mwkissf5-s23wgdvd5y",
+              "timeMs": 3500,
+              "value": 0,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": -1166.6666666666667,
+                "dy": 0.0002936852282803213
+              },
+              "outHandle": {
+                "dxMs": 1144.4443333333331,
+                "dy": -0.0002880911959621029
+              }
+            },
+            {
+              "id": "key-mwkiuaxm-vuez3f0uk7",
+              "timeMs": 6933.333,
+              "value": 0,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": -1144.4443333333331,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 1022.2223333333335,
+                "dy": 0
+              }
+            },
+            {
+              "id": "key-mwkivxen-fne5a6iosio",
+              "timeMs": 10000,
+              "value": 0,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": -1022.2223333333335,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 0,
+                "dy": 0
+              }
+            }
+          ],
+          "valueRange": {
+            "lower": 0,
+            "upper": 1.9198622,
+            "velocity": 2
+          }
+        },
+        {
+          "id": "track-mwkisdz4-1q2lz7eurcv",
+          "type": "joint",
+          "jointName": "right_thumb_mcp_joint",
+          "name": "right_thumb_mcp_joint",
+          "color": "#ff9f0a",
+          "muted": false,
+          "locked": false,
+          "visible": true,
+          "recordArmed": false,
+          "keyframes": [
+            {
+              "id": "key-mwkiyloa-ijrokhcus8r",
+              "timeMs": 0,
+              "value": 0.11693705257142857,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": 0,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 1166.6666666666667,
+                "dy": 0
+              }
+            },
+            {
+              "id": "key-mwkissf6-7v41p3iecfh",
+              "timeMs": 3500,
+              "value": 0.11693705257142857,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": -1166.6666666666667,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 1144.4443333333331,
+                "dy": 0
+              }
+            },
+            {
+              "id": "key-mwkiuaxo-uxqxj07z0b",
+              "timeMs": 6933.333,
+              "value": 0.11693705257142857,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": -1144.4443333333331,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 1022.2223333333335,
+                "dy": 0
+              }
+            },
+            {
+              "id": "key-mwkivxep-6ki57uc4ee9",
+              "timeMs": 10000,
+              "value": 0.11693705257142857,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": -1022.2223333333335,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 0,
+                "dy": 0
+              }
+            }
+          ],
+          "valueRange": {
+            "lower": 0,
+            "upper": 0.6108652,
+            "velocity": 2
+          }
+        },
+        {
+          "id": "track-mwkisdz4-xfq82skos8",
+          "type": "joint",
+          "jointName": "right_thumb_pip_joint",
+          "name": "right_thumb_pip_joint",
+          "color": "#30d158",
+          "muted": false,
+          "locked": false,
+          "visible": true,
+          "recordArmed": false,
+          "keyframes": [
+            {
+              "id": "key-mwkiyloc-tp143hl3kh",
+              "timeMs": 0,
+              "value": 0,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": 0,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 1166.6666666666667,
+                "dy": 0
+              }
+            },
+            {
+              "id": "key-mwkissf8-6tlzigt88k7",
+              "timeMs": 3500,
+              "value": 0,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": -1166.6666666666667,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 1144.4443333333331,
+                "dy": 0
+              }
+            },
+            {
+              "id": "key-mwkiuaxq-q0rbk2m2fer",
+              "timeMs": 6933.333,
+              "value": 0,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": -1144.4443333333331,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 1022.2223333333335,
+                "dy": 0
+              }
+            },
+            {
+              "id": "key-mwkivxer-ygj387m9uz",
+              "timeMs": 10000,
+              "value": 0,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": -1022.2223333333335,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 0,
+                "dy": 0
+              }
+            }
+          ],
+          "valueRange": {
+            "lower": 0,
+            "upper": 1.041888,
+            "velocity": 2
+          }
+        },
+        {
+          "id": "track-mwkisdz4-o8mg8eeuqvm",
+          "type": "joint",
+          "jointName": "right_thumb_dip_joint",
+          "name": "right_thumb_dip_joint",
+          "color": "#ff375f",
+          "muted": false,
+          "locked": false,
+          "visible": true,
+          "recordArmed": false,
+          "keyframes": [
+            {
+              "id": "key-mwkiyloe-fw2lf5hzq6u",
+              "timeMs": 0,
+              "value": 0,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": 0,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 1166.6666666666667,
+                "dy": 0
+              }
+            },
+            {
+              "id": "key-mwkissfa-j9k5ow6mxg",
+              "timeMs": 3500,
+              "value": 0,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": -1166.6666666666667,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 1144.4443333333331,
+                "dy": 0
+              }
+            },
+            {
+              "id": "key-mwkiuaxr-ndpr9e0nyj9",
+              "timeMs": 6933.333,
+              "value": 0,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": -1144.4443333333331,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 1022.2223333333335,
+                "dy": 0
+              }
+            },
+            {
+              "id": "key-mwkivxet-81vps1s4afm",
+              "timeMs": 10000,
+              "value": 0,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": -1022.2223333333335,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 0,
+                "dy": 0
+              }
+            }
+          ],
+          "valueRange": {
+            "lower": 0,
+            "upper": 0.9424778,
+            "velocity": 2
+          }
+        },
+        {
+          "id": "track-mwkisdz4-vuy9xv9ca9",
+          "type": "joint",
+          "jointName": "right_index_yaw_joint",
+          "name": "right_index_yaw_joint",
+          "color": "#bf5af2",
+          "muted": false,
+          "locked": false,
+          "visible": true,
+          "recordArmed": false,
+          "keyframes": [
+            {
+              "id": "key-mwkiylog-jizlj7cerl",
+              "timeMs": 0,
+              "value": 0.005223599999999995,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": 0,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 1166.6666666666667,
+                "dy": 0.0005803999999999995
+              }
+            },
+            {
+              "id": "key-mwkissfc-sxe8snl81e",
+              "timeMs": 3500,
+              "value": 0.006964799999999993,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": -1166.6666666666667,
+                "dy": -0.00029299039870146125
+              },
+              "outHandle": {
+                "dxMs": 1144.4443333333331,
+                "dy": 0.0002874096012985382
+              }
+            },
+            {
+              "id": "key-mwkiuaxt-jaqj5jmmgpo",
+              "timeMs": 6933.333,
+              "value": 0.006964799999999993,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": -1144.4443333333331,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 1022.2223333333335,
+                "dy": 0
+              }
+            },
+            {
+              "id": "key-mwkivxev-62ehwats86d",
+              "timeMs": 10000,
+              "value": 0.006964799999999993,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": -1022.2223333333335,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 0,
+                "dy": 0
+              }
+            }
+          ],
+          "valueRange": {
+            "lower": -0.26118,
+            "upper": 0.26118,
+            "velocity": 2
+          }
+        },
+        {
+          "id": "track-mwkisdz4-qahd0podkh",
+          "type": "joint",
+          "jointName": "right_index_mcp_joint",
+          "name": "right_index_mcp_joint",
+          "color": "#64d2ff",
+          "muted": false,
+          "locked": false,
+          "visible": true,
+          "recordArmed": false,
+          "keyframes": [
+            {
+              "id": "key-mwkiyloi-0rxwxq2c8z9l",
+              "timeMs": 0,
+              "value": 0.0017453291999999997,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": 0,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 1166.6666666666667,
+                "dy": 0.0005817764
+              }
+            },
+            {
+              "id": "key-mwkissfe-olod5npovkm",
+              "timeMs": 3500,
+              "value": 0.0034906583999999995,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": -1166.6666666666667,
+                "dy": -0.0002936852160425585
+              },
+              "outHandle": {
+                "dxMs": 1144.4443333333331,
+                "dy": 0.00028809118395744143
+              }
+            },
+            {
+              "id": "key-mwkiuaxv-dbt7qjgmrne",
+              "timeMs": 6933.333,
+              "value": 0.0034906583999999995,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": -1144.4443333333331,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 1022.2223333333335,
+                "dy": 0
+              }
+            },
+            {
+              "id": "key-mwkivxex-p4udgc8zvym",
+              "timeMs": 10000,
+              "value": 0.0034906583999999995,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": -1022.2223333333335,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 0,
+                "dy": 0
+              }
+            }
+          ],
+          "valueRange": {
+            "lower": 0,
+            "upper": 1.3089969,
+            "velocity": 2
+          }
+        },
+        {
+          "id": "track-mwkisdz4-buu9vjic6lk",
+          "type": "joint",
+          "jointName": "right_index_pip_joint",
+          "name": "right_index_pip_joint",
+          "color": "#ffd60a",
+          "muted": false,
+          "locked": false,
+          "visible": true,
+          "recordArmed": false,
+          "keyframes": [
+            {
+              "id": "key-mwkiylok-r8kj19p1yc",
+              "timeMs": 0,
+              "value": 0.0118682392,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": 0,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 1166.6666666666667,
+                "dy": 0
+              }
+            },
+            {
+              "id": "key-mwkissff-lfc1totwnq",
+              "timeMs": 3500,
+              "value": 0.0118682392,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": -1166.6666666666667,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 1144.4443333333331,
+                "dy": 0
+              }
+            },
+            {
+              "id": "key-mwkiuaxw-wkgznhm1xba",
+              "timeMs": 6933.333,
+              "value": 0.0118682392,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": -1144.4443333333331,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 1022.2223333333335,
+                "dy": 0
+              }
+            },
+            {
+              "id": "key-mwkivxey-aam527nzat4",
+              "timeMs": 10000,
+              "value": 0.0118682392,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": -1022.2223333333335,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 0,
+                "dy": 0
+              }
+            }
+          ],
+          "valueRange": {
+            "lower": 0,
+            "upper": 1.4835299,
+            "velocity": 2
+          }
+        },
+        {
+          "id": "track-mwkisdz4-fao74njbsd4",
+          "type": "joint",
+          "jointName": "right_index_dip_joint",
+          "name": "right_index_dip_joint",
+          "color": "#0a84ff",
+          "muted": false,
+          "locked": false,
+          "visible": true,
+          "recordArmed": false,
+          "keyframes": [
+            {
+              "id": "key-mwkiylom-blx1xc3eeld",
+              "timeMs": 0,
+              "value": 0,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": 0,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 1166.6666666666667,
+                "dy": 0
+              }
+            },
+            {
+              "id": "key-mwkissfg-gxb6mzqxqz7",
+              "timeMs": 3500,
+              "value": 0,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": -1166.6666666666667,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 1144.4443333333331,
+                "dy": 0
+              }
+            },
+            {
+              "id": "key-mwkiuaxy-biv77odyaf6",
+              "timeMs": 6933.333,
+              "value": 0,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": -1144.4443333333331,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 1022.2223333333335,
+                "dy": 0
+              }
+            },
+            {
+              "id": "key-mwkivxf0-0ty2pn1zo9mn",
+              "timeMs": 10000,
+              "value": 0,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": -1022.2223333333335,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 0,
+                "dy": 0
+              }
+            }
+          ],
+          "valueRange": {
+            "lower": 0,
+            "upper": 1.568,
+            "velocity": 2
+          }
+        },
+        {
+          "id": "track-mwkisdz4-tivyudk4xq",
+          "type": "joint",
+          "jointName": "right_middle_yaw_joint",
+          "name": "right_middle_yaw_joint",
+          "color": "#ff9f0a",
+          "muted": false,
+          "locked": false,
+          "visible": true,
+          "recordArmed": false,
+          "keyframes": [
+            {
+              "id": "key-mwkiyloo-3medn8i1s93",
+              "timeMs": 0,
+              "value": -0.0017411999999999983,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": 0,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 1166.6666666666667,
+                "dy": 0
+              }
+            },
+            {
+              "id": "key-mwkissfi-3wbjsqh249p",
+              "timeMs": 3500,
+              "value": -0.0017411999999999983,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": -1166.6666666666667,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 1144.4443333333331,
+                "dy": 0
+              }
+            },
+            {
+              "id": "key-mwkiuay0-gn9whejvxww",
+              "timeMs": 6933.333,
+              "value": -0.0017411999999999983,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": -1144.4443333333331,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 1022.2223333333335,
+                "dy": 0
+              }
+            },
+            {
+              "id": "key-mwkivxf2-883ce4qular",
+              "timeMs": 10000,
+              "value": -0.0017411999999999983,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": -1022.2223333333335,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 0,
+                "dy": 0
+              }
+            }
+          ],
+          "valueRange": {
+            "lower": -0.26118,
+            "upper": 0.26118,
+            "velocity": 2
+          }
+        },
+        {
+          "id": "track-mwkisdz4-hsny4xpu9d",
+          "type": "joint",
+          "jointName": "right_middle_mcp_joint",
+          "name": "right_middle_mcp_joint",
+          "color": "#30d158",
+          "muted": false,
+          "locked": false,
+          "visible": true,
+          "recordArmed": false,
+          "keyframes": [
+            {
+              "id": "key-mwkiyloq-jzu5k2c9uxk",
+              "timeMs": 0,
+              "value": 0,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": 0,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 1166.6666666666667,
+                "dy": 0
+              }
+            },
+            {
+              "id": "key-mwkissfk-lnh4tqj04p",
+              "timeMs": 3500,
+              "value": 0,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": -1166.6666666666667,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 1144.4443333333331,
+                "dy": 0
+              }
+            },
+            {
+              "id": "key-mwkiuay2-85ho5n8jm2",
+              "timeMs": 6933.333,
+              "value": 0,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": -1144.4443333333331,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 1022.2223333333335,
+                "dy": 0
+              }
+            },
+            {
+              "id": "key-mwkivxf4-dz5kfjzavlo",
+              "timeMs": 10000,
+              "value": 0,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": -1022.2223333333335,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 0,
+                "dy": 0
+              }
+            }
+          ],
+          "valueRange": {
+            "lower": 0,
+            "upper": 1.3089969,
+            "velocity": 2
+          }
+        },
+        {
+          "id": "track-mwkisdz4-pljdifwwm1",
+          "type": "joint",
+          "jointName": "right_middle_pip_joint",
+          "name": "right_middle_pip_joint",
+          "color": "#ff375f",
+          "muted": false,
+          "locked": false,
+          "visible": true,
+          "recordArmed": false,
+          "keyframes": [
+            {
+              "id": "key-mwkiylos-4w6qqcgz3oa",
+              "timeMs": 0,
+              "value": 0.019780398666666667,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": 0,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 1166.6666666666667,
+                "dy": 0
+              }
+            },
+            {
+              "id": "key-mwkissfm-ar0u915122t",
+              "timeMs": 3500,
+              "value": 0.019780398666666667,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": -1166.6666666666667,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 1144.4443333333331,
+                "dy": 0
+              }
+            },
+            {
+              "id": "key-mwkiuay3-6boc0x3cc59",
+              "timeMs": 6933.333,
+              "value": 0.019780398666666667,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": -1144.4443333333331,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 1022.2223333333335,
+                "dy": 0
+              }
+            },
+            {
+              "id": "key-mwkivxf5-7gxe4rxvczy",
+              "timeMs": 10000,
+              "value": 0.019780398666666667,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": -1022.2223333333335,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 0,
+                "dy": 0
+              }
+            }
+          ],
+          "valueRange": {
+            "lower": 0,
+            "upper": 1.4835299,
+            "velocity": 2
+          }
+        },
+        {
+          "id": "track-mwkisdz4-hexqtyu1uqh",
+          "type": "joint",
+          "jointName": "right_middle_dip_joint",
+          "name": "right_middle_dip_joint",
+          "color": "#bf5af2",
+          "muted": false,
+          "locked": false,
+          "visible": true,
+          "recordArmed": false,
+          "keyframes": [
+            {
+              "id": "key-mwkiylou-bs6omojixfw",
+              "timeMs": 0,
+              "value": 0,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": 0,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 1166.6666666666667,
+                "dy": 0
+              }
+            },
+            {
+              "id": "key-mwkissfn-utqljugm9a",
+              "timeMs": 3500,
+              "value": 0,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": -1166.6666666666667,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 1144.4443333333331,
+                "dy": 0
+              }
+            },
+            {
+              "id": "key-mwkiuay5-putaqzm2wvt",
+              "timeMs": 6933.333,
+              "value": 0,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": -1144.4443333333331,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 1022.2223333333335,
+                "dy": 0
+              }
+            },
+            {
+              "id": "key-mwkivxf7-lqfwzvod1",
+              "timeMs": 10000,
+              "value": 0,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": -1022.2223333333335,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 0,
+                "dy": 0
+              }
+            }
+          ],
+          "valueRange": {
+            "lower": 0,
+            "upper": 1.568,
+            "velocity": 2
+          }
+        },
+        {
+          "id": "track-mwkisdz4-ftqcgjo3x4",
+          "type": "joint",
+          "jointName": "right_ring_mcp_joint",
+          "name": "right_ring_mcp_joint",
+          "color": "#64d2ff",
+          "muted": false,
+          "locked": false,
+          "visible": true,
+          "recordArmed": false,
+          "keyframes": [
+            {
+              "id": "key-mwkiylow-7ph6l5khtoj",
+              "timeMs": 0,
+              "value": 0.006981316799999999,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": 0,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 1166.6666666666667,
+                "dy": 0
+              }
+            },
+            {
+              "id": "key-mwkissfp-50bqefrsh2i",
+              "timeMs": 3500,
+              "value": 0.006981316799999999,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": -1166.6666666666667,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 1144.4443333333331,
+                "dy": 0
+              }
+            },
+            {
+              "id": "key-mwkiuay7-wux3w7pnzn",
+              "timeMs": 6933.333,
+              "value": 0.006981316799999999,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": -1144.4443333333331,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 1022.2223333333335,
+                "dy": 0
+              }
+            },
+            {
+              "id": "key-mwkivxf8-hf9oj0mquop",
+              "timeMs": 10000,
+              "value": 0.006981316799999999,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": -1022.2223333333335,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 0,
+                "dy": 0
+              }
+            }
+          ],
+          "valueRange": {
+            "lower": 0,
+            "upper": 1.3089969,
+            "velocity": 2
+          }
+        },
+        {
+          "id": "track-mwkisdz4-v0nn5ar2u9",
+          "type": "joint",
+          "jointName": "right_ring_pip_joint",
+          "name": "right_ring_pip_joint",
+          "color": "#ffd60a",
+          "muted": false,
+          "locked": false,
+          "visible": true,
+          "recordArmed": false,
+          "keyframes": [
+            {
+              "id": "key-mwkiyloy-tsy05n0tks",
+              "timeMs": 0,
+              "value": 0,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": 0,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 1166.6666666666667,
+                "dy": 0
+              }
+            },
+            {
+              "id": "key-mwkissfq-cq8ob5ll9t",
+              "timeMs": 3500,
+              "value": 0,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": -1166.6666666666667,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 1144.4443333333331,
+                "dy": 0
+              }
+            },
+            {
+              "id": "key-mwkiuay9-yluc6o8t14n",
+              "timeMs": 6933.333,
+              "value": 0,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": -1144.4443333333331,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 1022.2223333333335,
+                "dy": 0
+              }
+            },
+            {
+              "id": "key-mwkivxfb-g4ndjjczkr",
+              "timeMs": 10000,
+              "value": 0,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": -1022.2223333333335,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 0,
+                "dy": 0
+              }
+            }
+          ],
+          "valueRange": {
+            "lower": 0,
+            "upper": 1.4835299,
+            "velocity": 2
+          }
+        },
+        {
+          "id": "track-mwkisdz4-9dig48j3i1",
+          "type": "joint",
+          "jointName": "right_ring_dip_joint",
+          "name": "right_ring_dip_joint",
+          "color": "#0a84ff",
+          "muted": false,
+          "locked": false,
+          "visible": true,
+          "recordArmed": false,
+          "keyframes": [
+            {
+              "id": "key-mwkiylp0-kab2vg0h7tl",
+              "timeMs": 0,
+              "value": 0,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": 0,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 1166.6666666666667,
+                "dy": 0
+              }
+            },
+            {
+              "id": "key-mwkissfs-eel5g5m4w8p",
+              "timeMs": 3500,
+              "value": 0,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": -1166.6666666666667,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 1144.4443333333331,
+                "dy": 0
+              }
+            },
+            {
+              "id": "key-mwkiuaya-zad5jt3go1e",
+              "timeMs": 6933.333,
+              "value": 0,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": -1144.4443333333331,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 1022.2223333333335,
+                "dy": 0
+              }
+            },
+            {
+              "id": "key-mwkivxfd-v5vthhxhlg",
+              "timeMs": 10000,
+              "value": 0,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": -1022.2223333333335,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 0,
+                "dy": 0
+              }
+            }
+          ],
+          "valueRange": {
+            "lower": 0,
+            "upper": 1.568,
+            "velocity": 2
+          }
+        },
+        {
+          "id": "track-mwkisdz4-wx1lmc42jie",
+          "type": "joint",
+          "jointName": "right_pinky_mcp_joint",
+          "name": "right_pinky_mcp_joint",
+          "color": "#ff9f0a",
+          "muted": false,
+          "locked": false,
+          "visible": true,
+          "recordArmed": false,
+          "keyframes": [
+            {
+              "id": "key-mwkiylp2-pgbgmp72gf",
+              "timeMs": 0,
+              "value": 0.0244346088,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": 0,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 1166.6666666666667,
+                "dy": 0
+              }
+            },
+            {
+              "id": "key-mwkissfu-jz7g0tkbopg",
+              "timeMs": 3500,
+              "value": 0.0244346088,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": -1166.6666666666667,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 1144.4443333333331,
+                "dy": 0
+              }
+            },
+            {
+              "id": "key-mwkiuayc-iemvjtemyg9",
+              "timeMs": 6933.333,
+              "value": 0.0244346088,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": -1144.4443333333331,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 1022.2223333333335,
+                "dy": 0
+              }
+            },
+            {
+              "id": "key-mwkivxfe-gq5ara3pncl",
+              "timeMs": 10000,
+              "value": 0.0244346088,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": -1022.2223333333335,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 0,
+                "dy": 0
+              }
+            }
+          ],
+          "valueRange": {
+            "lower": 0,
+            "upper": 1.3089969,
+            "velocity": 2
+          }
+        },
+        {
+          "id": "track-mwkisdz4-imtn0h2wmur",
+          "type": "joint",
+          "jointName": "right_pinky_pip_joint",
+          "name": "right_pinky_pip_joint",
+          "color": "#30d158",
+          "muted": false,
+          "locked": false,
+          "visible": true,
+          "recordArmed": false,
+          "keyframes": [
+            {
+              "id": "key-mwkiylp4-u2ipj25w1z",
+              "timeMs": 0,
+              "value": 0.019780398666666667,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": 0,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 1166.6666666666667,
+                "dy": 0
+              }
+            },
+            {
+              "id": "key-mwkissfw-y42s1s89lmi",
+              "timeMs": 3500,
+              "value": 0.019780398666666667,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": -1166.6666666666667,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 1144.4443333333331,
+                "dy": 0
+              }
+            },
+            {
+              "id": "key-mwkiuaye-fiiozz5m2k",
+              "timeMs": 6933.333,
+              "value": 0.019780398666666667,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": -1144.4443333333331,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 1022.2223333333335,
+                "dy": 0
+              }
+            },
+            {
+              "id": "key-mwkivxfg-jnt9g5ustgo",
+              "timeMs": 10000,
+              "value": 0.019780398666666667,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": -1022.2223333333335,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 0,
+                "dy": 0
+              }
+            }
+          ],
+          "valueRange": {
+            "lower": 0,
+            "upper": 1.4835299,
+            "velocity": 2
+          }
+        },
+        {
+          "id": "track-mwkisdz4-kr603afd7d9",
+          "type": "joint",
+          "jointName": "right_pinky_dip_joint",
+          "name": "right_pinky_dip_joint",
+          "color": "#ff375f",
+          "muted": false,
+          "locked": false,
+          "visible": true,
+          "recordArmed": false,
+          "keyframes": [
+            {
+              "id": "key-mwkiylp6-9n3pa3fvdsq",
+              "timeMs": 0,
+              "value": 0,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": 0,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 1166.6666666666667,
+                "dy": 0
+              }
+            },
+            {
+              "id": "key-mwkissfx-psnkam8e2y",
+              "timeMs": 3500,
+              "value": 0,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": -1166.6666666666667,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 1144.4443333333331,
+                "dy": 0
+              }
+            },
+            {
+              "id": "key-mwkiuayf-9ectwekes9d",
+              "timeMs": 6933.333,
+              "value": 0,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": -1144.4443333333331,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 1022.2223333333335,
+                "dy": 0
+              }
+            },
+            {
+              "id": "key-mwkivxfh-af5mzbifpv",
+              "timeMs": 10000,
+              "value": 0,
+              "interpolation": "auto",
+              "inHandle": {
+                "dxMs": -1022.2223333333335,
+                "dy": 0
+              },
+              "outHandle": {
+                "dxMs": 0,
+                "dy": 0
+              }
+            }
+          ],
+          "valueRange": {
+            "lower": 0,
+            "upper": 1.568,
+            "velocity": 2
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -24,4 +24,5 @@ weights/
 # IDE / OS
 .vscode/
 .idea/
+.codebuddy/
 .DS_Store
