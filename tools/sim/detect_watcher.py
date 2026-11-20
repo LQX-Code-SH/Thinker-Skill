@@ -1,5 +1,8 @@
 #!/usr/bin/env python3
-"""检测看门狗：轮询请求文件 → 调用 detect_object → 写结果文件。
+"""检测看门狗：轮询请求文件 → 调用技能 → 写结果文件。
+
+默认调 find_object（扫描 → 居中 → 居中标定下定 L2），与技能链一致；
+请求文件里可以用 ``skill`` 字段改成 detect_object（原地检测、不动头部）。
 
 为什么单独一个进程：
 
@@ -29,8 +32,8 @@ RES = Path("/thinker/.detect_res.json")
 SIM_CALL = Path(__file__).with_name("sim_call.py")
 
 
-def _call(object_name: str, timeout: int = 170) -> dict:
-    cmd = [sys.executable, str(SIM_CALL), "detect_object",
+def _call(object_name: str, skill: str = "find_object", timeout: int = 120) -> dict:
+    cmd = [sys.executable, str(SIM_CALL), skill,
            "--params", json.dumps({"object_name": object_name}, ensure_ascii=False),
            "--timeout", str(timeout)]
     env = dict(os.environ)
@@ -76,9 +79,12 @@ def main() -> int:
         except (OSError, ValueError):
             continue
         name = str(request.get("object") or "apple")
-        print(f"收到检测请求: {name}", flush=True)
+        # 默认走 find_object：与技能链一致（扫描 + 居中 + 居中标定）；
+        # 传 skill=detect_object 可退回"原地检测、不移动头部"。
+        skill = str(request.get("skill") or "find_object")
+        print(f"收到检测请求: {name} ({skill})", flush=True)
         started = time.time()
-        data = _call(name)
+        data = _call(name, skill)
         payload = {"object": name, "data": data, "at": time.time(),
                    "elapsed": round(time.time() - started, 2)}
         try:
