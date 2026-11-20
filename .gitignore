@@ -24,4 +24,8 @@ weights/
 # IDE / OS
 .vscode/
 .idea/
+.codebuddy/
 .DS_Store
+
+# 技能镜像的本地 wheel 仓库（tools/sim/fetch_wheels.sh 生成，约 4.5 GB）
+tools/sim/wheels/

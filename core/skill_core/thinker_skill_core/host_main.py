@@ -59,9 +59,26 @@ def main(argv=None):
         skills_dirs=skills_dirs,
         robot_dir=robot_dir,
     )
+    mcp_url = None
+    if mcp_server is not None:
+        from thinker_common import ConfigLoader
+
+        mcp_cfg = (ConfigLoader(config_dir).load().get("mcp") or {})
+        if mcp_cfg.get("enabled", True):
+            from .frontends.mcp import can_bind, start_http
+
+            mcp_host = mcp_cfg.get("host", "localhost")
+            mcp_port = int(mcp_cfg.get("port", 8000))
+            if can_bind(mcp_host, mcp_port):
+                start_http(mcp_server, host=mcp_host, port=mcp_port)
+                mcp_url = f"http://{mcp_host}:{mcp_port}/mcp"
+            else:
+                node.get_logger().error(
+                    f"mcp port {mcp_host}:{mcp_port} 已被占用，MCP 通道未启动")
+
     node.get_logger().info(
         f"thinker_host ready: services={len(services)} actions={len(actions)} "
-        f"mcp={'on' if mcp_server is not None else 'off'} "
+        f"mcp={mcp_url or 'off'} "
         f"skills={sorted(host._registry.names())} skipped={skipped} "
         f"syspath_added={len(added)}"
     )

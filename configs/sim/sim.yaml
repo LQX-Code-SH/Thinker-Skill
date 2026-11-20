@@ -16,3 +16,14 @@ skills:
     settle_ticks: 3
   detect_object:
     model_path: weights/grounding-dino-tiny
+  fetch_object:
+    # 示教位姿（configs/robot.yaml: taught_poses）是真机采的，仿真 URDF 下
+    # pregrasp/grasp 两个 TCP 点 IK 无解（差 58–81 mm，受腕部姿态约束），
+    # 所以仿真强制走 plan_grasp 重新规划。
+    use_taught: false
+    # 抓取姿态绕竖轴再转 -30°：岛台高度（z≈0.97）下默认 (0,-90,0) 无解，
+    # 苹果是回转体，偏航不影响抓取。
+    base_orientation_deg: [0.0, -90.0, -30.0]
+    # 抓取点位（z_bias / tcp_delta_* / grasp_delta_* / grasp_positions）仍是
+    # 真机标定值，仿真下实测偏高、会把物体推开，尚未标定完，暂不在此覆盖。
+    # 已知边界：俯抓姿态在 z≈0.97 以下是 IK 臂展下限。

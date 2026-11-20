@@ -1,0 +1,10 @@
+{
+  "name": "play_action",
+  "version": "0.3.0",
+  "modulePath": "mcp_interface.py",
+  "functionNames": ["play_action"],
+  "transport": "streamable-http",
+  "host": "localhost",
+  "port": 8034,
+  "tools": ["play_action"]
+}

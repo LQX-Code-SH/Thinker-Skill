@@ -23,7 +23,8 @@ SIM_HANG_Z   ?= 1.00
 
 .PHONY: help build build-skill test clean sim-init sim-up sim-down sim-build \
         sim-probe sim-pose sim-bridge sim-bridge-bg sim-fsm sim-fsm-bg \
-        sim-host sim-host-bg sim-logs sim-selftest sim-call sim-shell sim-image-view
+        sim-host sim-host-bg sim-logs sim-selftest sim-call sim-shell sim-image-view \
+        skill-build skill-up skill-down skill-host skill-host-bg skill-selftest skill-shell skill-logs
 
 help:
 	@echo "make build                     全量构建"
@@ -110,3 +111,30 @@ sim-call:
 
 sim-shell:
 	tools/sim/container.sh shell
+
+# ---- 双容器：技能侧（本体容器只跑桥，技能容器跑 thinker_host + 技能）----
+# 依赖版本与真机对齐（torch 2.9.1 / torchvision 0.24.0 / transformers 5.0.0 /
+# numpy 1.26.4），镜像定义见 tools/sim/Dockerfile.skill。
+skill-build:
+	tools/sim/container.sh skill-build
+
+skill-up:
+	tools/sim/container.sh skill-up
+
+skill-down:
+	tools/sim/container.sh skill-down
+
+skill-host:
+	tools/sim/container.sh skill-host
+
+skill-host-bg:
+	tools/sim/container.sh skill-host-bg
+
+skill-selftest:
+	tools/sim/container.sh skill-selftest --skills $(SIM_SKILL)
+
+skill-shell:
+	tools/sim/container.sh skill-shell
+
+skill-logs:
+	tools/sim/container.sh skill-logs
