@@ -43,3 +43,6 @@ tools/sim/wheels/
 .tmp_megapose/
 .tmp_boptk/
 gigaPose_datasets/
+
+# 子模块打包（810MB，按需临时的本地产物，不进仓库）
+/sim.zip
