@@ -53,8 +53,14 @@ class SimSensor(TienkungDexSensor):
         return frame
 
     def transform_to_base(self, point, angles=None):
-        # angles 与真机侧签名保持一致（SensorAPI 协议）；仿真不用它 ——
-        # 相机位姿来自 /ob_camera_head/pose，不依赖取帧时刻的关节角。
+        # 位姿来源：
+        #   pose（默认）= 用桥发布的 /ob_camera_head/pose；
+        #   urdf        = 走真机同款 URDF 链（用取帧时刻的关节角）。
+        # 注意：仿真桥的 /pose 目前是静态的（不随 head pitch 更新），低头后
+        # 会出现"新图像 + 旧位姿"，3D 定位整体偏移。切 urdf 可绕开该问题。
+        import os
+        if os.environ.get("SIM_CAMERA_POSE_SOURCE", "pose").lower() == "urdf":
+            return super().transform_to_base(point, angles)
         pose = self._pose
         if pose is None:
             return super().transform_to_base(point, angles)
