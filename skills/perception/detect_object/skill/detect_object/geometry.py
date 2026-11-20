@@ -80,13 +80,19 @@ def point_cloud(mask, depth, k, *, z_range=(0.05, 3.0)):
 
 
 def estimate_from_cloud(mask, depth, k, *, radius=None, min_points=30,
-                        z_range=(0.05, 3.0), mad_k=2.5, trim_ratio=0.0):
-    """mask 点云的 3D 中位数，剔除离群点后再沿视线补回半径。
+                        z_range=(0.05, 3.0), mad_k=2.5, trim_ratio=0.0,
+                        surface_quantile=0.05, face_band=0.012):
+    """mask 点云的 3D 定位：最近表面 + 物理半径补偿。
 
-    - 离群剔除：按到中位数的距离做 MAD 阈值（``mad_k``），mask 边缘常混入
-      背景/桌面像素，会把 extent 撑大、把中心拉偏；
-    - 半径：``radius=None`` 时自动取 ``min(extent)/2``（可见表面厚度的一半），
-      避免不同尺寸物体共用固定补偿量；显式传值优先。
+    单目/单视角只能看到物体的一半，点云中心必然偏向可见面。这里按几何做：
+
+    1. 剔除离群（MAD），去掉 mask 边缘混进来的桌面/背景；
+    2. 取**最近表面**：相机系 z 的 ``surface_quantile`` 分位附近（``face_band``
+       米内）的点集作为"最凸面"，用它的中位数作为该面的代表点；
+    3. 沿视线（远离相机）补偿一个**物理半径** —— 从最凸点走一个半径即到
+       几何中心，与物体尺寸无关地成立；
+    4. 半径默认取横向尺寸 ``min(extent_x, extent_y)/2``（可见轮廓宽度的一半），
+       显式传 ``radius`` 时用给定值。
     """
     pts = point_cloud(mask, depth, k, z_range=z_range)
     if pts.shape[0] < min_points:
@@ -100,29 +106,33 @@ def estimate_from_cloud(mask, depth, k, *, radius=None, min_points=30,
     kept = pts[keep] if int(keep.sum()) >= min_points else pts
 
     if trim_ratio and trim_ratio > 0.0:
-        # 逐轴对称裁剪极端值（对细长物体比球形阈值更稳）
         lo = np.quantile(kept, trim_ratio, axis=0)
         hi = np.quantile(kept, 1.0 - trim_ratio, axis=0)
         sel = np.all((kept >= lo) & (kept <= hi), axis=1)
         if int(sel.sum()) >= min_points:
             kept = kept[sel]
 
-    # 中心与尺寸都用剔除后的点集：mask 边缘常混入桌面/背景，原始中位数会被
-    # 拉高（实测仿真里苹果无补偿点云中心比球顶还高 3 cm）。
-    center = np.median(kept, axis=0)
     extent = kept.max(axis=0) - kept.min(axis=0)
-    # 沿视线（远离相机）补偿"可见表面 → 几何中心"的距离，按类别标定。
-    r = float(radius) if radius is not None else 0.03
-    norm = float(np.linalg.norm(center))
-    if norm > 1e-6:
-        center = center + center / norm * r
+
+    # 最近表面：z 分位附近的点（最凸面朝向相机）
+    z_near = float(np.quantile(kept[:, 2], float(surface_quantile)))
+    face = kept[kept[:, 2] <= z_near + float(face_band)]
+    if face.shape[0] < max(10, min_points // 3):
+        face = kept
+    surface = np.median(face, axis=0)
+
+    r = float(radius) if radius is not None else float(min(extent[0], extent[1])) / 2.0
+    norm = float(np.linalg.norm(surface))
+    center = surface + surface / norm * r if norm > 1e-6 else surface
 
     info = {
         "points": int(kept.shape[0]),
         "outliers": int(pts.shape[0] - kept.shape[0]),
+        "surface_points": int(face.shape[0]),
         "radius": round(r, 4),
         "extent": [float(v) for v in extent],
     }
     return center, info
+
 
 

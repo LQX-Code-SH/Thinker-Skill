@@ -11,6 +11,8 @@ from .geometry import estimate_from_box, estimate_from_cloud, estimate_from_mask
 from .sam2 import DEFAULT_MODEL as DEFAULT_SAM2_MODEL, Sam2Segmenter
 from .spatial import in_valid_range, normalize_prompt
 
+_MISS = object()          # _radius_for 内部哨兵：表示"无法解析"
+
 
 def resolve_model_path(raw, ctx):
     """解析模型目录：绝对路径直接用；相对路径依次尝试
@@ -64,15 +66,35 @@ class DetectObject:
 
     @staticmethod
     def _radius_for(locate_cfg, object_name):
-        """等效半径：类别配置 > 通用配置 > None（自动，由点云 extent 决定）。"""
+        """补偿半径：``auto`` → None（按点云横向尺寸算），数值 → 固定值。
+
+        优先级：``objects.<类别>.radius`` > ``locate.radius`` > 0.03 兜底。
+        """
         cfg = locate_cfg if isinstance(locate_cfg, dict) else {}
-        entry = (cfg.get("objects") or {}).get(object_name) or {}
-        if isinstance(entry, dict) and entry.get("radius") is not None:
-            return float(entry["radius"])
-        for key in ("radius", "radius_offset"):     # radius_offset 为旧键
-            value = cfg.get(key)
+
+        def _parse(value):
+            """返回 None（=auto）、float（固定值）或 _MISS（无法识别）。"""
+            if isinstance(value, str):
+                if value.strip().lower() in ("auto", "surface", "physical"):
+                    return None
+                try:
+                    return float(value)
+                except ValueError:
+                    return _MISS
             if isinstance(value, (int, float)):
                 return float(value)
+            return _MISS
+
+        entry = (cfg.get("objects") or {}).get(object_name) or {}
+        if isinstance(entry, dict) and entry.get("radius") is not None:
+            parsed = _parse(entry["radius"])
+            if parsed is not _MISS:
+                return parsed
+        for key in ("radius", "radius_offset"):         # radius_offset 为旧键
+            if cfg.get(key) is not None:
+                parsed = _parse(cfg[key])
+                if parsed is not _MISS:
+                    return parsed
         return 0.03
 
     def build_steps(self, ctx, params):

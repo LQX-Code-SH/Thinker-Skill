@@ -20,6 +20,7 @@ skills:
       backend: sam2
       model_path: weights/sam2-hiera-tiny
     locate:
+      # mask = mask 质心单点深度 + 固定补偿（实测最稳）；cloud_median = 点云中位数
       method: mask
   fetch_object:
     # 示教位姿（configs/robot.yaml: taught_poses）是真机采的，仿真 URDF 下
