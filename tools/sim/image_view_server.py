@@ -12,10 +12,12 @@
 
 import argparse
 import json
+import os
 import sys
 import threading
 import time
 from collections import deque
+from pathlib import Path
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import parse_qs, urlparse
 
@@ -175,38 +177,21 @@ def _to_bgr(msg):
 BASE_TO_PELVIS = 1.0006      # 与 configs/robot.yaml 的 pelvis_height 一致
 
 
-def _call_skill(node, skill, params, timeout=120.0):
-    """同步调用技能 ControlCommand 服务（调用线程需自行等待）。"""
-    from thinker_interfaces.srv import ControlCommand
-
-    service = f"/thinker/skill/{skill}/command"
-    client = node.create_client(ControlCommand, service)
-    if not client.wait_for_service(timeout_sec=5.0):
-        raise RuntimeError(f"服务未就绪: {service}")
-    request = ControlCommand.Request()
-    request.command = skill
-    request.params_json = json.dumps(params, ensure_ascii=False)
-    future = client.call_async(request)
-    deadline = time.monotonic() + timeout
-    while not future.done() and time.monotonic() < deadline:
-        time.sleep(0.05)
-    if not future.done():
-        raise RuntimeError("检测超时")
-    result = future.result()
-    data = json.loads(result.data_json or "{}") if result.data_json else {}
-    data["_state"] = result.state
-    data["_msg"] = result.msg
-    return data
+DETECT_REQ = Path("/thinker/.detect_req.json")
+DETECT_RES = Path("/thinker/.detect_res.json")
 
 
 class Detector:
-    """按需触发 detect_object，缓存最近一次结果 + 相机内参/位姿。"""
+    """通过请求/结果文件与 detect_watcher 进程通信。
+
+    不能在本进程里 subprocess 调技能服务：fork 会破坏 rclpy 的 context，
+    之后 get_topic_names_and_types / 订阅全部报 "context is invalid"，
+    表现为页面能打开但流只出一帧。看门狗进程在另一个进程里调用服务，
+    本进程只读写两个 JSON 文件。
+    """
 
     def __init__(self, node, camera_prefix="/ob_camera_head"):
         self._node = node
-        self._lock = threading.Lock()
-        self._result = None
-        self._busy = None
         self._k = None
         self._pose = None
         node.create_subscription(CameraInfo, f"{camera_prefix}/color/camera_info",
@@ -218,27 +203,18 @@ class Detector:
         return self._k, self._pose
 
     def result(self):
-        with self._lock:
-            return dict(self._result) if self._result else None
+        try:
+            return json.loads(DETECT_RES.read_text())
+        except (OSError, ValueError):
+            return None
 
     def trigger(self, object_name):
-        with self._lock:
-            if self._busy:
-                return {"status": "running", "object": self._busy}
-            self._busy = object_name
-        threading.Thread(target=self._run, args=(object_name,), daemon=True).start()
-        return {"status": "started", "object": object_name}
-
-    def _run(self, object_name):
-        data = {}
         try:
-            data = _call_skill(self._node, "detect_object",
-                               {"object_name": object_name})
-        except Exception as exc:                      # noqa: BLE001
-            data = {"_state": "failed", "_msg": str(exc)}
-        with self._lock:
-            self._result = {"object": object_name, "data": data, "at": time.time()}
-            self._busy = None
+            DETECT_REQ.write_text(json.dumps(
+                {"object": object_name, "at": time.time()}, ensure_ascii=False))
+        except OSError as exc:
+            return {"status": "error", "message": str(exc)}
+        return {"status": "started", "object": object_name}
 
 
 def _projector(k, pose, pelvis_h=BASE_TO_PELVIS):
@@ -262,7 +238,7 @@ def _projector(k, pose, pelvis_h=BASE_TO_PELVIS):
         return (int(round(k[0] * pc[0] / pc[2] + k[2])),
                 int(round(k[4] * pc[1] / pc[2] + k[5])))
 
-    return project
+    return project, R
 
 
 def annotate(bgr, det, k, pose):
@@ -294,22 +270,28 @@ def annotate(bgr, det, k, pose):
                         (8, 62), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 255), 1,
                         cv2.LINE_AA)
 
-    project = _projector(k, pose)
-    if project is None or len(center) != 3:
+    proj = _projector(k, pose)
+    if proj is None or len(center) != 3:
         return bgr
+    project, rot = proj
 
     uv = project(center)
     if uv:
         cv2.drawMarker(bgr, uv, (0, 255, 255), cv2.MARKER_CROSS, 14, 2)
 
     if len(extent) == 3 and all(v > 0 for v in extent):
+        # extent 是在相机系下测的，盒轴也用相机轴（rot 的列），否则斜视时
+        # 轴对齐盒的投影会整体偏移，看起来"框不在物体上"。
         half = np.array(extent, dtype=float) / 2.0
         c = np.array(center, dtype=float)
+        axes = [np.asarray(rot)[:, i] for i in range(3)]
         corners = []
         for sx in (-1, 1):
             for sy in (-1, 1):
                 for sz in (-1, 1):
-                    corners.append(c + np.array([sx, sy, sz]) * half)
+                    corners.append(c + sx * half[0] * axes[0]
+                                   + sy * half[1] * axes[1]
+                                   + sz * half[2] * axes[2])
         pts = [project(p) for p in corners]
         edges = [(0, 1), (0, 2), (0, 4), (1, 3), (1, 5), (2, 3),
                  (2, 6), (3, 7), (4, 5), (4, 6), (5, 7), (6, 7)]

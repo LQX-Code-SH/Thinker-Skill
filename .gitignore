@@ -32,3 +32,7 @@ tools/sim/wheels/
 
 # 仿真本地覆盖（SIM_INIT_X / APPLE_POS 等），不入库
 .sim.env
+
+# 取流页与检测看门狗的请求/结果文件（运行时生成）
+.detect_req.json
+.detect_res.json
