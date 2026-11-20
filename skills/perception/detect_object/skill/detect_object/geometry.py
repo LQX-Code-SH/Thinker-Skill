@@ -79,81 +79,123 @@ def point_cloud(mask, depth, k, *, z_range=(0.05, 3.0)):
     return np.stack([X, Y, z.astype(np.float64)], axis=1)
 
 
-def estimate_from_plane(mask, depth, k, *, box, plane_z, to_base,
-                        min_points=30, z_range=(0.05, 3.0), mad_k=2.5,
-                        plane_tol=0.006):
-    """平面约束定位：物体立在已知高度 ``plane_z`` 的平面上（base 系）。
+def estimate_from_plane(mask, depth, k, *, plane_z, to_base,
+                        offset_xy=(0.0, 0.0), min_points=30,
+                        z_range=(0.05, 3.0), mad_k=2.5,
+                        plane_tol=0.006, normal=None):
+    """点云平面定位（可选层）：沿桌面法向定 z，横向用投影中位数 + 标定偏移。
 
-    单视角只能看到物体的一半，从可见面推中心必然偏；但"物体底面贴着平面"
-    是硬约束，可以直接定出高度方向：
+    这是"精度增强"层，默认关闭。只做两件事：
 
-    - 物体物理高度 ``h = 框像素高 × 深度 / fy``（框内不会有背景，比点云
-      z_max 稳；斜视时会被透视压缩，属于已知残差）；
-    - 中心高度 ``z = plane_z + h/2``；
-    - 横向 ``x, y`` 取可见表面点中位数（同样偏相机侧，离轴越远越明显）。
+    1. **z 方向**：物体底面贴着已知平面，沿法向高度 ``t = (p - p0)·n`` 的
+       高分位就是物体高度 ``H``，于是 ``z = plane_z + H/2``。这比"像素框高
+       反算"稳得多——俯视时框高混了物体高度与直径，细高物体能差 30%。
+    2. **xy 方向**：投影到平面后取中位数，再叠加配置里的标定偏移
+       ``offset_xy``。单视角只能看到半面，中位数天然偏相机侧（实测
+       1-2 cm），偏移量按场景标定即可。
 
-    实测（仿真，低头 15°）：苹果 z 误差 +1 mm，四物体 z 误差 1–47 mm，
-    优于"表面 + 半径补偿"的 ~100 mm。``to_base`` 是把相机系点转到 base 系
-    的可调用对象（真机与仿真各自的坐标链不同）。
+    刻意**不做** PCA / 圆等形状拟合：在遮挡、粘连和离轴场景下增益不稳，
+    且需要额外输出轴向与 3D 框。需要 6D（轴向 + 3D 框）时走 FoundationPose。
+
+    ``normal`` 为平面法向（base 系），默认竖直向上；倾斜桌面由调用方传入。
     """
     pts = point_cloud(mask, depth, k, z_range=z_range)
     if pts.shape[0] < min_points:
         return None, "cloud_too_small"
 
-    # 批量转 base 系：用三次基向量变换凑出旋转矩阵与原点，避免逐点调用
+    # 批量转 base（三次基向量变换，避免逐点调用）
     origin = np.asarray(to_base(np.zeros(3)), dtype=float)
     basis = np.column_stack([np.asarray(to_base(e), dtype=float) - origin
                              for e in np.eye(3)])
     pts_base = pts @ basis.T + origin
-
-    # 预处理 1：去 NaN/Inf（float 深度图可能有 nan，uint16 不会有但统一处理）
-    finite = np.isfinite(pts_base).all(axis=1)
-    # 预处理 2：去桌面等支撑平面 —— mask 边缘常把台面算进来，会让中位数与
-    # extent 同时偏大（实测苹果 extent 曾含 0.119 m 的深度跨度，真实直径 0.08）
-    off_plane = np.abs(pts_base[:, 2] - float(plane_z)) > float(plane_tol)
-    pts_base = pts_base[finite & off_plane]
+    pts_base = pts_base[np.isfinite(pts_base).all(axis=1)]
     if pts_base.shape[0] < min_points:
         return None, "cloud_too_small"
 
-    # 预处理 3：离群剔除（到 3D 中位数的 MAD 阈值）
-    center0 = np.median(pts_base, axis=0)
-    dist = np.linalg.norm(pts_base - center0, axis=1)
-    med = float(np.median(dist))
-    mad = float(np.median(np.abs(dist - med))) + 1e-9
-    keep = dist <= med + float(mad_k) * 1.4826 * mad
-    kept = pts_base[keep] if int(keep.sum()) >= min_points else pts_base
+    n = np.asarray(normal if normal is not None else (0.0, 0.0, 1.0), dtype=float)
+    norm_n = float(np.linalg.norm(n))
+    if norm_n < 1e-9:
+        return None, "invalid_normal"
+    n = n / norm_n
 
-    surface = np.median(kept, axis=0)
-    # 框高反算物理高度要用**相机系深度**，不是 base 高度
-    z_cam = float(np.median(pts[:, 2]))
-    fy = float(k[4])
-    box_h = abs(float(box[3]) - float(box[1])) if box is not None else 0.0
-    # 高度用收紧后的 2D 框：框内不会有背景，实测苹果/杯子 z 误差 ≤6 mm。
-    # 点云的世界 z 跨度看似更"物理"，但 mask 边缘仍会漏进背景点（实测
-    # 苹果点云高度 0.165 m 而真实 0.08 m），反而更差，故不用。
-    h = box_h * z_cam / fy if fy > 0 else 0.0
-    if h <= 0.0:
-        return None, "invalid_box"
+    p0 = np.array([0.0, 0.0, float(plane_z)])
+    rel = pts_base - p0
+    t = rel @ n
+    above = t > float(plane_tol)           # 去平面内点与平面以下噪声
+    rel, t = rel[above], t[above]
+    if t.size < min_points:
+        return None, "cloud_too_small"
 
-    # 横向仍用可见表面点中位数。曾尝试"框中心射线与 z_center 平面求交"
-    # （球投影为圆、框中心即中心方向），但实测苹果偏 +52/−64 mm —— DINO/SAM2
-    # 的框本身并不严格对称，框中心的像素方向不穿过几何中心，反而更差。
-    z_center = float(plane_z) + h / 2.0
-    # surface 已在 base 系（见上面的批量变换），这里不能再次 to_base
-    center_base = np.array([surface[0], surface[1], z_center])
-    # 3D 框尺寸：[宽, 宽, 高]。用可见点云的包围盒（min/max）：分位裁剪会把
-    # 球面两端的稀疏点切掉，苹果实测 0.064 m（真实 0.08）。与相邻物体粘连时
-    # 包围盒会偏大（水瓶紧挨杯子时到 0.135 m），那是分割粘连，不是尺寸问题。
-    raw = kept.max(axis=0) - kept.min(axis=0)
-    width = float(min(raw[0], raw[1]))
+    # 高度：1-99 分位裁掉背景/孤立点，再取高分位
+    t_lo, t_hi = np.percentile(t, [1.0, 99.0])
+    sel = (t >= max(float(t_lo), 0.0)) & (t <= float(t_hi))
+    if int(sel.sum()) >= min_points:
+        rel, t = rel[sel], t[sel]
+    height = float(np.percentile(t, 99.0))
+    if height <= 1e-3:
+        return None, "invalid_height"
+
+    # 平面内正交基
+    helper = (np.array([1.0, 0.0, 0.0]) if abs(float(n[0])) < 0.9
+              else np.array([0.0, 1.0, 0.0]))
+    u_axis = np.cross(n, helper)
+    nu = float(np.linalg.norm(u_axis))
+    if nu < 1e-9:
+        return None, "invalid_normal"
+    u_axis = u_axis / nu
+    v_axis = np.cross(n, u_axis)
+
+    uv = np.stack([rel @ u_axis, rel @ v_axis], axis=1)
+    uv_med = np.median(uv, axis=0)
+    rad = np.linalg.norm(uv - uv_med, axis=1)
+    r_med = float(np.median(rad))
+    r_mad = float(np.median(np.abs(rad - r_med))) + 1e-9
+    keep = rad <= r_med + float(mad_k) * 1.4826 * r_mad   # 平面内离群剔除
+    if int(keep.sum()) >= min_points:
+        uv = uv[keep]
+
+    center_uv = np.median(uv, axis=0) + np.asarray(offset_xy, dtype=float)
+    center = (p0
+              + u_axis * float(center_uv[0])
+              + v_axis * float(center_uv[1])
+              + n * (height / 2.0))
+
+    # ── 目标轴 ────────────────────────────────────────────────
+    # 桌面上的物体分两类，画轴方式不同：
+    #  * 立着的（高度 >= 0.7 x 平面内最长边）→ 轴 = 桌面法向，轴心 = 目标中心；
+    #  * 平躺的（香蕉、倒伏水瓶等）→ 轴 = 平面内最长方向（平行于桌面）。
+    # 这里只借 PCA 判断"最长方向"，不参与定位。
+    centered = uv - np.median(uv, axis=0)
+    if centered.shape[0] >= 3:
+        eigval, eigvec = np.linalg.eigh(np.cov(centered.T))
+        major2d = eigvec[:, int(np.argmax(eigval))]
+    else:
+        major2d = np.array([1.0, 0.0])
+    minor2d = np.array([-major2d[1], major2d[0]])
+    proj_major = centered @ major2d
+    proj_minor = centered @ minor2d
+    length = float(np.percentile(proj_major, 98) - np.percentile(proj_major, 2))
+    wide = float(np.percentile(proj_minor, 98) - np.percentile(proj_minor, 2))
+
+    if height >= 0.7 * max(length, 1e-6):
+        axis_vec = n                      # 立着：垂直于桌面
+        axis_kind = "vertical"
+    else:
+        axis_vec = major2d[0] * u_axis + major2d[1] * v_axis   # 平躺：沿最长方向
+        axis_kind = "longitudinal"
+
     info = {
         "method": "plane",
-        "height": round(h, 4),
+        "height": round(height, 4),
+        "length": round(length, 4),
+        "width": round(wide, 4),
+        "offset_xy": [round(float(offset_xy[0]), 4), round(float(offset_xy[1]), 4)],
         "plane_z": float(plane_z),
-        "points": int(kept.shape[0]),
-        "extent": [width, width, float(h)],
+        "points": int(uv.shape[0]),
+        "axis": [round(float(v), 4) for v in axis_vec],
+        "axis_kind": axis_kind,
     }
-    return center_base, info
+    return center, info
 
 
 def estimate_from_cloud(mask, depth, k, *, radius=None, min_points=30,

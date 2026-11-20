@@ -43,19 +43,22 @@ skills:
       backend: sam2
       model_path: weights/sam2-hiera-tiny
       min_area: 50           # mask 像素数下限，低于视为分割失败
-    # 3D 定位：cloud_median=点云 3D 中位数 + 半径补偿；point=老的框中心单点
+    # 分层定位：base（默认）| plane（可选增强）
+    #   base  : 掩码/框质心 + 固定补偿，不依赖点云
+    #   plane : 点云（去 NaN/桌面/离群）+ 沿支撑面法向定 z + offset_xy 标定；
+    #           不输出轴向与 3D 框
     locate:
-      method: mask
-      # 沿视线补偿量（米）：可见表面到几何中心的距离。不是物体真实半径，
-      # 而是"点云中位数 + 该值"能落到物体中心，需按类别标定（auto 取
-      # extent 最小边 / 2 的尝试已实测否定：苹果 z 会偏高 3 cm）。
-      radius: 0.03
-      objects:
-        apple: {radius: 0.04}
-        banana: {radius: 0.03}
-        bottle: {radius: 0.03}
-        "water bottle": {radius: 0.03}
-        cup: {radius: 0.032}
+      # 定位分级（按任务精度需求；技能调用可用 level 参数覆盖）
+      #   1 场景级：只求目标在哪，允许厘米偏差（掩码质心 + offset）
+      #   2 抓取级：一般抓取，点云 + 平面约束定 z（实测 z ±3mm）
+      #   3 精细级：精细操作，需 6D（FoundationPose）；未就绪自动降级到 2
+      level: 2
+      offset: 0.03          # base 层：沿视线补偿（米）
+      plane_z: 0.92         # plane 层：支撑平面高度（base 系，按实测填）
+      offset_xy: [0.0, 0.0] # plane 层：横向标定偏移（米）
+    # 6D 精定位（可选）：需 CAD 资产；商用前需确认许可证
+    pose6d:
+      backend: none         # none | foundationpose
 
   play_action:
     # 动作文件（schemaVersion 2）搜索顺序：动作清单 actions.yaml 的注册名 →

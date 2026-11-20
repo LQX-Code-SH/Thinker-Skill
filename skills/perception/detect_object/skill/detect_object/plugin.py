@@ -135,13 +135,32 @@ class DetectObject:
         seg_path = resolve_model_path(
             seg_cfg.get("model_path") or DEFAULT_SAM2_MODEL, ctx)
         seg_min_area = int(seg_cfg.get("min_area", 50))
-        # 3D 定位方式：cloud_median（点云中位数）| point（框中心单点）
+        # 定位分级（按任务精度需求，可被 params.level 覆盖）：
+        #   L1 场景级：只求"目标在哪"，允许厘米级偏差 —— 掩码质心 + 固定补偿
+        #   L2 抓取级：一般抓取，点云 + 平面约束定 z（实测 z 误差 ±3 mm）
+        #   L3 精细级：精细操作，需 6D（FoundationPose）；后端未就绪时降级到 L2
         loc_cfg = dict(cfg.get("locate") or {})
-        locate_method = str(loc_cfg.get("method", "cloud_median")).lower()
+        level = int(params.get("level", loc_cfg.get("level", 2)))
+        level = max(1, min(3, level))
+        base_offset = float(loc_cfg.get("offset", 0.03))
         radius = self._radius_for(loc_cfg, object_name)
-        # plane 方法需要已知的支撑平面高度（base 系，米）；未配置时自动回落
         plane_z = loc_cfg.get("plane_z")
         plane_z = float(plane_z) if isinstance(plane_z, (int, float)) else None
+        # 横向标定偏移：objects.<类别>.offset_xy > locate.offset_xy > [0, 0]
+        # 单视角只看半面，残差随物体/视角变化，按类别标定最简单；
+        # 没配置就回退 0（不引入任何隐式补偿）。
+        def _offset_xy_for(name):
+            entry = (loc_cfg.get("objects") or {}).get(name) or {}
+            for cand in (entry.get("offset_xy") if isinstance(entry, dict) else None,
+                         loc_cfg.get("offset_xy")):
+                if isinstance(cand, (list, tuple)) and len(cand) == 2:
+                    return [float(cand[0]), float(cand[1])]
+            return [0.0, 0.0]
+
+        offset_xy = _offset_xy_for(object_name)
+        # 6D 后端：none（默认）| foundationpose（可选，需 CAD 与许可证评估）
+        pose_cfg = dict(cfg.get("pose6d") or {})
+        pose_backend = str(pose_cfg.get("backend", "none")).lower()
         st = {"frame": None, "det": None}
 
         def capture(c):
@@ -185,12 +204,13 @@ class DetectObject:
             info = {}
             # plane：物体立在已知高度的平面上，用"框高 → 物理高度"直接定 z，
             # 不依赖可见面的深度补偿（单视角半面误差的正解之一）。
-            if mask is not None and locate_method == "plane" and plane_z is not None:
+            degraded = False
+            if mask is not None and level >= 2 and plane_z is not None:
                 try:
-                    p_base, info = estimate_from_plane(
-                        mask, frame.depth, k, box=det.get("box"),
-                        plane_z=plane_z,
-                        to_base=lambda pt: c.sensor.transform_to_base(pt, angles))
+                    p_base_plane, info = estimate_from_plane(
+                        mask, frame.depth, k, plane_z=plane_z,
+                        to_base=lambda pt: c.sensor.transform_to_base(pt, angles),
+                        offset_xy=offset_xy)
                 except NotImplementedError as exc:
                     return StepResult(
                         status="failed",
@@ -198,17 +218,35 @@ class DetectObject:
                         data={"reason": f"cam->base 不可用: {exc}"},
                     )
                 method_used = "plane"
+                # L2 优化：xy 改用 L1 的掩码质心。实测同一帧下
+                #   L1 的 xy 误差 (−1, +3) mm、L2 的 xy 误差 (−12, +13) mm，
+                # 因为点云投影中位数被"只看到半面"带偏，而掩码质心落在视觉
+                # 中心上。z 仍用平面约束（不受该偏差影响），组合后 ≈4 mm。
+                try:
+                    p_cam_xy, _ = estimate_from_mask(
+                        mask, frame.depth, k, offset=base_offset)
+                    if p_cam_xy is not None:
+                        p_base_xy = c.sensor.transform_to_base(p_cam_xy, angles)
+                        p_base = [float(p_base_xy[0]) + offset_xy[0],
+                                  float(p_base_xy[1]) + offset_xy[1],
+                                  float(p_base_plane[2])]
+                        method_used = "plane_z+mask_xy"
+                except NotImplementedError:
+                    p_base = p_base_plane
+                if level >= 3:
+                    # 精细级请求了 6D，但 FoundationPose 后端尚未接入
+                    degraded = True
             else:
-                if mask is not None and locate_method == "cloud_median":
-                    p_cam, info = estimate_from_cloud(
-                        mask, frame.depth, k, radius=radius)
-                    method_used = "cloud_median"
-                elif mask is not None:
-                    p_cam, info = estimate_from_mask(mask, frame.depth, k)
+                if mask is not None:
+                    p_cam, info = estimate_from_mask(
+                        mask, frame.depth, k, offset=base_offset)
                     method_used = "mask"
                 else:
-                    p_cam, info = estimate_from_box(det["box"], frame.depth, k)
+                    p_cam, info = estimate_from_box(
+                        det["box"], frame.depth, k, offset=base_offset)
                     method_used = "box"
+                if level >= 2:
+                    degraded = True      # 无 mask/plane_z，退回 L1 精度
                 if p_cam is not None:
                     try:
                         # 用取帧时刻的关节角，避免与 locate 时刻不一致
@@ -244,14 +282,14 @@ class DetectObject:
                 "locate": method_used,
                 "segmentation": "sam2" if mask is not None else "none",
                 "mask_area": int(mask.sum()) if mask is not None else None,
-                "extent": (info.get("extent")
-                           if isinstance(info, dict) else None),
-                "points": (info.get("points")
-                           if isinstance(info, dict) else None),
-                "radius": (info.get("radius")
-                           if isinstance(info, dict) else None),
-                "outliers": (info.get("outliers")
-                             if isinstance(info, dict) else None),
+                "height": (info.get("height") if isinstance(info, dict) else None),
+                # 目标轴：立着的物体沿桌面法向，平躺/长条物体沿最长方向
+                "axis": (info.get("axis") if isinstance(info, dict) else None),
+                "axis_kind": (info.get("axis_kind")
+                              if isinstance(info, dict) else None),
+                "level": level,
+                "degraded": degraded,
+                "pose6d_backend": pose_backend,
             }
             # 写入语义状态，供下游技能（抓取/放置）直接复用
             c.state.set("last_detection", payload)
