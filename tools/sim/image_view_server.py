@@ -22,8 +22,9 @@ from urllib.parse import parse_qs, urlparse
 import cv2
 import numpy as np
 import rclpy
+from geometry_msgs.msg import PoseStamped
 from rclpy.qos import qos_profile_sensor_data
-from sensor_msgs.msg import CompressedImage, Image
+from sensor_msgs.msg import CameraInfo, CompressedImage, Image
 
 IMAGE_TYPES = ("sensor_msgs/msg/Image", "sensor_msgs/msg/CompressedImage")
 
@@ -170,13 +171,179 @@ def _to_bgr(msg):
     return cv2.cvtColor(gray.astype(np.uint8), cv2.COLOR_GRAY2BGR)
 
 
-def encode_jpeg(msg, quality):
+# ---------------- 检测叠加 ----------------
+BASE_TO_PELVIS = 1.0006      # 与 configs/robot.yaml 的 pelvis_height 一致
+
+
+def _call_skill(node, skill, params, timeout=120.0):
+    """同步调用技能 ControlCommand 服务（调用线程需自行等待）。"""
+    from thinker_interfaces.srv import ControlCommand
+
+    service = f"/thinker/skill/{skill}/command"
+    client = node.create_client(ControlCommand, service)
+    if not client.wait_for_service(timeout_sec=5.0):
+        raise RuntimeError(f"服务未就绪: {service}")
+    request = ControlCommand.Request()
+    request.command = skill
+    request.params_json = json.dumps(params, ensure_ascii=False)
+    future = client.call_async(request)
+    deadline = time.monotonic() + timeout
+    while not future.done() and time.monotonic() < deadline:
+        time.sleep(0.05)
+    if not future.done():
+        raise RuntimeError("检测超时")
+    result = future.result()
+    data = json.loads(result.data_json or "{}") if result.data_json else {}
+    data["_state"] = result.state
+    data["_msg"] = result.msg
+    return data
+
+
+class Detector:
+    """按需触发 detect_object，缓存最近一次结果 + 相机内参/位姿。"""
+
+    def __init__(self, node, camera_prefix="/ob_camera_head"):
+        self._node = node
+        self._lock = threading.Lock()
+        self._result = None
+        self._busy = None
+        self._k = None
+        self._pose = None
+        node.create_subscription(CameraInfo, f"{camera_prefix}/color/camera_info",
+                                 lambda m: setattr(self, "_k", list(m.k)), 5)
+        node.create_subscription(PoseStamped, f"{camera_prefix}/pose",
+                                 lambda m: setattr(self, "_pose", m.pose), 5)
+
+    def camera(self):
+        return self._k, self._pose
+
+    def result(self):
+        with self._lock:
+            return dict(self._result) if self._result else None
+
+    def trigger(self, object_name):
+        with self._lock:
+            if self._busy:
+                return {"status": "running", "object": self._busy}
+            self._busy = object_name
+        threading.Thread(target=self._run, args=(object_name,), daemon=True).start()
+        return {"status": "started", "object": object_name}
+
+    def _run(self, object_name):
+        data = {}
+        try:
+            data = _call_skill(self._node, "detect_object",
+                               {"object_name": object_name})
+        except Exception as exc:                      # noqa: BLE001
+            data = {"_state": "failed", "_msg": str(exc)}
+        with self._lock:
+            self._result = {"object": object_name, "data": data, "at": time.time()}
+            self._busy = None
+
+
+def _projector(k, pose, pelvis_h=BASE_TO_PELVIS):
+    """base 系点 → 像素坐标；相机参数缺失返回 None。"""
+    if k is None or pose is None:
+        return None
+    q = pose.orientation
+    x, y, z, w = q.x, q.y, q.z, q.w
+    R = np.array([
+        [1 - 2 * (y * y + z * z), 2 * (x * y - z * w), 2 * (x * z + y * w)],
+        [2 * (x * y + z * w), 1 - 2 * (x * x + z * z), 2 * (y * z - x * w)],
+        [2 * (x * z - y * w), 2 * (y * z + x * w), 1 - 2 * (x * x + y * y)],
+    ])
+    t = np.array([pose.position.x, pose.position.y, pose.position.z])
+
+    def project(point):
+        p = np.asarray(point, dtype=float) - np.array([0.0, 0.0, pelvis_h])
+        pc = R.T @ (p - t)
+        if pc[2] <= 1e-6:
+            return None
+        return (int(round(k[0] * pc[0] / pc[2] + k[2])),
+                int(round(k[4] * pc[1] / pc[2] + k[5])))
+
+    return project
+
+
+def annotate(bgr, det, k, pose):
+    """在图上画 2D 框、3D 框、中心点、主轴与位姿文本。"""
+    if not det or bgr is None:
+        return bgr
+    data = det.get("data") or {}
+    if data.get("_state") not in (None, "succeed"):
+        cv2.putText(bgr, f"detect failed: {data.get('_msg', '')}"[:60], (8, 20),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 1, cv2.LINE_AA)
+        return bgr
+
+    box = data.get("box") or []
+    if len(box) == 4:
+        cv2.rectangle(bgr, (int(box[0]), int(box[1])),
+                      (int(box[2]), int(box[3])), (0, 255, 0), 2)
+
+    center = data.get("obj_pose") or []
+    extent = data.get("extent") or []
+    name = data.get("object_name", "?")
+    score = float(data.get("score") or 0.0)
+    cv2.putText(bgr, f"{name} {score:.2f} {data.get('locate', '')}",
+                (8, 20), cv2.FONT_HERSHEY_SIMPLEX, 0.55, (0, 255, 0), 1, cv2.LINE_AA)
+    if len(center) == 3:
+        cv2.putText(bgr, "base xyz=(%.3f, %.3f, %.3f)" % tuple(center),
+                    (8, 42), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 255), 1, cv2.LINE_AA)
+        if extent:
+            cv2.putText(bgr, "extent=%.3f x %.3f x %.3f" % tuple(extent),
+                        (8, 62), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 255), 1,
+                        cv2.LINE_AA)
+
+    project = _projector(k, pose)
+    if project is None or len(center) != 3:
+        return bgr
+
+    uv = project(center)
+    if uv:
+        cv2.drawMarker(bgr, uv, (0, 255, 255), cv2.MARKER_CROSS, 14, 2)
+
+    if len(extent) == 3 and all(v > 0 for v in extent):
+        half = np.array(extent, dtype=float) / 2.0
+        c = np.array(center, dtype=float)
+        corners = []
+        for sx in (-1, 1):
+            for sy in (-1, 1):
+                for sz in (-1, 1):
+                    corners.append(c + np.array([sx, sy, sz]) * half)
+        pts = [project(p) for p in corners]
+        edges = [(0, 1), (0, 2), (0, 4), (1, 3), (1, 5), (2, 3),
+                 (2, 6), (3, 7), (4, 5), (4, 6), (5, 7), (6, 7)]
+        for a, b in edges:
+            if pts[a] and pts[b]:
+                cv2.line(bgr, pts[a], pts[b], (255, 180, 0), 1, cv2.LINE_AA)
+
+    axis = data.get("axis")
+    if axis and len(axis) == 3:
+        direction = np.asarray(axis, dtype=float)
+        norm = float(np.linalg.norm(direction))
+        if norm > 1e-6:
+            direction = direction / norm * 0.08
+            for sign, color in ((1, (0, 0, 255)), (-1, (255, 0, 255))):
+                tip = project(np.asarray(center) + sign * direction)
+                if uv and tip:
+                    cv2.line(bgr, uv, tip, color, 2, cv2.LINE_AA)
+
+    return bgr
+
+
+def encode_jpeg(msg, quality, det=None, camera=None):
     try:
         bgr = _to_bgr(msg)
     except Exception:  # noqa: BLE001 - 坏帧不应打断取流
         return None
     if bgr is None or bgr.size == 0:
         return None
+    if det is not None:
+        k, pose = camera if camera else (None, None)
+        try:
+            bgr = annotate(bgr, det, k, pose)
+        except Exception:  # noqa: BLE001 - 叠加失败不影响取流
+            pass
     ok, buf = cv2.imencode(".jpg", bgr, [int(cv2.IMWRITE_JPEG_QUALITY), int(quality)])
     return buf.tobytes() if ok else None
 
@@ -223,6 +390,9 @@ PAGE = r"""<!doctype html>
   </label>
   <label>画质 <input id="quality" type="range" min="30" max="95" value="80"
         style="width:100px"> <span id="qv">80</span></label>
+  <label>检测 <input id="obj" value="apple" style="width:92px"></label>
+  <button id="detect" title="调用 detect_object 并把结果叠加到画面">检测</button>
+  <label><input id="ov" type="checkbox" checked> 叠加</label>
   <span id="status">未选择话题</span>
 </header>
 <main>
@@ -239,7 +409,8 @@ function start() {
   const topic = topicsEl.value;
   if (!topic) { view.style.display = "none"; hint.style.display = "block"; return; }
   const meta = feeds.find(f => f.topic === topic);
-  const q = new URLSearchParams({topic, fps: $("fps").value, quality: $("quality").value});
+  const q = new URLSearchParams({topic, fps: $("fps").value, quality: $("quality").value,
+                                 detect: $("ov").checked ? "1" : "0"});
   view.src = "/stream?" + q.toString() + "&t=" + Date.now();
   view.style.display = "block";
   hint.style.display = "none";
@@ -285,7 +456,37 @@ async function loadTopics(initial) {
 topicsEl.addEventListener("change", start);
 $("fps").addEventListener("change", start);
 $("quality").addEventListener("input", e => { $("qv").textContent = e.target.value; start(); });
+$("ov").addEventListener("change", start);
 $("refresh").addEventListener("click", () => loadTopics(false));
+
+$("detect").addEventListener("click", async () => {
+  const obj = ($("obj").value || "apple").trim();
+  status.textContent = "检测中 " + obj + " …";
+  try {
+    await fetch("/api/detect?object=" + encodeURIComponent(obj), {cache: "no-store"});
+  } catch (e) { status.textContent = "检测请求失败"; return; }
+  const t0 = Date.now();
+  while (Date.now() - t0 < 180000) {
+    await new Promise(r => setTimeout(r, 800));
+    let d;
+    try {
+      d = await (await fetch("/api/detect_result", {cache: "no-store"})).json();
+    } catch (e) { continue; }
+    if (!d || !d.data) continue;
+    const st = d.data._state || "";
+    if (st === "succeed") {
+      const p = (d.data.obj_pose || []).map(v => v.toFixed(3)).join(", ");
+      status.textContent = obj + " ok · base=(" + p + ")"
+        + (d.data.locate ? " · " + d.data.locate : "");
+    } else {
+      status.textContent = obj + " " + (st || "failed") + " · " + (d.data._msg || "");
+    }
+    start();
+    return;
+  }
+  status.textContent = "检测超时";
+});
+
 loadTopics(true);
 setInterval(() => loadTopics(false), 4000);
 </script>
@@ -296,6 +497,7 @@ setInterval(() => loadTopics(false), 4000);
 
 class Handler(BaseHTTPRequestHandler):
     hub = None
+    detector = None
 
     def log_message(self, fmt, *args):  # 保持控制台干净
         pass
@@ -321,34 +523,55 @@ class Handler(BaseHTTPRequestHandler):
             self._send(200, body, "application/json; charset=utf-8")
             return
 
+        if parsed.path == "/api/detect":
+            object_name = (query.get("object") or ["apple"])[0]
+            body = json.dumps(self.detector.trigger(object_name),
+                              ensure_ascii=False).encode("utf-8")
+            self._send(200, body, "application/json; charset=utf-8")
+            return
+
+        if parsed.path == "/api/detect_result":
+            body = json.dumps(self.detector.result(),
+                              ensure_ascii=False).encode("utf-8")
+            self._send(200, body, "application/json; charset=utf-8")
+            return
+
         if parsed.path in ("/stream", "/snapshot"):
             topic = (query.get("topic") or [""])[0]
             quality = _int_arg(query, "quality", 80, 10, 95)
+            overlay = (query.get("detect") or ["0"])[0].lower() not in ("", "0", "false")
             feed = self.hub.acquire(topic)
             if feed is None:
                 self._send(404, b"unknown image topic", "text/plain; charset=utf-8")
                 return
             if parsed.path == "/snapshot":
-                self._snapshot(feed, quality)
+                self._snapshot(feed, quality, overlay)
             else:
-                self._stream(feed, _int_arg(query, "fps", 15, 1, 30), quality)
+                self._stream(feed, _int_arg(query, "fps", 15, 1, 30), quality, overlay)
             return
 
         self._send(404, b"not found", "text/plain; charset=utf-8")
 
-    def _snapshot(self, feed, quality):
+    def _overlay(self, enabled):
+        if not enabled or self.detector is None:
+            return None, None
+        det = self.detector.result()
+        return det, (self.detector.camera() if det else (None, None))
+
+    def _snapshot(self, feed, quality, overlay=False):
         deadline = time.time() + 5.0
+        det, camera = self._overlay(overlay)
         while time.time() < deadline:
             seq, msg = self.hub.snapshot(feed)
             if msg is not None:
-                jpg = encode_jpeg(msg, quality)
+                jpg = encode_jpeg(msg, quality, det, camera)
                 if jpg:
                     self._send(200, jpg, "image/jpeg")
                     return
             time.sleep(0.05)
         self._send(504, b"no frame", "text/plain; charset=utf-8")
 
-    def _stream(self, feed, fps, quality):
+    def _stream(self, feed, fps, quality, overlay=False):
         self.send_response(200)
         self.send_header("Content-Type", "multipart/x-mixed-replace; boundary=frame")
         self.send_header("Cache-Control", "no-store")
@@ -359,7 +582,8 @@ class Handler(BaseHTTPRequestHandler):
             while True:
                 seq, msg = self.hub.snapshot(feed)
                 if msg is not None and seq != last_seq:
-                    jpg = encode_jpeg(msg, quality)
+                    det, camera = self._overlay(overlay)
+                    jpg = encode_jpeg(msg, quality, det, camera)
                     if jpg:
                         self.wfile.write(
                             b"--frame\r\nContent-Type: image/jpeg\r\nContent-Length: "
@@ -392,6 +616,7 @@ def main(argv=None):
     node = rclpy.create_node("sim_image_view")
     hub = Hub(node)
     Handler.hub = hub
+    Handler.detector = Detector(node)
 
     try:
         server = ThreadingHTTPServer((args.host, args.port), Handler)

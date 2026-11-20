@@ -171,7 +171,10 @@ case "${1:-}" in
     need_container
     PORT="${SIM_VIEW_PORT:-8090}"
     echo "相机视图: http://localhost:$PORT （Ctrl-C 退出）"
+    # source 安装树：页面上的"检测"按钮要调 /thinker/skill/<name>/command
     docker exec $EXEC_TTY "$CONTAINER" bash -lc "$ENV
+      source $ROBOT_INSTALL/setup.bash >/dev/null 2>&1 || true
+      source $THINKER_INSTALL/setup.bash >/dev/null 2>&1 || true
       python3 /thinker/tools/sim/image_view_server.py --port $PORT
     "
     ;;
