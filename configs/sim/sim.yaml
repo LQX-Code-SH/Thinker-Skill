@@ -47,6 +47,22 @@ skills:
     # 6D 精定位（可选）：需 CAD 资产 + 许可证评估，默认关闭
     pose6d:
       backend: none         # none | foundationpose
+  find_object:
+    # 扫描网格：yaw ±yaw_range_deg 三档 x 每个 pitch
+    yaw_range_deg: 40
+    pitch_deg_list: [12, 30, 45]
+    tol_deg: 3.0            # 到位容差
+    settle_ticks: 3         # 连续稳定多少个 tick 才取帧（运动中取帧会偏 7cm）
+    center_tol_px: 20       # 居中判定阈值（像素）
+    center_iters: 2         # 居中迭代次数上限
+    yaw_sign: -1.0          # 实测：物体在图像右侧时 yaw 需减小
+    pitch_sign: 1.0         # 实测：物体在图像下方时 pitch 需增大
+    image_width: 640
+    image_height: 480
+    fx: 460.06
+    fy: 460.06
+    level: 2                # 居中后正式定位用的层级
+
   fetch_object:
     # 示教位姿（configs/robot.yaml: taught_poses）是真机采的，仿真 URDF 下
     # pregrasp/grasp 两个 TCP 点 IK 无解（差 58–81 mm，受腕部姿态约束），

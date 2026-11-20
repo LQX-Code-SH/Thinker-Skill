@@ -1,0 +1,10 @@
+name: find_object
+version: 0.1.0
+category: perception
+min_core: 0.1.0
+entry: find_object.plugin:FindObject
+commands: [find_object]
+requires: [body.head]
+precondition: []
+postcondition: {}
+timeout: 150
