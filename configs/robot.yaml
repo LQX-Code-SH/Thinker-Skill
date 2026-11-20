@@ -37,6 +37,22 @@ skills:
     model_path: weights/grounding-dino-tiny
     threshold: 0.35          # 检测置信度阈值；低阈值召回高但误检多
     text_threshold: 0.35
+    # 可选：box → mask 分割（DINO 给框，SAM2 补像素级掩码）。
+    # backend: none 时等价于旧行为（框中心单点深度）。
+    segment:
+      backend: sam2
+      model_path: weights/sam2-hiera-tiny
+      min_area: 50           # mask 像素数下限，低于视为分割失败
+    # 3D 定位：cloud_median=点云 3D 中位数 + 半径补偿；point=老的框中心单点
+    locate:
+      method: cloud_median
+      radius_offset: 0.03    # 类别未配置时的等效半径（米）
+      objects:               # 按物体给等效半径，消除"偏差随尺寸走"
+        apple: {radius: 0.04}
+        banana: {radius: 0.03}
+        bottle: {radius: 0.03}
+        "water bottle": {radius: 0.03}
+        cup: {radius: 0.032}
 
   play_action:
     # 动作文件（schemaVersion 2）搜索顺序：动作清单 actions.yaml 的注册名 →

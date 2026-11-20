@@ -7,7 +7,8 @@ from pathlib import Path
 from thinker_skill_sdk import ErrorCode, Step, StepResult
 
 from .detector import DEFAULT_MODEL, GroundingDinoDetector
-from .geometry import estimate_from_box, estimate_from_mask
+from .geometry import estimate_from_box, estimate_from_cloud, estimate_from_mask
+from .sam2 import DEFAULT_MODEL as DEFAULT_SAM2_MODEL, Sam2Segmenter
 from .spatial import in_valid_range, normalize_prompt
 
 
@@ -42,9 +43,10 @@ class DetectObject:
     postcondition = {}
     timeout = 60.0
 
-    def __init__(self, detector=None, default_k=None):
+    def __init__(self, detector=None, default_k=None, segmenter=None):
         self._detector = detector
         self._default_k = default_k
+        self._segmenter = segmenter
 
     def _det(self, model_path=None, threshold=0.35, text_threshold=0.35):
         if self._detector is None:
@@ -53,12 +55,41 @@ class DetectObject:
                 threshold=threshold, text_threshold=text_threshold)
         return self._detector
 
+    def _seg(self, model_path=None, min_area=50):
+        if self._segmenter is None:
+            self._segmenter = Sam2Segmenter(
+                model_path=model_path or DEFAULT_SAM2_MODEL,
+                min_area=min_area)
+        return self._segmenter
+
+    @staticmethod
+    def _radius_for(locate_cfg, object_name):
+        """物体等效半径：优先按类别配置，其次通用值，最后 3 cm。"""
+        cfg = locate_cfg if isinstance(locate_cfg, dict) else {}
+        entry = (cfg.get("objects") or {}).get(object_name) or {}
+        if isinstance(entry, dict) and entry.get("radius") is not None:
+            return float(entry["radius"])
+        value = cfg.get("radius_offset")
+        if isinstance(value, (int, float)):
+            return float(value)
+        return 0.03
+
     def build_steps(self, ctx, params):
         cfg = dict(ctx.cfg or {})
         object_name = normalize_prompt(params.get("object_name", "bottle"))
         model_path = resolve_model_path(cfg.get("model_path"), ctx)
         threshold = float(cfg.get("threshold", 0.35))
         text_threshold = float(cfg.get("text_threshold", 0.35))
+        # 可选：SAM2 分割（默认开，失败自动回落框中心单点）
+        seg_cfg = dict(cfg.get("segment") or {})
+        seg_backend = str(seg_cfg.get("backend", "sam2")).lower()
+        seg_path = resolve_model_path(
+            seg_cfg.get("model_path") or DEFAULT_SAM2_MODEL, ctx)
+        seg_min_area = int(seg_cfg.get("min_area", 50))
+        # 3D 定位方式：cloud_median（点云中位数）| point（框中心单点）
+        loc_cfg = dict(cfg.get("locate") or {})
+        locate_method = str(loc_cfg.get("method", "cloud_median")).lower()
+        radius = self._radius_for(loc_cfg, object_name)
         st = {"frame": None, "det": None}
 
         def capture(c):
@@ -75,7 +106,13 @@ class DetectObject:
                     retryable=True,
                     data={"object_name": object_name},
                 )
-            st["det"] = max(dets, key=lambda d: d["score"])
+            det = max(dets, key=lambda d: d["score"])
+            if seg_backend == "sam2":
+                mask = self._seg(seg_path, seg_min_area).segment(
+                    st["frame"].color, det["box"])
+                if mask is not None:
+                    det["mask"] = mask
+            st["det"] = det
             return StepResult(status="done")
 
         def locate(c):
@@ -88,10 +125,16 @@ class DetectObject:
                     data={"reason": "缺少相机内参"},
                 )
             mask = det.get("mask")
-            if mask is not None:
+            if mask is not None and locate_method == "cloud_median":
+                p_cam, info = estimate_from_cloud(
+                    mask, frame.depth, k, radius=radius)
+                method_used = "cloud_median"
+            elif mask is not None:
                 p_cam, info = estimate_from_mask(mask, frame.depth, k)
+                method_used = "mask"
             else:
                 p_cam, info = estimate_from_box(det["box"], frame.depth, k)
+                method_used = "box"
             if p_cam is None:
                 return StepResult(
                     status="failed",
@@ -123,6 +166,14 @@ class DetectObject:
                 "score": det.get("score"),
                 "box": [float(v) for v in det.get("box", [])],
                 "stamp": frame.stamp,
+                # 以下是可选信息，旧消费方忽略即可
+                "locate": method_used,
+                "segmentation": "sam2" if mask is not None else "none",
+                "mask_area": int(mask.sum()) if mask is not None else None,
+                "extent": (info.get("extent")
+                           if isinstance(info, dict) else None),
+                "points": (info.get("points")
+                           if isinstance(info, dict) else None),
             }
             # 写入语义状态，供下游技能（抓取/放置）直接复用
             c.state.set("last_detection", payload)
