@@ -20,8 +20,11 @@ skills:
       backend: sam2
       model_path: weights/sam2-hiera-tiny
     locate:
-      # mask = mask 质心单点深度 + 固定补偿（实测最稳）；cloud_median = 点云中位数
-      method: mask
+      # plane = 平面约束（物体立在已知高度平面上，用框高反算物理高度定 z）
+      # mask  = mask 质心单点深度 + 固定补偿
+      # cloud_median = 点云中位数 + 半径补偿
+      method: plane
+      plane_z: 0.92          # 岛台台面高度（base 系，米）
   fetch_object:
     # 示教位姿（configs/robot.yaml: taught_poses）是真机采的，仿真 URDF 下
     # pregrasp/grasp 两个 TCP 点 IK 无解（差 58–81 mm，受腕部姿态约束），

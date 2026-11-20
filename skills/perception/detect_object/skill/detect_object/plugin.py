@@ -7,7 +7,8 @@ from pathlib import Path
 from thinker_skill_sdk import ErrorCode, Step, StepResult
 
 from .detector import DEFAULT_MODEL, GroundingDinoDetector
-from .geometry import estimate_from_box, estimate_from_cloud, estimate_from_mask
+from .geometry import (estimate_from_box, estimate_from_cloud,
+                       estimate_from_mask, estimate_from_plane)
 from .sam2 import DEFAULT_MODEL as DEFAULT_SAM2_MODEL, Sam2Segmenter
 from .spatial import in_valid_range, normalize_prompt
 
@@ -113,6 +114,9 @@ class DetectObject:
         loc_cfg = dict(cfg.get("locate") or {})
         locate_method = str(loc_cfg.get("method", "cloud_median")).lower()
         radius = self._radius_for(loc_cfg, object_name)
+        # plane 方法需要已知的支撑平面高度（base 系，米）；未配置时自动回落
+        plane_z = loc_cfg.get("plane_z")
+        plane_z = float(plane_z) if isinstance(plane_z, (int, float)) else None
         st = {"frame": None, "det": None}
 
         def capture(c):
@@ -148,32 +152,51 @@ class DetectObject:
                     data={"reason": "缺少相机内参"},
                 )
             mask = det.get("mask")
-            if mask is not None and locate_method == "cloud_median":
-                p_cam, info = estimate_from_cloud(
-                    mask, frame.depth, k, radius=radius)
-                method_used = "cloud_median"
-            elif mask is not None:
-                p_cam, info = estimate_from_mask(mask, frame.depth, k)
-                method_used = "mask"
+            angles = getattr(frame, "angles", None)
+            p_base = None
+            info = {}
+            # plane：物体立在已知高度的平面上，用"框高 → 物理高度"直接定 z，
+            # 不依赖可见面的深度补偿（单视角半面误差的正解之一）。
+            if mask is not None and locate_method == "plane" and plane_z is not None:
+                try:
+                    p_base, info = estimate_from_plane(
+                        mask, frame.depth, k, box=det.get("box"),
+                        plane_z=plane_z,
+                        to_base=lambda pt: c.sensor.transform_to_base(pt, angles))
+                except NotImplementedError as exc:
+                    return StepResult(
+                        status="failed",
+                        code=ErrorCode.PERCEPTION_POSE_INVALID,
+                        data={"reason": f"cam->base 不可用: {exc}"},
+                    )
+                method_used = "plane"
             else:
-                p_cam, info = estimate_from_box(det["box"], frame.depth, k)
-                method_used = "box"
-            if p_cam is None:
+                if mask is not None and locate_method == "cloud_median":
+                    p_cam, info = estimate_from_cloud(
+                        mask, frame.depth, k, radius=radius)
+                    method_used = "cloud_median"
+                elif mask is not None:
+                    p_cam, info = estimate_from_mask(mask, frame.depth, k)
+                    method_used = "mask"
+                else:
+                    p_cam, info = estimate_from_box(det["box"], frame.depth, k)
+                    method_used = "box"
+                if p_cam is not None:
+                    try:
+                        # 用取帧时刻的关节角，避免与 locate 时刻不一致
+                        p_base = c.sensor.transform_to_base(p_cam, angles)
+                    except NotImplementedError as exc:
+                        return StepResult(
+                            status="failed",
+                            code=ErrorCode.PERCEPTION_POSE_INVALID,
+                            data={"reason": f"cam->base 不可用: {exc}"},
+                        )
+            if p_base is None:
                 return StepResult(
                     status="failed",
                     code=ErrorCode.PERCEPTION_POSE_INVALID,
                     retryable=True,
-                    data={"reason": info},
-                )
-            try:
-                # 用取帧时刻的关节角，避免与 locate 时刻不一致
-                p_base = c.sensor.transform_to_base(
-                    p_cam, getattr(frame, "angles", None))
-            except NotImplementedError as exc:
-                return StepResult(
-                    status="failed",
-                    code=ErrorCode.PERCEPTION_POSE_INVALID,
-                    data={"reason": f"cam->base 不可用: {exc}"},
+                    data={"reason": info if isinstance(info, str) else "定位失败"},
                 )
             pose = [float(x) for x in p_base]
             if not in_valid_range(pose):
