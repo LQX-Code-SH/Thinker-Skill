@@ -11,7 +11,7 @@ camera:
 skills:
   look_down_table:
     # 仿真 head pitch 上限 +0.2618 rad ≈ 15°；相机再向下 25°，视线可到约 40°
-    max_pitch_deg: 15.0
+    max_pitch_deg: 47.5
     tol_deg: 1.0
     settle_ticks: 3
   detect_object:
@@ -19,12 +19,34 @@ skills:
     segment:
       backend: sam2
       model_path: weights/sam2-hiera-tiny
+    # 分层定位：base（默认）| plane（可选增强）
+    #   base  : 掩码/框质心 + 固定补偿，不依赖点云，最快
+    #   plane : 掩码反投影成点云（去 NaN/桌面/离群），沿桌面法向定 z，
+    #           横向用投影中位数 + offset_xy 标定；不输出轴向与 3D 框
     locate:
-      # plane = 平面约束（物体立在已知高度平面上，用框高反算物理高度定 z）
-      # mask  = mask 质心单点深度 + 固定补偿
-      # cloud_median = 点云中位数 + 半径补偿
-      method: plane
-      plane_z: 0.92          # 岛台台面高度（base 系，米）
+      # 定位分级（按任务精度需求，技能调用可用 level 参数覆盖）
+      #   1 场景级：只求目标在哪，允许厘米偏差（掩码质心 + offset）
+      #   2 抓取级：一般抓取，点云 + 平面约束定 z（实测 z 误差 ±3 mm）
+      #   3 精细级：精细操作，需 6D（FoundationPose）；未就绪自动降级为 2
+      level: 2
+      offset: 0.03          # L1：沿视线补偿（米）
+      plane_z: 0.92         # L2：台面高度（base 系）
+      offset_xy: [0.0, 0.0] # L2：通用横向标定（未按类别配置时使用）
+      # 按类别的横向标定（米）：单视角只看半面带来的残差，按实测填；
+      # 未列出的类别自动回退到上面的通用值（默认 0，即不做任何补偿）。
+      # 注意：标定值与视角相关（当前为低头 45°、base x≈0.44~0.60 标定）。
+      objects:
+        apple:          {offset_xy: [-0.001, -0.003]}
+        cup:            {offset_xy: [-0.006, -0.008]}
+        "water bottle": {offset_xy: [0.018, 0.010]}
+        bottle:         {offset_xy: [0.018, 0.010]}
+        # 香蕉：用视觉重心（mask 质心直投），不做几何补偿。
+        # 它的 body 原点落在弯弧凹侧的空腔里（射线法判定在实体外），
+        # 任何"几何中心"补偿都会把 obj_pose 推到可见区域之外。
+        banana:         {offset_xy: [0.0, 0.0]}
+    # 6D 精定位（可选）：需 CAD 资产 + 许可证评估，默认关闭
+    pose6d:
+      backend: none         # none | foundationpose
   fetch_object:
     # 示教位姿（configs/robot.yaml: taught_poses）是真机采的，仿真 URDF 下
     # pregrasp/grasp 两个 TCP 点 IK 无解（差 58–81 mm，受腕部姿态约束），
