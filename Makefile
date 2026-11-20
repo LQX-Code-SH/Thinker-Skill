@@ -21,10 +21,20 @@ SIM_INIT_YAW ?= 180
 # FSM 模式等 SWR 期间的吊带骨盆高度（默认 1.03 太高，用 1.00）
 SIM_HANG_Z   ?= 1.00
 
+# 桌面苹果位置覆盖（世界坐标 x y z）。非空时起桥前会写进场景文件；
+# 留空则完全不动场景，用仓库里的原值。
+# 例：APPLE_POS="3.56 -2.39 0.9574" make sim-bridge-bg
+APPLE_POS    ?=
+SIM_SCENE_XML ?= $(SIM_DIR)/src/manip_description/assets/scene/objects/demo_tabletop_objects.xml
+
+# 本地覆盖（不入库）：把常用的 SIM_INIT_X / APPLE_POS 写进去，重启后自动生效
+-include .sim.env
+
 .PHONY: help build build-skill test clean sim-init sim-up sim-down sim-build \
         sim-probe sim-pose sim-bridge sim-bridge-bg sim-fsm sim-fsm-bg \
         sim-host sim-host-bg sim-logs sim-selftest sim-call sim-shell sim-image-view \
-        skill-build skill-up skill-down skill-host skill-host-bg skill-selftest skill-shell skill-logs
+        skill-build skill-up skill-down skill-host skill-host-bg skill-selftest skill-shell skill-logs \
+        sim-scene-set sim-scene-reset
 
 help:
 	@echo "make build                     全量构建"
@@ -64,7 +74,21 @@ sim-build:
 
 # 前台：带 MuJoCo 查看器窗口（需要 DISPLAY）
 sim-bridge:
+	@if [ -n "$(APPLE_POS)" ]; then \
+	  sed -i 's|name="demo_apple" pos="[^"]*"|name="demo_apple" pos="$(APPLE_POS)"|' $(SIM_SCENE_XML); \
+	  echo "苹果位置覆盖为 $(APPLE_POS)"; \
+	fi
 	SIM_INIT_X=$(SIM_INIT_X) SIM_INIT_Y=$(SIM_INIT_Y) SIM_INIT_Z=$(SIM_INIT_Z) SIM_INIT_YAW=$(SIM_INIT_YAW) tools/sim/container.sh bridge
+
+# 桌面物体位置：写入场景文件（改的是 sim 子模块工作区，提交前记得 reset）
+sim-scene-set:
+	@test -n "$(APPLE_POS)" || { echo '用法: make sim-scene-set APPLE_POS="3.56 -2.39 0.9574"'; exit 1; }
+	sed -i 's|name="demo_apple" pos="[^"]*"|name="demo_apple" pos="$(APPLE_POS)"|' $(SIM_SCENE_XML)
+	@echo "苹果位置: $(APPLE_POS)"; @git -C $(SIM_DIR) diff --stat -- src/manip_description/assets/scene/objects/demo_tabletop_objects.xml
+
+sim-scene-reset:
+	git -C $(SIM_DIR) checkout -- src/manip_description/assets/scene/objects/demo_tabletop_objects.xml
+	@echo "场景已还原为仓库值"
 
 sim-host:
 	tools/sim/container.sh host
@@ -75,6 +99,10 @@ sim-pose:
 
 # 后台：无窗口，日志 /tmp/sim_bridge.log
 sim-bridge-bg:
+	@if [ -n "$(APPLE_POS)" ]; then \
+	  sed -i 's|name="demo_apple" pos="[^"]*"|name="demo_apple" pos="$(APPLE_POS)"|' $(SIM_SCENE_XML); \
+	  echo "苹果位置覆盖为 $(APPLE_POS)"; \
+	fi
 	SIM_INIT_X=$(SIM_INIT_X) SIM_INIT_Y=$(SIM_INIT_Y) SIM_INIT_Z=$(SIM_INIT_Z) SIM_INIT_YAW=$(SIM_INIT_YAW) tools/sim/container.sh bridge-bg
 
 # 带 xmigcs FSM + 遥控器的半身模式（前台，带窗口）
