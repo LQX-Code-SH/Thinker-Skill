@@ -110,17 +110,30 @@ def estimate_from_plane(mask, depth, k, *, box, plane_z, to_base,
     z_cam = float(surface[2])
     fy = float(k[4])
     box_h = abs(float(box[3]) - float(box[1])) if box is not None else 0.0
+    # 高度用收紧后的 2D 框：框内不会有背景，实测苹果/杯子 z 误差 ≤6 mm。
+    # 点云的世界 z 跨度看似更"物理"，但 mask 边缘仍会漏进背景点（实测
+    # 苹果点云高度 0.165 m 而真实 0.08 m），反而更差，故不用。
     h = box_h * z_cam / fy if fy > 0 else 0.0
     if h <= 0.0:
         return None, "invalid_box"
 
+    # 横向仍用可见表面点中位数。曾尝试"框中心射线与 z_center 平面求交"
+    # （球投影为圆、框中心即中心方向），但实测苹果偏 +52/−64 mm —— DINO/SAM2
+    # 的框本身并不严格对称，框中心的像素方向不穿过几何中心，反而更差。
+    z_center = float(plane_z) + h / 2.0
     base = np.asarray(to_base(surface), dtype=float)
-    center_base = np.array([base[0], base[1], float(plane_z) + h / 2.0])
+    center_base = np.array([base[0], base[1], z_center])
+    # 3D 框尺寸：[宽, 宽, 高]。相机系的纵向跨度混了"物体高度"与"深度"，
+    # 直接当尺寸画会得到一个又宽又高的盒子（水瓶实测 0.046 × 0.165 m），
+    # 所以横向取可见轮廓的较小边当直径，高度用平面约束得到的结果。
+    raw = kept.max(axis=0) - kept.min(axis=0)
+    width = float(min(raw[0], raw[1]))
     info = {
         "method": "plane",
         "height": round(h, 4),
         "plane_z": float(plane_z),
         "points": int(kept.shape[0]),
+        "extent": [width, width, float(h)],
     }
     return center_base, info
 

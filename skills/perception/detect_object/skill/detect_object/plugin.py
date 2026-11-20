@@ -15,6 +15,31 @@ from .spatial import in_valid_range, normalize_prompt
 _MISS = object()          # _radius_for 内部哨兵：表示"无法解析"
 
 
+def refine_mask(mask, box, min_area=50):
+    """取 mask 的最大连通域，并把 2D 框收紧到它的包围盒。
+
+    DINO 的框是按"物体语义"给的，边缘常比真实轮廓松；SAM2 也会偶尔带上
+    与物体相连的背景碎片（实测水瓶的 extent 因此涨到 0.164 m，真实直径
+    0.06 m）。取最大连通域可去掉碎片，再用它的包围盒替代原框，框高/框宽
+    就与物体轮廓一致，plane 方法反算物理高度也更准。
+    """
+    try:
+        import cv2
+        import numpy as np
+    except ImportError:
+        return mask, list(box)
+
+    binary = (np.asarray(mask) > 0).astype(np.uint8)
+    count, labels, stats, _ = cv2.connectedComponentsWithStats(binary, 8)
+    if count <= 1:
+        return mask, list(box)
+    idx = 1 + int(np.argmax(stats[1:, cv2.CC_STAT_AREA]))
+    if int(stats[idx, cv2.CC_STAT_AREA]) < int(min_area):
+        return mask, list(box)
+    x, y, w, h = (int(v) for v in stats[idx, :4])
+    return labels == idx, [float(x), float(y), float(x + w), float(y + h)]
+
+
 def resolve_model_path(raw, ctx):
     """解析模型目录：绝对路径直接用；相对路径依次尝试
 
@@ -138,7 +163,10 @@ class DetectObject:
                 mask = self._seg(seg_path, seg_min_area).segment(
                     st["frame"].color, det["box"])
                 if mask is not None:
-                    det["mask"] = mask
+                    clean, refined = refine_mask(mask, det["box"])
+                    det["mask"] = clean
+                    det["box_raw"] = [float(v) for v in det["box"]]
+                    det["box"] = refined
             st["det"] = det
             return StepResult(status="done")
 
