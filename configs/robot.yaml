@@ -45,9 +45,12 @@ skills:
       min_area: 50           # mask 像素数下限，低于视为分割失败
     # 3D 定位：cloud_median=点云 3D 中位数 + 半径补偿；point=老的框中心单点
     locate:
-      method: cloud_median
-      radius_offset: 0.03    # 类别未配置时的等效半径（米）
-      objects:               # 按物体给等效半径，消除"偏差随尺寸走"
+      method: mask
+      # 沿视线补偿量（米）：可见表面到几何中心的距离。不是物体真实半径，
+      # 而是"点云中位数 + 该值"能落到物体中心，需按类别标定（auto 取
+      # extent 最小边 / 2 的尝试已实测否定：苹果 z 会偏高 3 cm）。
+      radius: 0.03
+      objects:
         apple: {radius: 0.04}
         banana: {radius: 0.03}
         bottle: {radius: 0.03}

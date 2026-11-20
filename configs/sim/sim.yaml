@@ -20,7 +20,7 @@ skills:
       backend: sam2
       model_path: weights/sam2-hiera-tiny
     locate:
-      method: cloud_median
+      method: mask
   fetch_object:
     # 示教位姿（configs/robot.yaml: taught_poses）是真机采的，仿真 URDF 下
     # pregrasp/grasp 两个 TCP 点 IK 无解（差 58–81 mm，受腕部姿态约束），

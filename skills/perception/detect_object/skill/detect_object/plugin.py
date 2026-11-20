@@ -64,14 +64,15 @@ class DetectObject:
 
     @staticmethod
     def _radius_for(locate_cfg, object_name):
-        """物体等效半径：优先按类别配置，其次通用值，最后 3 cm。"""
+        """等效半径：类别配置 > 通用配置 > None（自动，由点云 extent 决定）。"""
         cfg = locate_cfg if isinstance(locate_cfg, dict) else {}
         entry = (cfg.get("objects") or {}).get(object_name) or {}
         if isinstance(entry, dict) and entry.get("radius") is not None:
             return float(entry["radius"])
-        value = cfg.get("radius_offset")
-        if isinstance(value, (int, float)):
-            return float(value)
+        for key in ("radius", "radius_offset"):     # radius_offset 为旧键
+            value = cfg.get(key)
+            if isinstance(value, (int, float)):
+                return float(value)
         return 0.03
 
     def build_steps(self, ctx, params):
@@ -174,6 +175,10 @@ class DetectObject:
                            if isinstance(info, dict) else None),
                 "points": (info.get("points")
                            if isinstance(info, dict) else None),
+                "radius": (info.get("radius")
+                           if isinstance(info, dict) else None),
+                "outliers": (info.get("outliers")
+                             if isinstance(info, dict) else None),
             }
             # 写入语义状态，供下游技能（抓取/放置）直接复用
             c.state.set("last_detection", payload)

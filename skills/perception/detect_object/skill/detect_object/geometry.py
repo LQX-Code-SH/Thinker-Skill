@@ -79,26 +79,50 @@ def point_cloud(mask, depth, k, *, z_range=(0.05, 3.0)):
     return np.stack([X, Y, z.astype(np.float64)], axis=1)
 
 
-def estimate_from_cloud(mask, depth, k, *, radius=0.03, min_points=30,
-                        z_range=(0.05, 3.0)):
-    """mask 点云的 3D 中位数，沿视线补回 ``radius``（物体等效半径）。
+def estimate_from_cloud(mask, depth, k, *, radius=None, min_points=30,
+                        z_range=(0.05, 3.0), mad_k=2.5, trim_ratio=0.0):
+    """mask 点云的 3D 中位数，剔除离群点后再沿视线补回半径。
 
-    单点深度只看框中心一个像素，框抖 10 px 就会在深度上放大成厘米级误差；
-    中位数对孤立点与边缘噪声更稳，``radius`` 按类别给，避免不同尺寸物体
-    共用同一个固定补偿量。
+    - 离群剔除：按到中位数的距离做 MAD 阈值（``mad_k``），mask 边缘常混入
+      背景/桌面像素，会把 extent 撑大、把中心拉偏；
+    - 半径：``radius=None`` 时自动取 ``min(extent)/2``（可见表面厚度的一半），
+      避免不同尺寸物体共用固定补偿量；显式传值优先。
     """
     pts = point_cloud(mask, depth, k, z_range=z_range)
     if pts.shape[0] < min_points:
         return None, "cloud_too_small"
+
     center = np.median(pts, axis=0)
+    dist = np.linalg.norm(pts - center, axis=1)
+    med = float(np.median(dist))
+    mad = float(np.median(np.abs(dist - med))) + 1e-9
+    keep = dist <= med + float(mad_k) * 1.4826 * mad
+    kept = pts[keep] if int(keep.sum()) >= min_points else pts
+
+    if trim_ratio and trim_ratio > 0.0:
+        # 逐轴对称裁剪极端值（对细长物体比球形阈值更稳）
+        lo = np.quantile(kept, trim_ratio, axis=0)
+        hi = np.quantile(kept, 1.0 - trim_ratio, axis=0)
+        sel = np.all((kept >= lo) & (kept <= hi), axis=1)
+        if int(sel.sum()) >= min_points:
+            kept = kept[sel]
+
+    # 中心与尺寸都用剔除后的点集：mask 边缘常混入桌面/背景，原始中位数会被
+    # 拉高（实测仿真里苹果无补偿点云中心比球顶还高 3 cm）。
+    center = np.median(kept, axis=0)
+    extent = kept.max(axis=0) - kept.min(axis=0)
+    # 沿视线（远离相机）补偿"可见表面 → 几何中心"的距离，按类别标定。
+    r = float(radius) if radius is not None else 0.03
     norm = float(np.linalg.norm(center))
     if norm > 1e-6:
-        center = center + center / norm * float(radius)
-    extent = pts.max(axis=0) - pts.min(axis=0)
+        center = center + center / norm * r
+
     info = {
-        "points": int(pts.shape[0]),
-        "radius": float(radius),
+        "points": int(kept.shape[0]),
+        "outliers": int(pts.shape[0] - kept.shape[0]),
+        "radius": round(r, 4),
         "extent": [float(v) for v in extent],
     }
     return center, info
+
 
