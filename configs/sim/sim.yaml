@@ -62,6 +62,15 @@ skills:
     fx: 460.06
     fy: 460.06
     level: 2                # 居中后正式定位用的层级
+    # 居中后的横向标定（按类别，米）：find_object 把物体移到视野中部后，
+    # 单视角残差方向与"原视角"不同，这里单独标一套；detect_object 直接用
+    # 配置里 locate.objects 的原值，两者互不影响。
+    # 采集方式：每个物体跑 3 次 find_object 取平均残差，再按"原标定 − 残差"折算。
+    centered_offset_xy:
+      apple:          [-0.001, -0.002]
+      cup:            [-0.028, -0.019]
+      "water bottle": [0.035, 0.033]
+      bottle:         [0.035, 0.033]
 
   fetch_object:
     # 示教位姿（configs/robot.yaml: taught_poses）是真机采的，仿真 URDF 下

@@ -204,8 +204,13 @@ class FindObject:
                 return StepResult(status="running")
             st["settle"] = 0
             st["last_pose"] = None
-            res = self._call(c, "detect_object",
-                             {"object_name": object_name, "level": level})
+            # 居中后的横向标定与"原视角"不同（单视角残差方向会变），
+            # 这里透传给 detect_object 覆盖，未配置则用它自己的默认值。
+            payload = {"object_name": object_name, "level": level}
+            centered = (cfg.get("centered_offset_xy") or {}).get(object_name)
+            if isinstance(centered, (list, tuple)) and len(centered) == 2:
+                payload["offset_xy"] = [float(centered[0]), float(centered[1])]
+            res = self._call(c, "detect_object", payload)
             if res is None:
                 return StepResult(
                     status="failed", code=ErrorCode.SYS_CONFIG_ERROR,

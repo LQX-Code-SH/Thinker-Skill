@@ -157,7 +157,13 @@ class DetectObject:
                     return [float(cand[0]), float(cand[1])]
             return [0.0, 0.0]
 
-        offset_xy = _offset_xy_for(object_name)
+        # 调用方可覆盖横向标定：find_object 居中后的残差方向与"原视角"不同，
+        # 两套标定各管一段（detect_object 直接调用仍用配置里的原值）。
+        override_xy = params.get("offset_xy")
+        if isinstance(override_xy, (list, tuple)) and len(override_xy) == 2:
+            offset_xy = [float(override_xy[0]), float(override_xy[1])]
+        else:
+            offset_xy = _offset_xy_for(object_name)
         # 6D 后端：none（默认）| foundationpose（可选，需 CAD 与许可证评估）
         pose_cfg = dict(cfg.get("pose6d") or {})
         pose_backend = str(pose_cfg.get("backend", "none")).lower()
