@@ -16,7 +16,11 @@ SIM_POSE_ARGS ?= --count 1
 # 场景默认出生点（实测 /manip/base_pose）：(4.729, -2.600)，yaw≈0
 SIM_INIT_X   ?= 4.1
 SIM_INIT_Y   ?= -2.60
-SIM_INIT_Z   ?=
+# 站立高度：按桥的 DEFAULT_JOINT_POS 腿姿态（hip -0.13 / knee 0.30 / ankle -0.17）
+# 用 URDF 正运动学核算得 0.9931 m，此时足底刚好贴地。留空时桥会自行落地到
+# 0.988（压入 5 mm，踝被顶到 -0.57 rad，小腿前压、看起来前倾）。
+# 复核方式：python3 tools/measure_pelvis_height.py（真机 home 姿态是 1.0006）。
+SIM_INIT_Z   ?= 0.9931
 SIM_INIT_YAW ?= 180
 # FSM 模式等 SWR 期间的吊带骨盆高度（默认 1.03 太高，用 1.00）
 SIM_HANG_Z   ?= 1.00
