@@ -5,7 +5,7 @@
 from .body import ArmAPI, BaseAPI, BodyAPI, GripperAPI, HeadAPI, Pose, WaistAPI
 from .ctx import StepCtx
 from .errors import ErrorCode
-from .exceptions import Cancelled
+from .exceptions import Cancelled, SkillError
 from .sensor import Frame, SensorAPI
 from .state import StateAPI
 from .step import FailurePolicy, Step, StepKind, StepResult, StepStatus
@@ -24,6 +24,7 @@ __all__ = [
     "HeadAPI",
     "Pose",
     "SensorAPI",
+    "SkillError",
     "StateAPI",
     "Step",
     "StepCtx",

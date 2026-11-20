@@ -21,6 +21,11 @@ CAPABILITY_TO_AREA: Dict[str, str] = {
     "body.gripper": "upper",
     "body.waist": "upper",
     "body.base": "lower",
+    # 按侧声明（D-021）：左右臂/手同属上肢区域，映射到同一租约
+    "body.arm.left": "upper",
+    "body.arm.right": "upper",
+    "body.gripper.left": "upper",
+    "body.gripper.right": "upper",
 }
 
 

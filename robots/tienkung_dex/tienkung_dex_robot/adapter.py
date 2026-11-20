@@ -60,6 +60,7 @@ class TienkungDexAdapter:
         self,
         robot: Any,
         *,
+        node: Any = None,
         hand_side: str = "right",
         hand_dof: int = 6,
         camera: str = DEFAULT_CAMERA,
@@ -68,13 +69,35 @@ class TienkungDexAdapter:
         pelvis_height: float = 0.0,
         hand_variant: str = "brainco",
         ik_solver: str = "daqp",
+        ik_max_iter: int = 100,
+        ik_tol: float = 1e-3,
+        ik_rot_tol: float = 0.02,
+        ik_damping: float = 0.08,
+        tcp_offset=None,
+        reach_margin: float = 0.03,
     ):
         self.raw = robot
         self.hand_variant = hand_variant
+        vendor = HAND_VARIANTS[hand_variant]["hand_vendor"]
+        # SDK 只实现 brainco 手；inspire 走项目侧适配，注入真实 ROS node。
+        inspire_hands = None
+        if vendor == "inspire":
+            if node is None:
+                raise ValueError("inspire 手需要传入 ROS node 以创建话题")
+            from .inspire_hand import InspireHand
+            inspire_hands = {}
+            for side in TienkungDexBody.SIDES:
+                hand = InspireHand(node, side)
+                hand.start()
+                inspire_hands[side] = hand
         self.body = TienkungDexBody(
             robot, hand_side=hand_side, hand_dof=hand_dof,
+            hand_vendor=vendor, hand_variant=self.hand_variant,
+            inspire_hands=inspire_hands,
             urdf_path=urdf_path, pelvis_height=pelvis_height,
-            ik_solver=ik_solver)
+            ik_solver=ik_solver, ik_max_iter=ik_max_iter,
+            ik_tol=ik_tol, ik_rot_tol=ik_rot_tol, ik_damping=ik_damping,
+            tcp_offset=tcp_offset, reach_margin=reach_margin)
         self.sensor = TienkungDexSensor(
             robot, camera=camera, urdf_path=urdf_path, k=camera_k,
             pelvis_height=pelvis_height)
@@ -83,7 +106,21 @@ class TienkungDexAdapter:
         self.raw.start()
 
     def shutdown(self) -> None:
+        for gripper in self.body.grippers.values():
+            hand = getattr(gripper, "_inspire_hand", None)
+            if hand is not None:
+                try:
+                    hand.stop()
+                except Exception:  # noqa: BLE001 - 关停路径不抛错
+                    pass
         self.raw.shutdown()
+
+    def emergency_stop(self) -> None:
+        """软急停：停底盘速度流；关节保持最后位置（位置模式天然保持）。"""
+        try:
+            self.body.base.stop()
+        except Exception:  # noqa: BLE001 - 急停路径不能再抛错
+            pass
 
 
 def create_adapter(
@@ -100,6 +137,12 @@ def create_adapter(
     camera_k: Optional[list] = None,
     pelvis_height: float = 0.0,
     ik_solver: str = "daqp",
+    ik_max_iter: int = 100,
+    ik_tol: float = 1e-3,
+    ik_rot_tol: float = 0.02,
+    ik_damping: float = 0.08,
+    tcp_offset=None,
+    reach_margin: float = 0.03,
 ) -> TienkungDexAdapter:
     """创建适配器（未 start；调用方需 ``adapter.start()``）。"""
     variant = HAND_VARIANTS.get(hand_variant)
@@ -126,8 +169,10 @@ def create_adapter(
         joints_table_path=joints_table_path,
     )
     return TienkungDexAdapter(
-        robot, hand_side=hand_side, hand_dof=dof,
+        robot, node=node, hand_side=hand_side, hand_dof=dof,
         camera=camera, urdf_path=urdf_path, camera_k=camera_k,
         pelvis_height=pelvis_height, hand_variant=hand_variant,
-        ik_solver=ik_solver,
+        ik_solver=ik_solver, ik_max_iter=ik_max_iter,
+        ik_tol=ik_tol, ik_rot_tol=ik_rot_tol, ik_damping=ik_damping,
+        tcp_offset=tcp_offset, reach_margin=reach_margin,
     )

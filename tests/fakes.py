@@ -4,9 +4,11 @@ from __future__ import annotations
 from typing import Any, List, Mapping, Optional
 
 from thinker_skill_sdk import (
+    ErrorCode,
     Frame,
     Pose,
     SensorAPI,
+    SkillError,
     StateAPI,
     Step,
     StepCtx,
@@ -28,9 +30,14 @@ class _NullLog:
 
 
 class FakeArm:
+    """假手臂：位姿目标立即到位（``pose_targets`` 供断言）。"""
+
     def __init__(self):
         self._joints: dict = {}
         self._moving = False
+        self.pose = Pose(x=0.0, y=0.0, z=0.0)
+        self.pose_targets: list = []
+        self.reachable: Optional[bool] = True
 
     def move_to_joints(self, joints: Mapping[str, float], *, duration: float = 0.0):
         self._joints.update(joints)
@@ -41,17 +48,31 @@ class FakeArm:
     def is_moving(self):
         return self._moving
 
-    def move_to_pose(self, pose: Pose, *, duration: float = 0.0):
-        raise NotImplementedError("pose_ik not supported by FakeArm")
+    def move_to_pose(self, pose: Pose, *, tcp: bool = False,
+                     duration: float = 0.0):
+        if self.reachable is False:
+            raise SkillError(ErrorCode.MOTION_IK_UNREACHABLE, "FakeArm: 不可达")
+        self.pose_targets.append((pose, tcp))
+        self.pose = pose
 
     def get_tcp_pose(self):
-        return Pose(x=0.0, y=0.0, z=0.0)
+        return self.pose
+
+    def is_reachable(self, pose: Pose, *, tcp: bool = False):
+        return self.reachable
 
 
 class FakeGripper:
-    def __init__(self):
+    def __init__(self, side: str = "right", *, hand_format: str = "", dof: int = 6):
+        self.side = side
         self.width = 1.0
         self.holding = False
+        self.positions: List[float] = []
+        self.set_calls: list = []
+        self.hand_format = hand_format
+        self.dof = dof
+        self.joint_positions: dict = {}
+        self.joint_calls: list = []
 
     def grasp(self, *, force: float = 0.5):
         self.width = 0.0
@@ -62,10 +83,59 @@ class FakeGripper:
         self.holding = False
 
     def set_positions(self, positions):
-        self.width = float(positions[0]) if positions else 0.0
+        self.positions = [float(p) for p in positions]
+        self.set_calls.append(list(self.positions))
+        self.width = self.positions[0] if self.positions else 0.0
+
+    def set_raw_codes(self, codes):
+        self.raw_codes = [int(v) for v in codes]
+        self.set_calls.append(list(self.raw_codes))
+
+    def set_joint_positions(self, joints):
+        self.joint_positions.update({str(k): float(v) for k, v in joints.items()})
+        self.joint_calls.append(dict(self.joint_positions))
+
+    def get_joint_positions(self):
+        return dict(self.joint_positions)
+
+    def set_grip_keep_abduction(self, grip_values, base_codes):
+        codes = list(base_codes)
+        self.raw_codes = codes
+        self.set_calls.append(list(codes))
+
+    def contact_state(self, **kwargs):
+        return {"touched": [True] * 5, "count": 5, "any_contact": True}
+
+    def get_touch(self):
+        return {"finger_forces": [100] * 5, "finger_proximity": [0] * 5}
+
+    def get_force_threshold(self):
+        return [0] * 13
+
+    def get_finger_forces(self):
+        return [60] * 5
+
+    def start_force_close(self, grip_values, base_codes, total_steps=8):
+        self._fc = {"base": list(base_codes), "total": int(total_steps),
+                    "step": 0}
+
+    def step_force_close(self, target_force):
+        fc = getattr(self, "_fc", None)
+        if fc is None:
+            return {"step": 0, "total": 1, "force_sum": 0.0,
+                    "reached": False, "done": True}
+        fc["step"] = min(fc["step"] + 1, fc["total"])
+        fsum = 300.0  # fake 固定 5 指力和
+        reached = fsum >= float(target_force)
+        return {"step": fc["step"], "total": fc["total"],
+                "force_sum": fsum, "reached": reached,
+                "done": reached or fc["step"] >= fc["total"]}
+
+    def set_force(self, forces):
+        self.forces = list(forces)
 
     def get_positions(self):
-        return [self.width]
+        return list(self.positions) or [self.width]
 
     def is_holding(self):
         return self.holding
@@ -124,14 +194,29 @@ class FakeBase:
 
 
 class FakeBody:
-    """满足 BodyAPI 的结构化鸭子类型。"""
+    """满足 BodyAPI 的结构化鸭子类型（左右手臂/手部同时暴露）。"""
 
-    def __init__(self):
-        self.arm = FakeArm()
-        self.gripper = FakeGripper()
+    def __init__(self, default_side: str = "right",
+                 model: str = "tienkung_dex", hand_variant: str = ""):
+        self.default_side = default_side
+        self.model = model
+        self.hand_variant = hand_variant
+        self.arms = {"left": FakeArm(), "right": FakeArm()}
+        self.grippers = {s: FakeGripper(s) for s in self.arms}
+        self.arm = self.arms[default_side]
+        self.gripper = self.grippers[default_side]
         self.waist = FakeWaist()
         self.head = FakeHead()
         self.base = FakeBase()
+        self.arm_batch_calls: list = []
+
+    def move_arms(self, targets):
+        """双臂合并下发（与真机 BodyAPI 的可选批量接口一致）。"""
+        self.arm_batch_calls.append({s: dict(v) for s, v in targets.items()})
+        for side, joints in targets.items():
+            arm = self.arms.get(side)
+            if arm is not None:
+                arm.move_to_joints(joints)
 
 
 class FakeSensor(SensorAPI):
@@ -146,7 +231,7 @@ class FakeSensor(SensorAPI):
         self._i += 1
         return f
 
-    def transform_to_base(self, pose):
+    def transform_to_base(self, pose, angles=None):
         return pose
 
 
@@ -173,6 +258,7 @@ def make_ctx(
     steps: Optional[List[Step]] = None,
     log=None,
     say=None,
+    call_skill=None,
 ) -> StepCtx:
     """构造可注入假时钟、与 ``steps`` 共享列表的 StepCtx。"""
     steps_list: List[Step] = steps if steps is not None else []
@@ -190,4 +276,5 @@ def make_ctx(
         check_cancel=lambda: None,
         now=clock or (lambda: 0.0),
         append_steps=steps_list.extend,
+        call_skill=call_skill,
     )

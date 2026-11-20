@@ -3,6 +3,7 @@
 # 用法：tools/pack_skill.sh <skill> [输出目录]
 # 前置：runtime 已构建并 source（技能依赖 thinker_skill_sdk）
 # 权重：skill.yaml 的 resources.weights 列出的目录会一并打进包（部署后位于 <ver>/weights/）
+# 动作：技能根目录的 actions/ 一并打进包（部署后位于 <ver>/actions/，供 play_action 等技能读取）
 set -euo pipefail
 
 SKILL="${1:?用法: tools/pack_skill.sh <skill> [输出目录]}"
@@ -34,6 +35,7 @@ rm -rf "$STAGE"
 mkdir -p "$STAGE"
 cp -a "$WORK/install" "$STAGE/install"
 [ -d "$SKILL_DIR/mcp_interface" ] && cp -a "$SKILL_DIR/mcp_interface" "$STAGE/mcp_interface"
+[ -d "$SKILL_DIR/actions" ] && cp -a "$SKILL_DIR/actions" "$STAGE/actions"
 [ -f "$SKILL_DIR/DESIGN.md" ] && cp "$SKILL_DIR/DESIGN.md" "$STAGE/"
 
 # 按 skill.yaml 的 resources.weights 打包权重

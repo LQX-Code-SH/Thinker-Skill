@@ -1,0 +1,97 @@
+# 技能容器镜像：只装"技能运行时"，依赖版本与真机（Jetson Thor + ROS Jazzy）对齐。
+#
+# 分工：
+#   thinker_sim   本体容器  = MuJoCo 桥 + 厂商运控，镜像保持 manip_local:v4 不动
+#   thinker_skill 技能容器  = thinker_host + 技能，本镜像
+#   两者 --network host + 同 ROS_DOMAIN_ID 通信，技能容器另外直通 GPU。
+#
+# 为什么 FROM manip_local:v4-slim 而不是 ros:jazzy：
+#   跨容器通信走 DDS，两端 fastcdr / fastrtps 必须同版本（2.2.8 / 2.14.7）。
+#   同一基础镜像直接继承，避免 Humble↔Jazzy 那类
+#   "sequence size exceeds remaining buffer"（实测跨版本数据面不通）。
+#   代价是镜像里多带一份 mujoco/xmigcs，技能容器不使用。
+#
+# 装到系统 python3（/usr/bin/python3，自带 numpy 1.26.4），不用 xmigcs venv：
+#   真机技能就跑在系统 python3.12 上，实测版本：
+#     torch 2.9.1(+cu130) / torchvision 0.24.0 / transformers 5.0.0 /
+#     numpy 1.26.4 / scipy 1.15.3 / opencv 4.11.0.86 / qpsolvers 4.13.0 / quadprog 0.1.13
+#   仿真机是 x86_64 + RTX 4060，用 PyPI 官方轮子（自带 CUDA 12.8 运行时）；
+#   torch 取 2.9.0 而非真机的 2.9.1：PyPI 的 torchvision 0.24.0 把 torch 钉在 2.9.0
+#   （真机是 Jetson 轮子，约束被厂商放宽），只有 patch 号差异。
+#
+# 构建（全部走国内源，不需要 Docker Hub）：
+#   make skill-build
+#   或 docker build --build-arg BASE_IMAGE=manip_local:v4-slim -t manip_skill:jazzy \
+#        -f tools/sim/Dockerfile.skill tools/sim
+ARG BASE_IMAGE=manip_local:v4-slim
+FROM ${BASE_IMAGE}
+
+# 源选择的关键实测（同一 URL，curl 与 pip 差 100 倍的原因）：
+#   pip 只用 HTTP/1.1，而阿里云 CDN 对 HTTP/1.1 限速 ~0.13–0.17 MB/s，
+#   HTTP/2（curl 默认）却有 20–25 MB/s —— 所以"阿里云国内源"反而最慢。
+#   清华 POST 不分协议：HTTP/1.1 实测 scipy 9.6 MB/s、torch 21.8 MB/s。
+#   结论：默认全部走清华，不要用阿里云 pypi / pytorch-wheels 给 pip 用。
+ARG PIP_INDEX_URL=https://pypi.tuna.tsinghua.edu.cn/simple
+# 留空表示与 PIP_INDEX_URL 相同（torch 也从清华取，PyPI 官方轮子自带 CUDA 12.8 运行时）
+ARG TORCH_INDEX_URL=
+ARG PIP_TRUSTED_HOST=pypi.tuna.tsinghua.edu.cn
+
+SHELL ["/bin/bash", "-c"]
+
+ENV PIP_INDEX_URL=${PIP_INDEX_URL} \
+    PIP_TRUSTED_HOST=${PIP_TRUSTED_HOST} \
+    PIP_DEFAULT_TIMEOUT=120 \
+    PIP_RETRIES=10 \
+    WHEEL_INDEX=${PIP_INDEX_URL}
+
+# 固化 pip 配置：容器里临时装包（调试权重下载等）也默认走国内源
+RUN mkdir -p /etc/pip && printf '[global]\nindex-url = %s\ntrusted-host = %s\ntimeout = 120\nretries = 10\n' \
+        "${PIP_INDEX_URL}" "${PIP_TRUSTED_HOST}" > /etc/pip.conf \
+ && cat /etc/pip.conf
+
+# 大体积 wheel（torch + 15 个 nvidia-* CUDA 运行库，约 4.5 GB）在构建内用 curl 下载：
+#   - pip 只走 HTTP/1.1、无断点续传，900 MB 的 torch 断一次就整包重下；
+#   - curl 走 HTTP/2（构建内实测 12–17 MB/s）、-C - 可续传、--retry 自动重试；
+#   - 下载目录挂在 BuildKit cache mount 上，不进镜像层，跨构建保留，
+#     所以改依赖重跑时不会重复下载。
+COPY fetch_wheels.sh /tmp/fetch_wheels.sh
+
+# 非 torch 依赖：版本取自真机 pip3 list。
+#   numpy 钉 1.26.4：底座系统 python 就是它，防被 torch/transformers 带高；
+#   quadprog 用 0.1.14 而不是真机的 0.1.13 —— 0.1.13 没有 cp312 的 Linux 轮子，
+#   会退化成源码编译（需要 gfortran/meson），0.1.14 有 manylinux 轮子；
+#   daqp 故意不装：真机没有它，机型包的 IK 会自动降级到 dls 纯 numpy 实现，
+#   装了会变成 QP 解算，仿真与真机行为反而不一致。
+RUN --mount=type=cache,target=/root/.cache/pip \
+    /usr/bin/python3 -m pip install --break-system-packages --no-cache-dir \
+        --retries 10 --timeout 120 -i "${PIP_INDEX_URL}" \
+        numpy==1.26.4 \
+        scipy==1.15.3 \
+        pyyaml \
+        qpsolvers==4.13.0 \
+        quadprog==0.1.14 \
+        transformers==5.0.0 \
+        opencv-python-headless==4.11.0.86
+
+# torch / torchvision：先 curl 下载（缓存到 BuildKit 的 /wheels），再离线安装，
+# 两步同在一个 RUN 里，wheel 不会进入镜像层。torch 取 2.9.0 而非真机的 2.9.1 ——
+# PyPI 的 torchvision 0.24.0 把 torch 钉在 2.9.0（真机是 Jetson 轮子，约束被放宽）。
+RUN --mount=type=cache,target=/wheels \
+    --mount=type=cache,target=/root/.cache/pip \
+    bash -c 'set -euo pipefail; \
+      chmod +x /tmp/fetch_wheels.sh; \
+      WHEELHOUSE=/wheels /tmp/fetch_wheels.sh; \
+      echo "--- 1) 大件（torch/CUDA 库）严格用本地 wheel，不解析依赖 ---"; \
+      /usr/bin/python3 -m pip install --break-system-packages --no-cache-dir \
+        --no-index --find-links /wheels --no-deps -r /wheels/requirements.txt; \
+      echo "--- 2) 补齐小依赖（sympy/pillow/gdown 等）由 pip 解析，走国内索引 ---"; \
+      /usr/bin/python3 -m pip install --break-system-packages --no-cache-dir \
+        --find-links /wheels -i "$PIP_INDEX_URL" \
+        torch==2.9.0 torchvision==0.24.0'
+
+# 自检：装完立刻确认能 import，且版本与真机一致
+RUN /usr/bin/python3 -c "import torch, torchvision, transformers, cv2, numpy, scipy, qpsolvers, yaml; \
+print('skill deps ok', torch.__version__, torchvision.__version__, transformers.__version__, \
+numpy.__version__, scipy.__version__, cv2.__version__)"
+
+WORKDIR /thinker
