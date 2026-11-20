@@ -38,7 +38,12 @@ def _frame(depth=1000, k=K, angles=None):
 
 def _run(dets, params=None, frame=None):
     from detect_object.plugin import DetectObject
-    ctx = make_ctx(sensor=_Sensor(frames=[frame or _frame()]))
+    # 显式关掉分割、锁 L1：这些用例验证"框 → 相机系 → base 系"的链路，
+    # 不应依赖 SAM2 权重（默认 backend=sam2 会真的加载模型，并对全零图像
+    # 分割出非中心掩码，把质心带偏 8 mm）。
+    ctx = make_ctx(sensor=_Sensor(frames=[frame or _frame()]),
+                   cfg={"segment": {"backend": "none"},
+                        "locate": {"level": 1, "offset": 0.03}})
     steps = DetectObject(detector=_Det(dets)).build_steps(ctx, params or {})
     return run_pipeline(steps, ctx)
 
